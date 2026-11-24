@@ -1082,8 +1082,8 @@
       },
       updateBio(bio) {
         const v = String(bio ?? '').trim();
-        if ([...v].length > 100) {
-          return Promise.reject(fail('BIO_TOO_LONG', '自己紹介は100文字までです'));
+        if ([...v].length > 50) {
+          return Promise.reject(fail('BIO_TOO_LONG', '自己紹介は50文字までです'));
         }
         users.get('me').bio = v;
         return ok({ bio: v });
