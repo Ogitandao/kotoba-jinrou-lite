@@ -173,8 +173,8 @@
         const lock = document.createElement('span');
         lock.className = 'icon-choice-lock';
         lock.textContent = c.tier === 'coin'
-          ? `🪙 ${fmt(c.priceCoins ?? 0)}コイン`
-          : `🏆 ${c.winThreshold ?? 0}勝で解放`;
+          ? `🪙${fmt(c.priceCoins ?? 0)}コイン`
+          : `🏆${c.winThreshold ?? 0}勝で解放`;
         b.appendChild(lock);
       } else {
         b.addEventListener('click', () => selectIcon(c.key));
