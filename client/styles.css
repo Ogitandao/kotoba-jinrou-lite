@@ -33,6 +33,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 /* スマホ枠 */
 .phone {
+  position: relative;
   max-width: 430px;
   margin: 0 auto;
   height: 100dvh;
@@ -228,12 +229,19 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .list-end-spacer { height: 18px; }
 
 /* ルームを作る（スティッキー帯：下部メニューの上） */
+/* ボタンだけが浮いて見えるよう、帯の背景は置かず画面に重ねる（2026-11-25 おぎ）。
+   帯の領域はタップを透過し、ボタンだけが操作を受ける。 */
 .create-bar {
-  flex: 0 0 auto;
-  padding: 8px 14px 10px;
-  background: linear-gradient(180deg, rgba(224,243,255,0), #dff2ff 45%);
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(58px + env(safe-area-inset-bottom) + 10px);
+  padding: 0 18px;
+  background: none;
+  pointer-events: none;
+  z-index: 30;
 }
 .create-btn {
+  pointer-events: auto;
   width: 100%;
   background: #eaf6ff;
   border: 2.5px solid var(--sky);
@@ -241,16 +249,19 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   border-radius: 16px;
   padding: 10px 12px 8px;
   display: flex; flex-direction: column; align-items: center; gap: 1px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 12px 26px rgba(20, 90, 160, 0.30);
 }
+/* 浮いたボタンの下に最後のルームカードが隠れないよう、ロビー末尾に余白 */
+#tab-lobby { padding-bottom: 96px; }
 .create-title { font-size: 20px; font-weight: 800; }
 .create-sub { font-size: 12.5px; color: var(--ink-soft); font-weight: 700; }
 
 /* 下部メニュー（2タブ） */
 .tabbar {
   flex: 0 0 auto;
+  height: calc(58px + env(safe-area-inset-bottom));
   display: flex; gap: 10px;
-  padding: 8px 14px calc(10px + env(safe-area-inset-bottom));
+  padding: 8px 14px calc(8px + env(safe-area-inset-bottom));
   background: rgba(255, 255, 255, 0.9);
   border-top: 1px solid var(--line);
 }
