@@ -35,7 +35,7 @@ const visible = (el) => el && !el.classList.contains('hidden');
 
 // --- 表示要素 ---
 check('タイトルバー＋⚙️設定ボタンが表示される',
-  visible($('btn-settings')) && document.querySelector('.topbar-title')?.textContent.includes('ことば人狼'));
+  visible($('btn-settings')) && document.querySelector('.topbar-logo')?.getAttribute('alt') === 'ことば人狼');
 check('プロフィール（名前・ID・自己紹介）が表示される',
   $('my-name').textContent === 'おぎ' &&
   $('my-id').textContent === 'ogi_2847' &&
