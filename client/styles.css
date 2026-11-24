@@ -714,3 +714,17 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-family: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
   font-weight: 400;
 }
+
+/* 縦固定：横向き（スマホを横にした時）だけ全画面の案内を出す */
+.rotate-notice { display: none; }
+@media (orientation: landscape) and (max-height: 480px) {
+  .rotate-notice {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; position: fixed; inset: 0; z-index: 999;
+    background: linear-gradient(180deg, #e4fbf0 0%, #e0f3ff 55%, #d8efff 100%);
+    text-align: center; padding: 20px;
+  }
+}
+.rotate-wolf { width: 74px; height: auto; }
+.rotate-title { font-size: 19px; font-weight: 800; color: #14549e; }
+.rotate-sub { font-size: 14px; font-weight: 700; color: var(--ink-soft); }

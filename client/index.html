@@ -26,6 +26,12 @@
 <script src="./js/data-adapter.js"></script>
 </head>
 <body>
+<!-- 縦固定：横向きでは案内を表示して遊ばせない（2026-11-25 おぎ） -->
+<div id="rotate-notice" class="rotate-notice" aria-hidden="true">
+  <img src="img/wolf-mark.webp" alt="" class="rotate-wolf" />
+  <p class="rotate-title">このゲームは縦向き専用です</p>
+  <p class="rotate-sub">スマホを縦に戻してね</p>
+</div>
 <div class="phone">
 
   <!-- スクロールしても右上に残る細いバー＋⚙️設定ボタン（おぎ案） -->
