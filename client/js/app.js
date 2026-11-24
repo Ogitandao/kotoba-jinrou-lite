@@ -166,12 +166,16 @@
       b.className = `icon-choice${c.selected ? ' selected' : ''}`;
       b.dataset.iconKey = c.key;
       const src = window.KL_ICON_SRC ? window.KL_ICON_SRC(c.key) : null;
+      // 中身は絶対配置のインナーに閉じ込め、セル寸法（正方形）に影響させない
+      const inner = document.createElement('span');
+      inner.className = 'icon-choice-inner';
+      b.appendChild(inner);
       if (src) {
         const img = document.createElement('img');
         img.className = 'avatar-img';
         img.src = src;
         img.alt = '';
-        b.appendChild(img);
+        inner.appendChild(img);
       }
       if (c.selected) {
         const check = document.createElement('span');
@@ -186,7 +190,7 @@
         lock.textContent = c.tier === 'coin'
           ? `🪙${fmt(c.priceCoins ?? 0)}コイン`
           : `🏆${c.winThreshold ?? 0}勝で解放`;
-        b.appendChild(lock);
+        inner.appendChild(lock);
         b.addEventListener('click', () => {
           toast(c.tier === 'coin'
             ? `このアイコンは${fmt(c.priceCoins ?? 0)}コインで購入できます`
