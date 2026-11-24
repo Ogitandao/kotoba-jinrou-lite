@@ -197,6 +197,10 @@ await new Promise((r) => setTimeout(r, 30));
 check('空で保存すると「自己紹介（タップで編集）」の案内表示に戻る',
   $('my-bio').textContent === '自己紹介（タップで編集）' && $('my-bio').classList.contains('empty'));
 
+check('縦固定：横向き案内オーバーレイがある', !!$('rotate-notice'));
+check('縦固定：横向きメディアクエリで表示する CSS がある',
+  readFileSync(new URL('styles.css', base), 'utf8').includes('(orientation: landscape)'));
+
 const failed = results.filter((r) => !r.ok);
 console.log(`\n=== ${results.length - failed.length}/${results.length} PASS ===`);
 process.exit(failed.length ? 1 : 0);
