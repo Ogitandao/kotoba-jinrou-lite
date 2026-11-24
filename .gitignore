@@ -1,0 +1,3 @@
+node_modules/
+# 配信時設定（環境変数から生成する。実値はコミットしない）
+client/kl-config.js
