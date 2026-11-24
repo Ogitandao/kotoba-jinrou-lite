@@ -61,8 +61,11 @@ await tick(80);
 
 // --- データ層 ---
 const catalog = await KL().listIcons();
-check('[I2] カタログは無料21種・全て所有扱い',
-  catalog.length === 21 && catalog.every((c) => c.tier === 'free' && c.owned),
+check('[I2] カタログは21種（無料18＋勝利数解放3）、並びは人間が先頭',
+  catalog.length === 21
+    && catalog.filter((c) => c.tier === 'free' && c.owned).length === 18
+    && catalog.filter((c) => c.tier === 'win' && !c.owned).length === 3
+    && catalog[0].key === 'man1' && catalog[6].key === 'wolf',
   `n=${catalog.length}`);
 check('[I2] 初期選択は おおかみ（wolf）',
   catalog.find((c) => c.selected)?.key === 'wolf');
@@ -91,12 +94,18 @@ check('[I5] オンラインの友達帯：画像アイコン＋緑ドットが�
 $('my-avatar').click();
 await tick(60);
 check('[I2] アイコンをタップすると選択モーダルが開く', visible($('modal-avatar')));
-check('[I2] グリッドに21種が出て、おおかみに選択中が付く',
+check('[I2] グリッドに21種が出て、おおかみに選択中（✓バッジ）が付く',
   document.querySelectorAll('#icon-grid .icon-choice').length === 21
   && document.querySelector('#icon-grid .icon-choice[data-icon-key="wolf"]')
-    ?.classList.contains('selected'));
-check('[I2] 勝利数解放・コイン購入は「今後追加」の案内が出る',
-  visible($('icon-win-note')) && visible($('icon-coin-note')));
+    ?.classList.contains('selected')
+  && !!document.querySelector('#icon-grid .icon-choice[data-icon-key="wolf"] .icon-choice-check'));
+check('[I2] 名前ラベルは無く、「今後追加」の案内文も無い（2026-11-25 おぎ）',
+  document.querySelectorAll('#icon-grid .icon-choice-name').length === 0
+  && !$('icon-win-note') && !$('icon-coin-note'));
+check('[I2] 勝利数解放（こあら）はロック表示で条件が出る',
+  document.querySelector('#icon-grid .icon-choice[data-icon-key="koala"]')?.disabled === true
+  && document.querySelector('#icon-grid .icon-choice[data-icon-key="koala"] .icon-choice-lock')
+    ?.textContent.includes('5勝'));
 document.querySelector('#icon-grid .icon-choice[data-icon-key="cat"]').click();
 await tick(60);
 check('[I3] ねこを選ぶとロビーの自分のアイコンが即変わる',

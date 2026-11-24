@@ -37,27 +37,27 @@
   // 将来 win / coin ティアが DB に増えたら listIcons は DB 側が正本に
   // なる（Sim はこの無料分のみを返す）。
   const ICON_CATALOG = [
-    { key: 'dog', name: 'いぬ', tier: 'free', priceCoins: null, winThreshold: null, sort: 1 },
-    { key: 'cat', name: 'ねこ', tier: 'free', priceCoins: null, winThreshold: null, sort: 2 },
-    { key: 'rabbit', name: 'うさぎ', tier: 'free', priceCoins: null, winThreshold: null, sort: 3 },
-    { key: 'bear', name: 'くま', tier: 'free', priceCoins: null, winThreshold: null, sort: 4 },
-    { key: 'panda', name: 'パンダ', tier: 'free', priceCoins: null, winThreshold: null, sort: 5 },
-    { key: 'penguin', name: 'ペンギン', tier: 'free', priceCoins: null, winThreshold: null, sort: 6 },
-    { key: 'owl', name: 'ふくろう', tier: 'free', priceCoins: null, winThreshold: null, sort: 7 },
-    { key: 'fox', name: 'きつね', tier: 'free', priceCoins: null, winThreshold: null, sort: 8 },
-    { key: 'tanuki', name: 'たぬき', tier: 'free', priceCoins: null, winThreshold: null, sort: 9 },
-    { key: 'chick', name: 'ひよこ', tier: 'free', priceCoins: null, winThreshold: null, sort: 10 },
-    { key: 'frog', name: 'かえる', tier: 'free', priceCoins: null, winThreshold: null, sort: 11 },
-    { key: 'koala', name: 'こあら', tier: 'free', priceCoins: null, winThreshold: null, sort: 12 },
-    { key: 'tiger', name: 'とら', tier: 'free', priceCoins: null, winThreshold: null, sort: 13 },
-    { key: 'seal', name: 'あざらし', tier: 'free', priceCoins: null, winThreshold: null, sort: 14 },
-    { key: 'wolf', name: 'おおかみ', tier: 'free', priceCoins: null, winThreshold: null, sort: 15 },
-    { key: 'man1', name: '男性・黒髪', tier: 'free', priceCoins: null, winThreshold: null, sort: 16 },
-    { key: 'man2', name: '男性・茶髪', tier: 'free', priceCoins: null, winThreshold: null, sort: 17 },
-    { key: 'man3', name: '男性・眼鏡', tier: 'free', priceCoins: null, winThreshold: null, sort: 18 },
-    { key: 'woman1', name: '女性・ロング', tier: 'free', priceCoins: null, winThreshold: null, sort: 19 },
-    { key: 'woman2', name: '女性・ボブ', tier: 'free', priceCoins: null, winThreshold: null, sort: 20 },
-    { key: 'woman3', name: '女性・ポニーテール', tier: 'free', priceCoins: null, winThreshold: null, sort: 21 },
+    { key: 'man1', name: '男性・黒髪', tier: 'free', priceCoins: null, winThreshold: null, sort: 1 },
+    { key: 'man2', name: '男性・茶髪', tier: 'free', priceCoins: null, winThreshold: null, sort: 2 },
+    { key: 'man3', name: '男性・眼鏡', tier: 'free', priceCoins: null, winThreshold: null, sort: 3 },
+    { key: 'woman1', name: '女性・ロング', tier: 'free', priceCoins: null, winThreshold: null, sort: 4 },
+    { key: 'woman2', name: '女性・ボブ', tier: 'free', priceCoins: null, winThreshold: null, sort: 5 },
+    { key: 'woman3', name: '女性・ポニーテール', tier: 'free', priceCoins: null, winThreshold: null, sort: 6 },
+    { key: 'wolf', name: 'おおかみ', tier: 'free', priceCoins: null, winThreshold: null, sort: 7 },
+    { key: 'dog', name: 'いぬ', tier: 'free', priceCoins: null, winThreshold: null, sort: 8 },
+    { key: 'cat', name: 'ねこ', tier: 'free', priceCoins: null, winThreshold: null, sort: 9 },
+    { key: 'rabbit', name: 'うさぎ', tier: 'free', priceCoins: null, winThreshold: null, sort: 10 },
+    { key: 'bear', name: 'くま', tier: 'free', priceCoins: null, winThreshold: null, sort: 11 },
+    { key: 'panda', name: 'パンダ', tier: 'free', priceCoins: null, winThreshold: null, sort: 12 },
+    { key: 'penguin', name: 'ペンギン', tier: 'free', priceCoins: null, winThreshold: null, sort: 13 },
+    { key: 'owl', name: 'ふくろう', tier: 'free', priceCoins: null, winThreshold: null, sort: 14 },
+    { key: 'tanuki', name: 'たぬき', tier: 'free', priceCoins: null, winThreshold: null, sort: 15 },
+    { key: 'chick', name: 'ひよこ', tier: 'free', priceCoins: null, winThreshold: null, sort: 16 },
+    { key: 'frog', name: 'かえる', tier: 'free', priceCoins: null, winThreshold: null, sort: 17 },
+    { key: 'tiger', name: 'とら', tier: 'free', priceCoins: null, winThreshold: null, sort: 18 },
+    { key: 'koala', name: 'こあら', tier: 'win', priceCoins: null, winThreshold: 5, sort: 19 },
+    { key: 'seal', name: 'あざらし', tier: 'win', priceCoins: null, winThreshold: 10, sort: 20 },
+    { key: 'fox', name: 'きつね', tier: 'win', priceCoins: null, winThreshold: 20, sort: 21 },
   ];
   const ICON_KEY_SET = new Set(ICON_CATALOG.map((c) => c.key));
   // プリセット画像の URL を返す（同梱ファイルがある key のみ）。
@@ -1076,8 +1076,11 @@
       // ---------- アイコン（0017 の kl_set_icon と同じ判定） ----------
       listIcons() {
         const mine = users.get('me');
+        const wins = mine.wordwolfWins ?? 0;
         return ok(ICON_CATALOG.map((c) => ({
-          ...c, owned: c.tier === 'free', selected: mine.iconKey === c.key,
+          ...c,
+          owned: c.tier === 'free' || (c.tier === 'win' && wins >= (c.winThreshold ?? 0)),
+          selected: mine.iconKey === c.key,
         })));
       },
       updateBio(bio) {
@@ -1091,7 +1094,12 @@
       setIcon(key) {
         const cat = ICON_CATALOG.find((c) => c.key === key);
         if (!cat) return Promise.reject(fail('ICON_NOT_FOUND', 'そのアイコンは存在しません'));
-        if (cat.tier !== 'free') {
+        if (cat.tier === 'win') {
+          const wins = users.get('me').wordwolfWins ?? 0;
+          if (wins < (cat.winThreshold ?? 0)) {
+            return Promise.reject(fail('ICON_NOT_OWNED', 'そのアイコンはまだ持っていません'));
+          }
+        } else if (cat.tier !== 'free') {
           return Promise.reject(fail('ICON_NOT_OWNED', 'そのアイコンはまだ持っていません'));
         }
         users.get('me').iconKey = key;
@@ -1597,7 +1605,8 @@
         return (catalog ?? []).map((c) => ({
           key: c.key, name: c.name, tier: c.tier,
           priceCoins: c.price_coins, winThreshold: c.win_threshold, sort: c.sort,
-          owned: c.tier === 'free' || owned.has(c.key),
+          owned: c.tier === 'free' || owned.has(c.key)
+            || (c.tier === 'win' && (p.wordwolf_wins ?? 0) >= (c.win_threshold ?? 0)),
           selected: p.icon_key === c.key,
         }));
       },

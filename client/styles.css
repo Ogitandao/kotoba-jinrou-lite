@@ -146,13 +146,25 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 
 /* アイコン選択グリッド */
-.icon-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 10px 0; }
+.icon-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+  margin: 10px 0; padding: 2px;
+  overflow-y: auto; min-height: 0;
+}
 .icon-choice {
+  position: relative; min-width: 0;
   display: flex; flex-direction: column; align-items: center; gap: 3px;
   background: #f4fbff; border: 2px solid var(--line); border-radius: 14px;
   padding: 6px 2px;
 }
-.icon-choice .avatar-img { width: 46px; height: 46px; border-radius: 10px; }
+.icon-choice .avatar-img { width: 44px; height: 44px; border-radius: 10px; }
+.icon-choice-check {
+  position: absolute; top: -7px; right: -7px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--mint); color: #fff;
+  font-size: 12px; font-weight: 800; line-height: 20px; text-align: center;
+  box-shadow: 0 2px 6px rgba(23, 50, 74, 0.25);
+}
 .icon-choice.selected { border-color: var(--mint); background: var(--mint-bg); }
 .icon-choice:disabled { opacity: 0.55; cursor: default; }
 .icon-choice-name { font-size: 11px; font-weight: 700; line-height: 1.25; text-align: center; }
@@ -304,6 +316,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   width: 100%; max-width: 360px;
   padding: 20px;
   box-shadow: 0 12px 32px rgba(23, 50, 74, 0.25);
+  max-height: calc(100dvh - 40px);
+  display: flex; flex-direction: column;
 }
 .modal h3 { font-size: 18px; font-weight: 800; margin-bottom: 12px; text-align: center; }
 .modal-note { font-size: 13.5px; color: var(--ink-soft); text-align: center; margin: 8px 0; }

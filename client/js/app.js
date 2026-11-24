@@ -162,10 +162,12 @@
         img.alt = '';
         b.appendChild(img);
       }
-      const name = document.createElement('span');
-      name.className = 'icon-choice-name';
-      name.textContent = c.selected ? `${c.name}（選択中）` : c.name;
-      b.appendChild(name);
+      if (c.selected) {
+        const check = document.createElement('span');
+        check.className = 'icon-choice-check';
+        check.textContent = '✓';
+        b.appendChild(check);
+      }
       if (!c.owned) {
         b.disabled = true;
         const lock = document.createElement('span');
@@ -179,9 +181,6 @@
       }
       grid.appendChild(b);
     }
-    // カタログに win / coin がまだ無い間は「今後追加」の案内を出す
-    $('icon-win-note').classList.toggle('hidden', catalog.some((c) => c.tier === 'win'));
-    $('icon-coin-note').classList.toggle('hidden', catalog.some((c) => c.tier === 'coin'));
   }
   async function selectIcon(key) {
     try {

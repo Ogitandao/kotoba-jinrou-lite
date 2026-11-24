@@ -90,8 +90,15 @@ async function rpc(user, fn, args) {
 
 // --- カタログ（オーナー SQL で確認） ---
 const cat = sql('select tier, count(*)::int as n from public.icons group by tier');
-check('icons カタログに無料21種が seed されている',
-  cat.length === 1 && cat[0].tier === 'free' && cat[0].n === 21, JSON.stringify(cat));
+check('icons カタログは無料18種＋勝利数解放3種（0022）',
+  cat.length === 2
+    && cat.find((r) => r.tier === 'free')?.n === 18
+    && cat.find((r) => r.tier === 'win')?.n === 3,
+  JSON.stringify(cat));
+const order = sql('select key from public.icons order by sort limit 7');
+check('並びは人間が先頭（man1..woman3→wolf）',
+  order.map((r) => r.key).join(',') === 'man1,man2,man3,woman1,woman2,woman3,wolf',
+  JSON.stringify(order));
 
 const A = await signup('a');
 const B = await signup('b');
@@ -116,6 +123,17 @@ check('profiles.icon_key に保存される（再読込で維持される正本�
   profA1.data?.icon_key === 'cat', profA1.data?.icon_key ?? 'none');
 const setBad = await rpc(A, 'kl_set_icon', { p_icon_key: 'bogus' });
 check('存在しないキーは ICON_NOT_FOUND', setBad.code === 'ICON_NOT_FOUND', setBad.code ?? '');
+const setKoalaLocked = await rpc(A, 'kl_set_icon', { p_icon_key: 'koala' });
+check('勝利数不足のこあら（5勝）は ICON_NOT_OWNED', setKoalaLocked.code === 'ICON_NOT_OWNED',
+  setKoalaLocked.code ?? '');
+// 勝利数を5に上げると自動付与の経路が通る（オーナー SQL は wins を直接書ける）
+sql(`update public.profiles set wordwolf_wins = 5 where id = '${A.id}'`);
+const setKoalaOk = await rpc(A, 'kl_set_icon', { p_icon_key: 'koala' });
+check('条件を満たせば win ティアが自動付与され選択できる',
+  !setKoalaOk.error && setKoalaOk.data?.iconKey === 'koala', setKoalaOk.code ?? '');
+const ownKoala = sql(`select count(*)::int as n from public.user_icons where icon_key = 'koala' and user_id = '${A.id}'`);
+check('user_icons に所有が記録される', ownKoala[0]?.n === 1, JSON.stringify(ownKoala));
+await rpc(A, 'kl_set_icon', { p_icon_key: 'cat' }); // 後続チェック用に cat へ戻す
 const search = await rpc(B, 'kl_search_user', { p_public_id: profA0.data.public_id });
 check('kl_search_user の返却に icon_key（cat）が含まれる',
   search.data?.[0]?.icon_key === 'cat', JSON.stringify(search.data?.[0] ?? {}));
