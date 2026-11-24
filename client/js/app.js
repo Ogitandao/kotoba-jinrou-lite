@@ -43,12 +43,23 @@
   const fmt = (n) => n.toLocaleString('ja-JP');
 
   let toastTimer = null;
+  let toastFadeTimer = null;
   function toast(msg) {
     const t = $('toast');
     t.textContent = msg;
-    t.classList.remove('hidden');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.add('hidden'), 2600);
+    clearTimeout(toastFadeTimer);
+    t.classList.remove('hidden');
+    t.classList.add('toast-out');
+    void t.offsetWidth; // フェードインを効かせるためのリフロー
+    t.classList.remove('toast-out');
+    toastTimer = setTimeout(() => {
+      t.classList.add('toast-out');
+      toastFadeTimer = setTimeout(() => {
+        t.classList.add('hidden');
+        t.classList.remove('toast-out');
+      }, 400);
+    }, 2600);
   }
   function toastError(err) {
     toast(err?.message ?? 'エラーが発生しました');

@@ -148,7 +148,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 /* アイコン選択グリッド */
 .icon-grid {
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
-  margin: 10px 0; padding: 8px 2px 2px;
+  margin: 10px 0; padding: 9px 9px 2px 2px;
   overflow-y: auto; min-height: 0;
   align-content: start;
 }
@@ -159,17 +159,17 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   background: #f4fbff; border: 2px solid var(--line); border-radius: 14px;
   padding: 4px 2px;
-  overflow: hidden;
 }
 .icon-choice-lock {
   position: absolute; left: 0; right: 0; bottom: 0;
   background: rgba(255, 255, 255, 0.85);
+  border-radius: 0 0 12px 12px;
   font-size: 9.5px; font-weight: 800; color: var(--ink-soft);
   text-align: center; white-space: nowrap; padding: 2px 0;
 }
 .icon-choice .avatar-img { width: 44px; height: 44px; border-radius: 10px; }
 .icon-choice-check {
-  position: absolute; top: -7px; right: -7px;
+  position: absolute; top: -7px; right: -7px; z-index: 2;
   width: 20px; height: 20px; border-radius: 50%;
   background: var(--mint); color: #fff;
   font-size: 12px; font-weight: 800; line-height: 20px; text-align: center;
@@ -375,7 +375,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-size: 14px; font-weight: 700;
   max-width: 88vw; text-align: center;
   z-index: 60;
+  transition: opacity 0.38s ease, transform 0.38s ease;
 }
+.toast-out { opacity: 0; transform: translateX(-50%) translateY(8px); }
 
 /* ===== フレンド／トーク／DM／ギフト（ソーシャル実装フェーズ） ===== */
 .panel-head { font-size: 15px; font-weight: 800; margin: 16px 2px 8px; color: var(--ink); }
