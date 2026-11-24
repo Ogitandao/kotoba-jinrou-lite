@@ -1080,6 +1080,14 @@
           ...c, owned: c.tier === 'free', selected: mine.iconKey === c.key,
         })));
       },
+      updateBio(bio) {
+        const v = String(bio ?? '').trim();
+        if ([...v].length > 100) {
+          return Promise.reject(fail('BIO_TOO_LONG', '自己紹介は100文字までです'));
+        }
+        users.get('me').bio = v;
+        return ok({ bio: v });
+      },
       setIcon(key) {
         const cat = ICON_CATALOG.find((c) => c.key === key);
         if (!cat) return Promise.reject(fail('ICON_NOT_FOUND', 'そのアイコンは存在しません'));
@@ -1593,6 +1601,10 @@
           selected: p.icon_key === c.key,
         }));
       },
+      async updateBio(bio) {
+        const r = await rpc('kl_update_profile', { p_bio: String(bio ?? '').trim() });
+        return { bio: r.bio };
+      },
       async setIcon(key) {
         const r = await rpc('kl_set_icon', { p_icon_key: key });
         return { iconKey: r.iconKey };
@@ -1857,6 +1869,7 @@
     sendGift: (id, key) => active.sendGift(id, key),
     listIcons: () => active.listIcons(),
     setIcon: (key) => active.setIcon(key),
+    updateBio: (bio) => active.updateBio(bio),
     sendInvite: (id, roomId, pw) => active.sendInvite(id, roomId, pw),
     spendCoins: (n) => active.spendCoins(n),
     addCoins: (n) => active.addCoins(n),

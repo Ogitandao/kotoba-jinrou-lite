@@ -122,7 +122,15 @@
     fillAvatar($('my-avatar'), me);
     $('my-name').textContent = me.name;
     $('my-id').textContent = me.publicId;
-    $('my-bio').textContent = me.bio;
+    const bioEl = $('my-bio');
+    if (me.bio) {
+      bioEl.textContent = me.bio;
+      bioEl.classList.remove('empty');
+    } else {
+      // 未設定のときは「タップで編集できる」ことが分かる案内を出す（2026-11-25 おぎ）
+      bioEl.textContent = '自己紹介（タップで編集）';
+      bioEl.classList.add('empty');
+    }
     $('avatar-modal-name').textContent = me.name;
     fillAvatar($('avatar-modal-preview'), me);
   }
@@ -1475,6 +1483,23 @@
     $('btn-account').addEventListener('click', () => toast('アカウント設定は認証接続フェーズで実装します'));
     $('btn-logout').addEventListener('click', () => toast('ログアウトは認証接続フェーズで実装します'));
     $('my-avatar').addEventListener('click', openIconModal);
+    $('my-bio').addEventListener('click', () => {
+      $('bio-input').value = state.me?.bio ?? '';
+      $('bio-count').textContent = [...$('bio-input').value].length;
+      openModal('modal-bio');
+    });
+    $('bio-input').addEventListener('input', () => {
+      $('bio-count').textContent = [...$('bio-input').value].length;
+    });
+    $('bio-save').addEventListener('click', async () => {
+      try {
+        const r = await DATA.updateBio($('bio-input').value.trim());
+        state.me.bio = r.bio;
+        renderProfile();
+        closeModal();
+        toast('自己紹介を更新しました');
+      } catch (e) { toastError(e); }
+    });
     $('btn-invite').addEventListener('click', openInviteModal);
     $('pill-coins').addEventListener('click', () => openModal('modal-charge'));
     $('pill-popularity').addEventListener('click', () => toast('人気度はギフトをもらうと上がります'));

@@ -179,6 +179,24 @@ $('tabbtn-lobby').click();
 check('ロビータブへ戻れる（作成バーも戻る）',
   visible($('tab-lobby')) && !visible($('tab-friends')) && visible($('create-bar')));
 
+// --- 自己紹介の編集（0020） ---
+$('my-bio').click();
+check('自己紹介タップで編集モーダルが開き、現在の文が入っている',
+  visible($('modal-bio')) && $('bio-input').value.length > 0);
+$('bio-input').value = '検証用の自己紹介です';
+$('bio-input').dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+check('文字数カウンタが入力に追随する', $('bio-count').textContent === '10');
+$('bio-save').click();
+await new Promise((r) => setTimeout(r, 30));
+check('保存するとロビーの自己紹介が即変わる',
+  $('my-bio').textContent.includes('検証用の自己紹介です') && !visible($('modal-bio')));
+$('my-bio').click();
+$('bio-input').value = '';
+$('bio-save').click();
+await new Promise((r) => setTimeout(r, 30));
+check('空で保存すると「自己紹介（タップで編集）」の案内表示に戻る',
+  $('my-bio').textContent === '自己紹介（タップで編集）' && $('my-bio').classList.contains('empty'));
+
 const failed = results.filter((r) => !r.ok);
 console.log(`\n=== ${results.length - failed.length}/${results.length} PASS ===`);
 process.exit(failed.length ? 1 : 0);

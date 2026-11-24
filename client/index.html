@@ -46,7 +46,7 @@
             <span class="online-label"><span class="dot dot-on"></span>オンライン</span>
           </div>
           <div class="profile-id">ID: <span id="my-id">ogi_2847</span></div>
-          <p id="my-bio" class="profile-bio"></p>
+          <button id="my-bio" class="profile-bio" type="button" aria-label="自己紹介を編集"></button>
         </div>
       </div>
 
@@ -289,6 +289,17 @@
     <p id="icon-win-note" class="modal-note">🏆 勝利数で解放されるアイコンは今後追加されます</p>
     <p id="icon-coin-note" class="modal-note">🪙 コインで買えるアイコンは今後追加されます</p>
     <button class="modal-close" data-close type="button">閉じる</button>
+  </div>
+
+  <!-- 自己紹介の編集 -->
+  <div id="modal-bio" class="modal hidden">
+    <h3>自己紹介を編集</h3>
+    <textarea id="bio-input" class="bio-input" rows="4" maxlength="100" placeholder="はじめまして！みんなで楽しくワードウルフしたいです"></textarea>
+    <p class="modal-note"><span id="bio-count">0</span> / 100文字</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close type="button">キャンセル</button>
+      <button id="bio-save" class="btn btn-primary" type="button">保存する</button>
+    </div>
   </div>
 
   <!-- 友達を招待（DM招待カードの発行） -->

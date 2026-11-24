@@ -95,7 +95,19 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 .dot-on { background: #2ecc71; }
 .profile-id { color: var(--ink-soft); font-size: 14px; margin: 2px 0 6px; }
-.profile-bio { font-size: 13.5px; line-height: 1.55; color: #33536d; }
+.profile-bio {
+  font-size: 13.5px; line-height: 1.55; color: #33536d;
+  display: block; width: 100%; text-align: left;
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-family: inherit;
+}
+.profile-bio::after { content: ' ✎'; font-size: 11px; color: var(--ink-soft); }
+.profile-bio.empty { color: var(--ink-soft); }
+.bio-input {
+  width: 100%; font: inherit; font-size: 14.5px; line-height: 1.6;
+  border: 2px solid var(--border, #cfe3ee); border-radius: 12px;
+  padding: 10px 12px; resize: none; box-sizing: border-box;
+}
 
 /* ピル（コイン／人気度） */
 .pill-row { display: flex; gap: 10px; margin-top: 12px; }

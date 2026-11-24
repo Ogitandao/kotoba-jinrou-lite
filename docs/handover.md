@@ -969,3 +969,7 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
 - おぎ承認の見本シート（男女各3・フラット人物）から6種を切り出し正式素材化。無料プリセットは動物15＋人物6＝21種に。
 - migration 0019 を実DBへ適用済み（free=21確認）。client/icons 同梱、data-adapter の ICON_CATALOG に sort 16-21 で追加。Drive「アイコン画像」にも21種揃えた。
 - 検証: verify-icons 22/22、verify-icons-invite-db 16/16。
+
+## 2026-11-25 自己紹介の編集（0020）
+- ロビーの自己紹介をタップで編集モーダル（100文字・カウンタ付き）。未設定時は「自己紹介（タップで編集）」の案内表示。RPC kl_update_profile（BIO_TOO_LONG検証あり）を実DB適用済み、実DBテスト（保存・101文字拒否・復元）通過。verify-lobby 44/44。
+- 注意：テストユーザー lite-test-a/b は auth.users の行が不完全（created_at NULL等）でサインイン不可（"Database error querying schema"）。2026-11-24の手動投入由来の既存欠陥で、実ユーザー・アプリには無関係。実DB検証は都度作成するテストユーザーで行うこと。
