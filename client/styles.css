@@ -1,0 +1,673 @@
+/* ことば人狼 Lite — ロビー基盤スタイル
+   デザイン基準：ロビーモックv1（おぎ承認済み）
+   明るいミント×水色パレット。「初心者でも気軽に始めやすい、見やすい配色」。
+   本家（人狼NIGHT）のダークファンタジーには寄せない。 */
+:root {
+  --ink: #17324a;
+  --ink-soft: #4a6a84;
+  --mint: #35cf8b;
+  --mint-bg: #dcfaea;
+  --sky: #2b9df4;
+  --sky-deep: #1f8bf0;
+  --card: #ffffff;
+  --line: #d9ecf7;
+  --gold: #f5a623;
+  --danger: #e5534b;
+  --radius: 20px;
+  --shadow: 0 4px 14px rgba(31, 90, 140, 0.10);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  /* 丸ゴシック M PLUS Rounded 1c（Google Fonts CDN / OFL）を第一に。
+     見出し・ボタン・名前などは各所の font-weight: 800 で ExtraBold に寄る。
+     長文の本文（ルール文・システムDM）は読みやすさ優先で従来フォント */
+  font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font-weight: 700;
+  color: var(--ink);
+  background: #cfeefc;
+}
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+.hidden { display: none !important; }
+
+/* スマホ枠 */
+.phone {
+  max-width: 430px;
+  margin: 0 auto;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #e4fbf0 0%, #e0f3ff 55%, #d8efff 100%);
+  box-shadow: 0 0 24px rgba(31, 90, 140, 0.15);
+}
+
+/* 上部固定バー（スクロールしても残る細いバー＋⚙️） */
+.topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 8px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--line);
+  z-index: 5;
+}
+.topbar-title { font-size: 20px; font-weight: 800; color: #14549e; letter-spacing: 0.04em; }
+.gear-btn {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow);
+  font-size: 19px;
+  line-height: 1;
+}
+
+/* スクロール領域 */
+.scroll { flex: 1 1 auto; overflow-y: auto; padding: 14px 14px 0; }
+.tab-panel { padding-bottom: 8px; }
+
+/* プロフィールカード */
+.profile-card {
+  display: flex;
+  gap: 14px;
+  background: linear-gradient(135deg, #d9fbe8, #e6f7ff);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.avatar {
+  flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 18px; /* 本家標準：アイコンは四角（角丸） */
+  background: #fff;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.9), var(--shadow);
+}
+.avatar-lg { width: 88px; height: 88px; font-size: 52px; }
+.avatar-md { width: 56px; height: 56px; font-size: 34px; border-radius: 14px; }
+.avatar-sm { width: 52px; height: 52px; font-size: 32px; border-radius: 14px; position: relative; }
+.avatar-xl { width: 128px; height: 128px; font-size: 76px; margin: 10px auto; }
+.profile-main { min-width: 0; }
+.profile-name-row { display: flex; align-items: center; gap: 10px; }
+.profile-name { font-size: 26px; font-weight: 800; }
+.online-label { color: #159a5f; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; gap: 5px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.dot-on { background: #2ecc71; }
+.profile-id { color: var(--ink-soft); font-size: 14px; margin: 2px 0 6px; }
+.profile-bio { font-size: 13.5px; line-height: 1.55; color: #33536d; }
+
+/* ピル（コイン／人気度） */
+.pill-row { display: flex; gap: 10px; margin-top: 12px; }
+.pill {
+  flex: 1 1 0;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  background: var(--card);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  padding: 10px 12px;
+  font-weight: 800; font-size: 16px;
+  white-space: nowrap;
+}
+.charge-chip {
+  background: #bfe3ff; color: #1473c9;
+  border-radius: 999px; padding: 3px 10px; font-size: 13px;
+}
+.pill-coin, .pill-sparkle { font-size: 18px; }
+/* ピル内はアイコン＋数字のみで1行固定（2026-11-25 おぎ）。桁が増えても
+   子要素を縮めたり改行させたりしない */
+.pill > span { white-space: nowrap; flex: 0 0 auto; }
+
+/* プリセットアイコン画像（.avatar の中身として全面に敷く） */
+.avatar-img {
+  width: 100%; height: 100%; display: block;
+  object-fit: cover; border-radius: inherit;
+}
+/* DM画面ヘッダーのオンラインバッジ（出す場所はロビーの友達帯と
+   DM画面だけ：2026-11-25 おぎ） */
+.dm-header .avatar .dot {
+  position: absolute; right: -1px; bottom: -1px;
+  border: 2px solid #eafaf1; width: 13px; height: 13px;
+}
+
+/* アイコン選択グリッド */
+.icon-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 10px 0; }
+.icon-choice {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: #f4fbff; border: 2px solid var(--line); border-radius: 14px;
+  padding: 6px 2px;
+}
+.icon-choice .avatar-img { width: 46px; height: 46px; border-radius: 10px; }
+.icon-choice.selected { border-color: var(--mint); background: var(--mint-bg); }
+.icon-choice:disabled { opacity: 0.55; cursor: default; }
+.icon-choice-name { font-size: 11px; font-weight: 700; line-height: 1.25; text-align: center; }
+.icon-choice-lock { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); }
+
+/* ログインボーナス */
+.bonus-banner {
+  width: 100%;
+  margin-top: 12px;
+  background: linear-gradient(90deg, #ffedb3, #ffd964);
+  color: #9a6a00;
+  font-weight: 800; font-size: 16.5px;
+  border-radius: 14px;
+  padding: 13px 12px;
+  box-shadow: var(--shadow);
+}
+.bonus-banner #bonus-state {
+  background: #fff; color: #d18d00;
+  border-radius: 999px; padding: 2px 10px; font-size: 13px; margin-left: 6px;
+}
+.bonus-banner.claimed { background: linear-gradient(90deg, #fff3c4, #ffe98f); }
+.bonus-banner.claimed #bonus-state { background: #ffe9a8; color: #a87b12; }
+
+/* セクション見出し */
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 20px 2px 10px;
+}
+.section-head h2 { font-size: 19px; font-weight: 800; }
+.link-btn { color: var(--sky); font-weight: 700; font-size: 14.5px; }
+
+/* オンラインの友達 */
+.friends-strip { display: flex; gap: 14px; overflow-x: auto; padding: 2px 2px 6px; }
+.friend-item { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 56px; }
+.friend-item .friend-name { font-size: 13px; font-weight: 700; }
+.friend-item .dot { position: absolute; right: -1px; bottom: -1px; border: 2px solid #eafaf1; width: 13px; height: 13px; }
+
+/* ランダム入室 */
+.random-btn {
+  width: 100%;
+  margin-top: 14px;
+  background: linear-gradient(180deg, #3db2ff, var(--sky-deep));
+  color: #fff;
+  border-radius: 18px;
+  padding: 15px 12px 13px;
+  box-shadow: 0 6px 16px rgba(31, 139, 240, 0.35);
+  display: flex; flex-direction: column; gap: 2px; align-items: center;
+}
+.random-title { font-size: 22px; font-weight: 800; }
+.random-sub { font-size: 13.5px; opacity: 0.95; }
+
+/* ルーム一覧 */
+.room-list { display: flex; flex-direction: column; gap: 10px; }
+.room-card {
+  display: flex; gap: 12px; align-items: center;
+  width: 100%; text-align: left;
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 12px 14px;
+}
+.room-main { flex: 1 1 auto; min-width: 0; }
+.room-title { font-weight: 800; font-size: 15.5px; line-height: 1.35; }
+.room-meta { display: flex; align-items: center; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
+.room-players { color: var(--ink-soft); font-weight: 700; font-size: 14px; }
+.tag {
+  border-radius: 999px; padding: 2px 10px; font-size: 12.5px; font-weight: 800;
+}
+.tag-public { background: var(--mint-bg); color: #128a54; }
+.tag-private { background: #e8edf2; color: #5a6b7a; }
+.tag-beginner { background: var(--mint-bg); color: #128a54; }
+.list-end-spacer { height: 18px; }
+
+/* ルームを作る（スティッキー帯：下部メニューの上） */
+.create-bar {
+  flex: 0 0 auto;
+  padding: 8px 14px 10px;
+  background: linear-gradient(180deg, rgba(224,243,255,0), #dff2ff 45%);
+}
+.create-btn {
+  width: 100%;
+  background: #eaf6ff;
+  border: 2.5px solid var(--sky);
+  color: #1473c9;
+  border-radius: 16px;
+  padding: 10px 12px 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  box-shadow: var(--shadow);
+}
+.create-title { font-size: 20px; font-weight: 800; }
+.create-sub { font-size: 12.5px; color: var(--ink-soft); font-weight: 700; }
+
+/* 下部メニュー（2タブ） */
+.tabbar {
+  flex: 0 0 auto;
+  display: flex; gap: 10px;
+  padding: 8px 14px calc(10px + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.9);
+  border-top: 1px solid var(--line);
+}
+.tabbtn {
+  flex: 1 1 0;
+  border-radius: 999px;
+  padding: 11px 0;
+  font-size: 17px; font-weight: 800;
+  color: var(--ink-soft);
+  background: transparent;
+}
+.tabbtn.active { background: #bfe3ff; color: #1473c9; }
+
+/* フレンドタブ */
+.subtab-bar {
+  display: flex; gap: 8px;
+  background: #fff; border-radius: 999px; padding: 5px;
+  box-shadow: var(--shadow);
+}
+.subtab { flex: 1 1 0; border-radius: 999px; padding: 9px 0; font-weight: 800; color: var(--ink-soft); }
+.subtab.active { background: var(--mint-bg); color: #128a54; }
+.subpanel { padding: 26px 10px; }
+.empty-state { text-align: center; color: var(--ink-soft); }
+.empty-icon { font-size: 44px; margin-bottom: 10px; }
+.empty-state p { font-weight: 700; }
+.empty-note { font-size: 13px; margin-top: 6px; font-weight: 400; }
+
+/* モーダル */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(23, 50, 74, 0.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  z-index: 50;
+}
+.modal {
+  background: #fff; border-radius: var(--radius);
+  width: 100%; max-width: 360px;
+  padding: 20px;
+  box-shadow: 0 12px 32px rgba(23, 50, 74, 0.25);
+}
+.modal h3 { font-size: 18px; font-weight: 800; margin-bottom: 12px; text-align: center; }
+.modal-note { font-size: 13.5px; color: var(--ink-soft); text-align: center; margin: 8px 0; }
+.modal-close {
+  width: 100%; margin-top: 14px;
+  background: #eef6fd; color: #1473c9;
+  border-radius: 999px; padding: 10px 0; font-weight: 800;
+}
+.settings-list { list-style: none; }
+.settings-row {
+  width: 100%; display: flex; justify-content: space-between; align-items: center;
+  padding: 13px 4px; font-weight: 700; border-bottom: 1px solid var(--line);
+}
+.settings-row.danger { color: var(--danger); }
+.row-arrow { color: var(--ink-soft); }
+.charge-list { list-style: none; }
+.charge-list li {
+  display: flex; justify-content: space-between;
+  padding: 12px 6px; border-bottom: 1px solid var(--line); font-weight: 800;
+}
+.charge-price { color: #1473c9; }
+.form-label { display: block; font-weight: 700; font-size: 14px; margin-bottom: 12px; }
+.form-label input, .form-label select {
+  width: 100%; margin-top: 6px;
+  border: 2px solid var(--line); border-radius: 12px;
+  padding: 10px 12px; font: inherit;
+  background: #fff;
+}
+.radio-row { display: flex; gap: 16px; font-weight: 700; font-size: 14.5px; margin-bottom: 6px; }
+.form-error { color: var(--danger); font-weight: 700; font-size: 14px; margin: 8px 0; }
+.modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+.sub-btn {
+  flex: 1 1 0; background: #eef6fd; color: #1473c9;
+  border-radius: 999px; padding: 10px 0; font-weight: 800;
+}
+.primary-btn {
+  flex: 1 1 0; background: linear-gradient(180deg, #3db2ff, var(--sky-deep)); color: #fff;
+  border-radius: 999px; padding: 10px 0; font-weight: 800;
+}
+
+/* トースト */
+.toast {
+  position: fixed; left: 50%; bottom: 110px; transform: translateX(-50%);
+  background: rgba(23, 50, 74, 0.92); color: #fff;
+  border-radius: 999px; padding: 10px 18px;
+  font-size: 14px; font-weight: 700;
+  max-width: 88vw; text-align: center;
+  z-index: 60;
+}
+
+/* ===== フレンド／トーク／DM／ギフト（ソーシャル実装フェーズ） ===== */
+.panel-head { font-size: 15px; font-weight: 800; margin: 16px 2px 8px; color: var(--ink); }
+.search-row { display: flex; gap: 8px; margin: 4px 0 6px; }
+.search-row input {
+  flex: 1 1 auto; min-width: 0;
+  border: 1.5px solid var(--line); border-radius: 12px;
+  padding: 10px 12px; font: inherit; background: #fff; color: var(--ink);
+}
+.search-row .primary-btn { flex: 0 0 auto; }
+
+.user-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card); border-radius: 16px;
+  padding: 10px 12px; margin-bottom: 8px; box-shadow: var(--shadow);
+}
+.user-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.user-name { font-weight: 800; }
+.user-sub { font-size: 12px; color: var(--ink-soft); }
+.mini-btn {
+  flex: 0 0 auto;
+  border-radius: 999px; padding: 7px 13px;
+  background: #eef6fb; color: var(--ink); font-weight: 700; font-size: 13px;
+}
+.mini-btn.primary { background: var(--mint); color: #fff; }
+.mini-btn.danger { background: #fdecea; color: var(--danger); }
+.mini-btn:disabled { opacity: 0.55; cursor: default; }
+.pending-label { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+
+.talk-list { display: flex; flex-direction: column; gap: 8px; }
+.talk-row {
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  background: var(--card); border-radius: 16px;
+  padding: 10px 12px; box-shadow: var(--shadow); width: 100%;
+}
+.talk-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.talk-name { font-weight: 800; }
+.talk-preview {
+  font-size: 13px; color: var(--ink-soft);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.unread-badge {
+  flex: 0 0 auto;
+  min-width: 22px; height: 22px; border-radius: 999px;
+  background: var(--danger); color: #fff;
+  font-size: 12.5px; font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 6px;
+}
+
+/* DM画面：画面全体のオーバーレイ。発言は下端寄せ（本家のクランチャット様式） */
+.dm-screen {
+  position: fixed; z-index: 20;
+  top: 0; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: min(430px, 100%);
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, #e4fbf0 0%, #e0f3ff 55%, #d8efff 100%);
+}
+.dm-header {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid var(--line);
+}
+.dm-peer-name { flex: 1 1 auto; font-weight: 800; }
+.gift-open-btn {
+  flex: 0 0 auto;
+  background: #fff3d6; border-radius: 999px;
+  padding: 8px 13px; font-weight: 800; font-size: 13.5px;
+}
+.dm-messages { flex: 1 1 auto; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; }
+.dm-msgs-inner { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+.dm-msg {
+  /* 吹き出し幅の基準（2026-11-24 おぎ）：日本語15文字が1行に入る
+     幅（LINEの感覚）。font-size 基準の em で上限を決め、画面が
+     狭いときは % 側で抑える */
+  max-width: min(86%, calc(15em + 30px)); padding: 9px 13px; border-radius: 16px;
+  font-size: 14.5px; line-height: 1.45; word-break: break-word;
+  background: #fff; align-self: flex-start; box-shadow: var(--shadow);
+}
+.dm-msg.mine { background: #b7f0d2; align-self: flex-end; }
+.dm-gift-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: 16px;
+  background: #fff7e0; box-shadow: var(--shadow); align-self: flex-start;
+}
+.dm-gift-card.mine { align-self: flex-end; }
+.gift-card-icon { font-size: 30px; }
+.gift-card-main { display: flex; flex-direction: column; }
+.gift-card-name { font-weight: 800; }
+.gift-card-price { font-size: 12.5px; color: var(--ink-soft); }
+.dm-invite-card {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 10px 14px; border-radius: 16px;
+  background: #e8f4ff; box-shadow: var(--shadow); align-self: flex-start;
+}
+.dm-invite-card.mine { align-self: flex-end; }
+.invite-card-title { font-weight: 800; }
+.invite-card-room { font-weight: 700; font-size: 13.5px; }
+.invite-card-pw { font-size: 13.5px; }
+.dm-input-row {
+  flex: 0 0 auto;
+  display: flex; gap: 8px; padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border-top: 1px solid var(--line);
+}
+.dm-input-row input {
+  flex: 1 1 auto; min-width: 0;
+  border: 1.5px solid var(--line); border-radius: 999px;
+  padding: 10px 14px; font: inherit; background: #fff; color: var(--ink);
+}
+
+/* ギフト選択 */
+.gift-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+.gift-item {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: #f4fbff; border: 1.5px solid var(--line); border-radius: 14px;
+  padding: 10px 4px;
+}
+.gift-item:active { background: var(--mint-bg); }
+.gift-icon { font-size: 26px; }
+.gift-name { font-size: 12px; font-weight: 700; }
+.gift-price { font-size: 11.5px; color: var(--ink-soft); }
+
+/* ===== 待機室／対戦画面（対戦画面フェーズ） ===== */
+.room-screen {
+  position: fixed; z-index: 20;
+  top: 0; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: min(430px, 100%);
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, #e4fbf0 0%, #e0f3ff 55%, #d8efff 100%);
+}
+.room-count { flex: 0 0 auto; font-weight: 800; color: var(--ink-soft); font-size: 14px; }
+.room-body { flex: 1 1 auto; overflow-y: auto; padding: 12px 14px 20px; }
+.room-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.room-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.room-actions .primary-btn { flex: 0 0 auto; padding: 13px 0; font-size: 16px; }
+.room-actions .sub-btn { flex: 0 0 auto; padding: 11px 0; }
+.room-actions .primary-btn:disabled { opacity: 0.5; }
+.member-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card); border-radius: 16px;
+  padding: 9px 12px; margin-bottom: 8px; box-shadow: var(--shadow);
+}
+.member-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.member-name { font-weight: 800; }
+.host-badge {
+  flex: 0 0 auto; font-size: 11.5px; font-weight: 800;
+  background: #fff3d6; color: #9a6a00; border-radius: 999px; padding: 3px 9px;
+}
+.ready-badge {
+  flex: 0 0 auto; font-size: 12px; font-weight: 800;
+  border-radius: 999px; padding: 4px 10px;
+  background: #e8edf2; color: #5a6b7a;
+}
+.ready-badge.ready { background: var(--mint-bg); color: #128a54; }
+
+/* プレイヤー番号バッジ（参加順1〜N、名前の前に出す小さい四角バッジ） */
+.no-badge {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  min-width: 19px; height: 19px; padding: 0 3px;
+  border-radius: 5px; background: #14549e; color: #fff;
+  font-size: 11.5px; font-weight: 800; line-height: 1;
+}
+.member-name-line { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.gp-name-line { display: flex; align-items: center; gap: 3px; max-width: 76px; }
+
+.game-timer {
+  flex: 0 0 auto; font-weight: 800; font-size: 17px; color: #14549e;
+  background: #fff; border: 1.5px solid var(--line); border-radius: 999px;
+  padding: 4px 13px; min-width: 74px; text-align: center;
+}
+.game-timer.urgent { color: var(--danger); border-color: var(--danger); }
+.game-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding: 10px 14px 0; }
+.game-phase-label {
+  flex: 0 0 auto; text-align: center; font-weight: 800; font-size: 16.5px;
+  color: #14549e; margin-bottom: 8px;
+}
+.topic-card {
+  flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: #fff; border: 2px solid var(--mint); border-radius: 18px;
+  padding: 10px 14px; margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.topic-label { font-size: 12.5px; font-weight: 800; color: #128a54; }
+.topic-words { font-size: 26px; font-weight: 800; }
+.game-genre-line {
+  flex: 0 0 auto; text-align: center; font-size: 13px; font-weight: 800;
+  color: #14549e; margin-bottom: 8px;
+}
+.tag-genre { background: #e8f3ff; color: #14549e; }
+.game-players { flex: 0 0 auto; display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.game-player { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 52px; }
+.game-player .gp-name { font-size: 11.5px; font-weight: 700; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.game-player .gp-voted { font-size: 11px; font-weight: 800; color: #128a54; height: 14px; }
+/* min-height: 0 が無いと flex の自動最小サイズ（中身の高さ）までしか
+   縮まず、投票・結果パネルが画面下にはみ出して見切れる（実機指摘）。
+   チャット領域は内部スクロールに任せて縮められるようにする */
+.game-messages { flex: 1 1 auto; min-height: 0; padding: 4px 0 10px; }
+.game-msg-row { display: flex; flex-direction: column; max-width: 88%; align-self: flex-start; }
+.game-msg-row.mine { align-self: flex-end; align-items: flex-end; }
+/* 対戦画面の吹き出し：幅の基準は DM と同じ「日本語15文字／行」。
+   バブル側に % の max-width を重ねると、行の shrink-to-fit と競合
+   して短文でも極端に狭く潰れる（実機で「こんばんは」が割れた原因）
+   ため、上限は em 基準で決める。自分・他人で基準は同一 */
+.game-msg-row .dm-msg { max-width: min(100%, calc(15em + 30px)); }
+.game-msg-sender { display: flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; color: var(--ink-soft); margin: 0 4px 2px; }
+.game-panel {
+  /* 高さ上限を持たせ、はみ出しはパネル内部のリスト側スクロールで
+     吸収する。見出し・警告文・ボタンは固定表示（flex: 0 0 auto）で
+     常に見える／押せる形にする（警告文が下端で見切れる問題の対策） */
+  flex: 0 1 auto; min-height: 0; max-height: 52%;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: rgba(255, 255, 255, 0.75); border-radius: 18px;
+  padding: 6px 12px 14px; margin-bottom: 10px;
+}
+.game-panel > * { flex: 0 0 auto; }
+#game-vote-list, #game-reveal-list, #game-reversal-choices {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+}
+.vote-btn {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: #fff; border: 2px solid var(--line); border-radius: 14px;
+  padding: 8px 12px; margin-bottom: 8px; font-weight: 800; text-align: left;
+}
+.vote-btn.selected { border-color: var(--sky); background: #e8f4ff; }
+.vote-btn:disabled { opacity: 0.55; }
+.vote-warning {
+  margin: 8px 0 0; font-size: 11.5px; line-height: 1.5; color: #b3541e;
+  background: #fff4e5; border: 1px solid #f5cf9f; border-radius: 8px; padding: 6px 8px;
+}
+/* 無発言警告バナー（話し合い終盤・発言0件の本人だけに表示） */
+.afk-warning {
+  flex: 0 0 auto; margin-bottom: 10px;
+  background: #fff4e5; border: 1.5px solid #f5cf9f; border-radius: 12px;
+  padding: 8px 12px; font-size: 13px; font-weight: 700; line-height: 1.5;
+  color: #b3541e;
+}
+#game-vote-pass { width: 100%; margin-top: 2px; }
+.reversal-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.reversal-choice {
+  background: #fff; border: 2px solid var(--line); border-radius: 14px;
+  padding: 13px 8px; font-weight: 800; font-size: 16px;
+}
+.reversal-choice:active { background: var(--mint-bg); }
+.result-banner {
+  text-align: center; font-size: 24px; font-weight: 800;
+  border-radius: 16px; padding: 14px 10px; margin: 8px 0 4px;
+}
+.result-banner.win { background: var(--mint-bg); color: #0d7a44; }
+.result-banner.lose { background: #e8f4ff; color: #14549e; }
+.reveal-row {
+  display: flex; align-items: center; gap: 10px;
+  background: #fff; border-radius: 14px; padding: 8px 12px; margin-bottom: 7px;
+}
+.reveal-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.reveal-name { font-weight: 800; }
+.reveal-topic { font-size: 12.5px; color: var(--ink-soft); }
+.role-badge {
+  flex: 0 0 auto; font-size: 12px; font-weight: 800;
+  border-radius: 999px; padding: 4px 10px;
+}
+.role-badge.wolf { background: #fdecea; color: var(--danger); }
+.role-badge.citizen { background: var(--mint-bg); color: #128a54; }
+/* 待機室チャット（ゲーム前・ゲーム間の雑談。本編と同じLINE式） */
+.room-chat-messages {
+  max-height: 280px; min-height: 120px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--line); border-radius: 14px;
+  margin-top: 6px;
+}
+.room-chat-empty { text-align: center; color: var(--ink-soft); font-size: 13px; padding: 14px 8px; }
+/* 待機室のキックボタン（マスターのみ表示） */
+.kick-btn {
+  flex: 0 0 auto; font-size: 12px; font-weight: 800;
+  color: var(--danger); background: #fdecea;
+  border-radius: 999px; padding: 5px 12px;
+}
+
+/* ペナルティバナー（ロビー） */
+.penalty-banner {
+  background: #fff4e5; border: 1px solid #f5cf9f; color: #b3541e;
+  border-radius: 14px; padding: 10px 12px; margin-bottom: 10px;
+  font-size: 13px; font-weight: 700; line-height: 1.5;
+}
+
+/* チュートリアルモーダル（一個の大きいポップアップ内でスライド送り。
+   本文は読みやすさ優先で従来フォント） */
+.modal-tutorial { max-width: 400px; }
+.tutorial-viewport { overflow: hidden; border-radius: 14px; }
+.tutorial-track { display: flex; transition: transform 0.3s ease; }
+.tutorial-slide {
+  flex: 0 0 100%; min-width: 0; text-align: center; padding: 6px 8px 2px;
+}
+.tutorial-slide h4 { font-size: 17px; font-weight: 800; margin: 10px 0 8px; }
+.tutorial-slide p {
+  font-size: 13.5px; line-height: 1.65; color: var(--ink); text-align: left;
+  font-family: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font-weight: 400;
+}
+.tutorial-art { display: flex; justify-content: center; gap: 10px; }
+.tutorial-art img {
+  width: 84px; height: 84px; border-radius: 20px; object-fit: cover;
+  box-shadow: 0 4px 12px rgba(23, 50, 74, 0.15);
+}
+.tutorial-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 10px;
+}
+.tutorial-arrow {
+  width: 38px; height: 38px; border-radius: 999px; flex: 0 0 auto;
+  background: #eef6fd; color: #1473c9; font-size: 22px; font-weight: 800;
+  line-height: 1;
+}
+.tutorial-dots { display: flex; gap: 7px; justify-content: center; flex: 1 1 auto; }
+.tutorial-dot {
+  width: 9px; height: 9px; border-radius: 999px; padding: 0;
+  background: #cfe3f5;
+}
+.tutorial-dot.active { background: var(--sky-deep); }
+
+/* フレンドタブの同意ゲート（未同意の間はグレーアウト） */
+.tabbtn.locked { opacity: 0.45; filter: grayscale(0.7); }
+
+/* ようこそDM内のチュートリアル導線ボタン */
+.welcome-tutorial-btn {
+  display: block; width: 100%; margin-top: 10px;
+  background: linear-gradient(180deg, #3db2ff, var(--sky-deep)); color: #fff;
+  border-radius: 999px; padding: 9px 0; font-weight: 800; font-size: 13.5px;
+}
+
+/* 対戦画面のシステムログ（強制退室など） */
+.game-system-log {
+  align-self: center; text-align: center;
+  background: rgba(23, 50, 74, 0.08); color: var(--ink-soft);
+  border-radius: 999px; padding: 5px 12px; margin: 4px auto;
+  font-size: 12px; font-weight: 700; max-width: 92%;
+}
+
+/* DMのシステムメッセージ（ペナルティ通知など。長文なので従来フォント） */
+.dm-system-msg {
+  align-self: stretch; background: #eef4ff; border: 1px solid var(--line);
+  border-radius: 14px; padding: 10px 12px; margin: 4px 0;
+  font-size: 13px; line-height: 1.6; color: var(--ink); white-space: pre-line;
+  font-family: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font-weight: 400;
+}

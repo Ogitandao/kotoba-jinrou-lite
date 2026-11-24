@@ -1,0 +1,28 @@
+{
+  "description": "ことば人狼（人狼NIGHT Lite）— テキスト専用ワードウルフ＋個人チャットの独立アプリ",
+  "devDependencies": {
+    "jsdom": "^25.0.1"
+  },
+  "name": "kotoba-jinrou-lite",
+  "private": true,
+  "scripts": {
+    "build:pages-config": "node scripts/build-pages-config.mjs",
+    "verify": "node scripts/verify-lobby.mjs",
+    "verify:wordwolf-db": "node scripts/verify-wordwolf-db.mjs",
+    "verify:social": "node scripts/verify-social.mjs",
+    "verify:social-ui": "node scripts/verify-social-ui.mjs",
+    "verify:all": "node scripts/verify-lobby.mjs && node scripts/verify-wordwolf-db.mjs && node scripts/verify-penalty.mjs && node scripts/verify-social.mjs && node scripts/verify-social-ui.mjs && node scripts/verify-icons.mjs && node scripts/verify-game-ui.mjs && node scripts/verify-supabase-mode.mjs",
+    "verify:penalty": "node scripts/verify-penalty.mjs",
+    "verify:penalty-db": "node scripts/verify-penalty-db.mjs",
+    "verify:startflow-db": "node scripts/verify-startflow-db.mjs",
+    "verify:genre-db": "node scripts/verify-genre-db.mjs",
+    "verify:icons": "node scripts/verify-icons.mjs",
+    "verify:icons-invite-db": "node scripts/verify-icons-invite-db.mjs",
+    "verify:tutorial-db": "node scripts/verify-tutorial-db.mjs",
+    "verify:game-ui": "node scripts/verify-game-ui.mjs",
+    "verify:supabase-mode": "node scripts/verify-supabase-mode.mjs",
+    "verify:e2e-session": "node scripts/verify-e2e-session.mjs"
+  },
+  "type": "module",
+  "version": "0.1.0"
+}

@@ -1,0 +1,966 @@
+# 引き継ぎ（基盤フェーズ → Supabase接続フェーズ）
+
+2026-11-24 作成。基盤の切り出し＋ロビー実装の完了時点の記録。
+
+## 作ったもの
+
+- 独立プロジェクト `~/workspace/kotoba-jinrou-lite/`（git 管理）
+- ロビー（タブ1）：基準モックv1（おぎ承認済み）準拠
+  - 明るいミント×水色パレット。本家のダークファンタジーには寄せていない
+  - 上部固定の細いバー（タイトル＋⚙️設定ボタン）。スクロールしても残る
+  - プロフィールカード：四角アイコン（本家標準）＋名前＋ユーザーID＋
+    自己紹介。アイコンタップで拡大モーダル
+  - コイン／人気度ピル（タップ可。コイン→チャージモーダル）
+  - ログインボーナスバナー（タップで +10 コイン、獲得済み表示に変化）
+  - オンラインの友達帯（タップで合流トースト＝次フェーズ導線）
+  - ランダム入室の大ボタン（空きのある公開ルームを抽選して提示）
+  - ルーム一覧：公開／🔒非公開タグ、🔰初心者歓迎、人数表示。
+    一覧末尾にスペーサー（`.list-end-spacer`）を入れ、最後のカードが
+    作成ボタン裏に隠れないようにした
+  - 「ルームを作る」は下部メニューの上の固定帯（スクロール領域の外）。
+    作成モーダル：公開／非公開（100コイン消費）、コイン不足時は
+    「コインが足りません」＋チャージボタンを表示（計画 §2.5 の仕様）
+  - 下部メニューは2タブのみ（ロビー／フレンド）。作成バーは
+    フレンドタブでは隠れる
+- フレンド（タブ2）：枠のみ。トーク／フレンドのサブタブ切り替えと
+  空状態表示まで。中身（DM・フレンド一覧・ID検索）は次フェーズ
+- 設定モーダル：ブロックリスト／アカウント／ログアウトの入り口のみ
+
+## 本家からコピーして独立させたもの（本家ファイルは無変更）
+
+- `client/vendor/supabase.js`（supabase-js バンドル、そのままコピー）
+- 設定注入パターン：本家 `client/config.js`（`window.__WW_CONFIG__`）→
+  Lite は `client/config.js`（`window.__KL_CONFIG__` / `window.KL_CONFIG`）
+- ビルド時設定生成：本家 `scripts/build-pages-config.mjs` →
+  Lite は環境変数 `KL_SUPABASE_URL` / `KL_SUPABASE_KEY` から
+  `client/kl-config.js` を生成（実値はコミットしない）
+
+## 実装メモ
+
+- このフェーズは検証（jsdom）がモジュールスクリプトを実行できないため、
+  クラシックスクリプト構成（config.js / dummy-data.js / app.js を
+  グローバル経由で連携）。Supabase 接続フェーズで、本家と同じ
+  ES モジュール＋`createClient(config.supabaseUrl, config.supabaseKey)`
+  の形へ移行してよい（その場合は検証手段も実ブラウザ系へ切替）
+- ダミーデータは `client/js/dummy-data.js` の `window.KL_DUMMY` に集約。
+  実データ化の際は app.js の `renderProfile / renderFriends /
+  renderRooms` の入力を Supabase 取得結果に差し替える
+
+## 次フェーズ（Supabase接続）で必要な設定値
+
+おぎが作成中の Supabase Lite プロジェクトから、以下をもらう：
+
+1. **Project URL**（`KL_SUPABASE_URL` に入れる）
+2. **publishable key（anon key）**（`KL_SUPABASE_KEY` に入れる）
+3. 認証は本家と同じ OAuth（Google＋Apple）。Supabase 側で各
+   プロバイダの有効化とリダイレクト URL 設定が必要
+4. DB スキーマは新規設計（本家の流用部品＝DM／フレンド／ギフト／
+   コイン基盤のテーブル定義を移植する想定。計画書 §3 参照）
+5. ローカル確認用に値を直接渡す場合も、リポジトリにはコミットせず
+   `client/kl-config.js`（gitignore 済み）にだけ置くこと
+
+## DB方式ワードウルフ進行の実証（2026-11-24 追加）
+
+設計とローカル実証が完了した。実 Supabase への適用はまだ。
+
+- 設計正本：`docs/wordwolf-db-design.md`
+  - 状態は DB の行に持ち、各フェーズに `phase_deadline_at` を
+    持たせる。時刻の権威は DB の `now()` のみ
+  - 進行は「クライアントの合図（RPC `ww_advance`、先着1件・
+    冪等）」＋「pg_cron の見回り（`ww_sweep`）」の2系統
+  - 発言・投票・逆転回答は、遷移が未実行でも締め切りを過ぎて
+    いれば DB 時刻判定で拒否する（公平性の核）
+  - 秘匿はテーブル分離：`ww_game_secrets`（RLS 全拒否）、
+    `ww_player_topics`（自分の行のみ）、投票は RPC 経由のみ
+  - フェーズ：intro 15秒 → discussion（4〜6人=300秒／
+    7〜8人=480秒）→ voting 15秒 → reversal 30秒（該当時）→
+    result 15秒 → 次ゲーム or セット終了。3ゲーム1セット、
+    同票は +60秒延長・再投票1回まで。本家ルールをそのまま移植
+- ローカル実証：`sim/db.mjs`（仮想時計つきインメモリDB）＋
+  `sim/server.mjs`（RPC 相当のサーバー側ロジック）。
+  `npm run verify:wordwolf-db` で **58/58 PASS**
+  - 1セット（3ゲーム）完走（合図駆動・投票の早期解決含む）
+  - 締め切り後の発言/投票を DEADLINE_PASSED で拒否
+  - 全員スルー＝ウルフ勝ち、同票→延長→再同票＝ウルフ勝ち
+  - 逆転回答6択（正解/不正解/時間切れ/OFF部屋）
+  - 合図の冪等性（phase_version は1回だけ進む）
+  - sweep だけでセット完走（全員アプリを閉じた想定）
+  - 個人ビューの秘匿、人数帯の設定値（8人=ウルフ2人・480秒）
+- お題（topics.json）と乱数（rng.mjs）は本家から独立コピー
+  （`sim/` 配下）。本家ファイルは無変更
+
+### 実 Supabase 適用時に残る論点
+
+- pg_cron の有効化と `ww_sweep` の登録（Free プランでの
+  pg_cron 可用性・実行間隔の最終確認を含む）
+- RPC は全て SECURITY DEFINER で実装し、`ww_game_secrets` へは
+  RPC 内部からのみ触る。advance 系 RPC の呼び出し権限
+  （認証済み全員に開ける／なりすまし対策）の線引き
+- Realtime の購読設計：`ww_games` の行更新（フェーズ・締め
+  切り・votes_cast）と `ww_messages` の insert を購読し、
+  締め切りは受信した `phase_deadline_at` でローカル表示。
+  votes の行自体は他人の票が見えないよう RLS で制限する
+- 途中離脱（本家は markDeparted で集計から除外）の DB 方式版：
+  ハートビート列＋sweep での離脱確定、投票完了判定からの
+  除外を RPC 側に実装する
+- 話し合い時間は本家のボイス前提値（300秒／480秒）をそのまま
+  使った。テキスト専用だとテンポが落ちる懸念（計画書 §8）が
+  あり、実プレイを見て再調整するかは未決定
+- result（結果発表）と余韻は本家に倣い1フェーズ15秒に統合
+  した。演出を分けたくなったらフェーズ追加で対応する
+
+## Supabase 接続設定の投入と疎通確認（2026-11-24 追加）
+
+おぎが作成した Lite 専用プロジェクトの接続設定を投入し、疎通を確認した。
+
+- 対象プロジェクト：`kotoba-jinrou-lite`
+  （Project URL: https://dtdwkluanoaqiaruzbwe.supabase.co、
+  リージョン ap-northeast-1 / Tokyo）
+- 設定投入：環境変数 `KL_SUPABASE_URL` / `KL_SUPABASE_KEY` を
+  `scripts/build-pages-config.mjs` に流し込み、`client/kl-config.js`
+  を生成した。kl-config.js は .gitignore 済みで、**キー実値は
+  リポジトリにコミットしていない**（この文書にも書かない）。
+  キーは新形式の publishable key（`sb_publishable_…`）
+- 設定チェーンの確認：kl-config.js → client/config.js →
+  `window.KL_CONFIG` に URL とキーが正しく入ることを実読みで確認
+- 疎通結果（vendor/supabase.js の `createClient` 経由＋生 fetch）：
+  - Auth：`/auth/v1/health` 200（GoTrue v2.198.0）、
+    `/auth/v1/settings` 200 で設定 JSON を取得できた
+  - `auth.getSession()`：セッションなし（null）・エラーなし
+  - REST：存在しないテーブルへの select が **404 / PGRST205**
+    （schema cache にテーブルが無い）で返った。認証エラー（401）
+    ではない＝PostgREST が publishable key を受け付け、リクエストが
+    スキーマ判定まで到達した証拠
+  - Storage：`storage.listBuckets()` がエラーなし・空配列で返った
+    （実クライアント経由の読み取り成功）
+- **REST ルート（`/rest/v1/`）が 401 を返す件の切り分け**：
+  実クライアント経由では問題なし。ルートは OpenAPI スキーマ文書の
+  エンドポイントで、新形式キー体系では **secret key 専用**に
+  制限されているのが原因（publishable key を apikey ヘッダで
+  送ると 401 `"Secret API key required"`、キー無しだと
+  `"No API key found in request"`）。疎通不良ではない。
+  なお supabase-js は新形式キーを `Authorization: Bearer` には
+  載せず `apikey` ヘッダのみで送る仕様（バンドル内 `fetchWithAuth`
+  で確認）。手動で Bearer に publishable key を載せる叩き方を
+  すると JWT として解釈され弾かれるので、疎通確認は必ず
+  実クライアント経由で行うこと
+- 実務メモ：むぜたんの Supabase 連携トークンからは Lite
+  プロジェクトが見えない（本家のみ）。今後の SQL 適用は、
+  おぎに SQL Editor で実行してもらうか、トークン再登録が
+  必要になる見込み
+
+### この確認で新たに分かった残作業
+
+- Auth 設定（`/auth/v1/settings`）では Google / Apple とも
+  **未有効化（false）**だった。本家と同じ OAuth ログインにする
+  には、Supabase 側で各プロバイダの有効化とリダイレクト URL
+  設定が必要（従来の引き継ぎ項目の再確認）
+- DB スキーマはまだ未適用（テーブルゼロ）。設計
+  （`docs/wordwolf-db-design.md`）の SQL 適用が接続フェーズの
+  次作業
+
+## ソーシャル実装フェーズ（2026-11-24 追加）
+
+おぎの「いけるとこまで行っちゃって OK」で実施。実 DB への SQL 適用
+だけはむぜたん側から実行できないため「適用可能な形に整える」ところ
+まで。適用はおぎが `docs/supabase-apply-runbook.md` の手順で実施する。
+
+- **マイグレーション SQL**（`supabase/migrations/`、連番6本）：
+  0001 プロフィール（公開ID・登録トリガ）／0002 フレンド・ブロック／
+  0003 コイン財布・台帳（登録ボーナス100・消費は無料分から）／
+  0004 DM・ギフトカタログ8種・通報／0005 ソーシャル RPC（kl_*、
+  エラーコードは sim と共通）／0006 ルーム＋ワードウルフ DB 方式
+  （ww_*、設計書 §3〜§6 の実装。お題 seed は sim/topics.json と同一）
+  - 設計書 `docs/wordwolf-db-design.md` は末尾が欠落していた
+    （§2 の途中で切れ、ゴミ文字列が混入）ため、§3〜§6 を補完して
+    修復した
+  - ローカルに Postgres が無いため SQL の実行検証はできていない。
+    静的チェック（括弧・ドルクォート対応）と、ロジック同等品である
+    sim の検証で担保し、初回適用時は runbook の確認クエリで検証する
+- **データ層**（`client/js/data-adapter.js`）：画面は `window.KL_DATA`
+  越しにのみデータへ触る。裏側は SimBackend（デモ用、RPC と同じ
+  判定・エラーコード）と SupabaseBackend（読み=RLS select、
+  書き=kl_* RPC）。未ログイン・未適用時は自動で Sim に落ちる
+- **画面**：フレンドタブの中身（トーク一覧＋未読バッジ／フレンド
+  一覧／公開ID検索／申請の承認・拒否／申請中表示）、DM 画面
+  （本家のクランチャット様式＝下端寄せ、リンク送信は拒否、招待
+  カードのパスワード表示＋コピー対応）、ギフト送信（カタログ選択→
+  コイン消費→DM にギフトカード）、ブロックリストの実一覧＋解除、
+  プロフィール／コイン／人気度／ログインボーナスをアダプタ経由に
+  接続（実データ化の受け口）
+- **RPC 相当のローカル実証**（`sim/social.mjs`）：申請フロー・
+  ブロック効果・DM ルール・ギフトの無料→課金消費順と台帳検算・
+  ログインボーナスの日次制御を再現
+- **検証**：`npm run verify:all` で全 **143件 PASS**
+  （ロビー25／ワードウルフDB58／ソーシャルロジック40／ソーシャルUI20）。
+  既存スイートは壊していない（verify-lobby には非同期化に合わせた
+  待ち追加のみ）
+- **手順書**：`docs/supabase-apply-runbook.md`（SQL Editor 適用）、
+  `docs/oauth-setup-runbook.md`（Google/Apple 有効化、おぎ実施分）
+
+### おぎの作業が必要な残項目
+
+1. **SQL の適用**：runbook の順で 0001→0006 を SQL Editor で実行
+2. **OAuth 有効化**：Google（Cloud Console の認証情報作成＋
+   Supabase Providers 設定）。Apple は iOS 提出前でも可
+3. その後、むぜたん側で実ログイン疎通（プロフィール→申請→DM→
+   ギフト）を確認する
+
+## 実 Supabase 疎通テスト（2026-11-24 追加）
+
+マイグレーション 0001〜0006 の適用済みプロジェクト（ref
+`dtdwkluanoaqiaruzbwe`）に対し、実 DB で検証した。SQL 実行は
+Management API の query エンドポイント（owner 権限）経由。
+
+### テストデータ（削除せず残置。識別マーカー付き）
+
+- テストA：`lite-test-a@example.com` /
+  id `39c3a315-c6ff-4ffa-8980-64e838a03dea` / 公開ID `GUV6JSL3`
+- テストB：`lite-test-b@example.com` /
+  id `8943ac24-b260-4c76-8a4d-0f6d801b45d2` / 公開ID `2QD2RZ6W`
+- テストD：`lite-test-d@kltest.dev` /
+  id `e62f2fdf-d542-4ae8-af69-19e3313376ec`
+  （サインイン不具合の切り分け用に追加した3人目）
+- 全員 `raw_user_meta_data.test_marker = "test/lite"`、共通パスワード
+  `Lite-Test-2026-Pass!`（テスト専用）。auth.users へ SQL で直接
+  INSERT して作成（identities 行も併せて作成）
+- A の財布には検証用の擬似チャージ（paid +50、台帳 reason=purchase）
+  が入っている。A⇔B はフレンド成立済み、DM・ギフト履歴あり
+
+### 検証結果
+
+1. **登録トリガ：PASS**（A/B/D 全員）
+   - auth.users への INSERT で profiles が自動作成され、公開ID
+     （8桁）が付与され、display_name がメタデータから反映された
+   - coin_wallets が無料100／課金0で作成され、coin_ledger の
+     welcome +100 と残高が一致（台帳検算OK）
+2. **RPC の SQL レベル検証：17/17 PASS**
+   - 手法：PostgREST 方式の疑似セッション（トランザクション内で
+     `SET LOCAL ROLE authenticated` ＋ `request.jwt.claims` に
+     sub を設定）で実 DB の kl_* 関数を実行。auth.uid()・RLS が
+     実セッション相当に効く形で検証した
+   - ID検索（relation=none）／フレンド申請→承認／二重申請は
+     ALREADY_REQUESTED／フレンド外DMは NOT_FRIENDS／DM送信／
+     URL入りDMは URL_NOT_ALLOWED／既読化
+   - ギフト：heart(30) で無料 100→70・相手人気度+30。擬似チャージ
+     後に candy(100) を送ると **無料70を使い切ってから課金30**
+     （消費順＝無料分から）を実績で確認。残高不足は
+     INSUFFICIENT_COINS で拒否され残高不変
+   - ログインボーナス：1回目 +10（無料）、同日2回目は
+     claimed=false で二重受取なし。台帳 daily_login は1行のみ
+   - 台帳検算：A の財布残高（無料10／課金20）＝台帳合計と一致。
+     DM 内ギフトカード2件、ギフト履歴と整合
+   - RLS（authenticated ロール）：財布は自分の行のみ可視、
+     profiles は全員分可視（設計どおり）
+   - 人気度ガード：本人が自分の popularity を直接 UPDATE しても
+     トリガで巻き戻ることを確認
+3. **RLS の外形確認（REST・publishable key・未認証）：PASS**
+   - profiles / coin_wallets / gift_catalog / dm_messages は
+     全て **401 permission denied**。kl_* RPC の実行も 401。
+     未認証で読める・書けるものは無かった
+
+### 未検証範囲（正直な切り分け）
+
+- **REST 経由の実セッション検証は未検証**：SQL で直接作成した
+  テストユーザーでは、GoTrue のパスワードサインインが
+  **500 `Database error querying schema`** になり実 JWT が
+  取れなかった（メールドメインを変えても、identities の
+  provider_id 形式を変えても再現）。このため「実 JWT での
+  /rest/v1/rpc 呼び出し」「認証済み REST での RLS」は、
+  通常のサインアップフローで作ったユーザーでの再確認が残る。
+  直接 INSERT した行と GoTrue が期待する内部状態の差異が
+  原因とみられ、本番ユーザー（通常登録）への影響は限定的な
+  見込みだが、要追跡課題として残す
+- ついでに判明：GoTrue は `example.com` ドメインを
+  `email_address_invalid` で蹴る。テストユーザーを API 経由で
+  作る場合はドメイン選定に注意
+
+## 実セッションE2E／ワードウルフ実DB／接続モード検証（2026-11-24 追加）
+
+### 1. 実セッションE2E：**BLOCKED（設定側の上限）**
+
+- 通常サインアップ（`POST /auth/v1/signup`、publishable key）は
+  **429 `over_email_send_rate_limit`** で失敗し、ユーザーが作れない。
+  Auth 設定の実測値：`rate_limit_email_sent = 2`（1時間あたり）、
+  `mailer_autoconfirm = false`、カスタム SMTP 未設定（組み込み
+  メールプロバイダ）。組み込みプロバイダ利用中はこの上限が実質の
+  キャップになり、検証用ユーザーを量産できない
+- ついでに判明：`kltest.dev` も `email_address_invalid` で蹴られる
+  （MX のあるドメインが必要。gmail.com はバリデーション通過）
+- **必要な設定変更（未実施。おぎ判断待ち）**：①カスタム SMTP を
+  設定して `rate_limit_email_sent` を引き上げる、または
+  ②検証の間だけ `mailer_autoconfirm = true` にする（本番運用には
+  非推奨）。上限リセット（1時間）を待てば 2 件ずつは作れる
+- このため「実 JWT での REST 実利用（プロフィール取得・ID検索・
+  申請・DM・ギフト・ボーナス・残高整合）」は今回も未検証。
+  SQL レベル（疑似セッション）での同等検証は前回 17/17 PASS 済み
+
+### 2. ワードウルフ進行の実DB検証：**PASS（36/37＋切り分け1件）**
+
+- 手法：疑似セッション（`request.jwt.claims` に sub を設定）で
+  実 DB の ww_* RPC を実行。プレイヤーは既存テスト A/B/D に
+  テストE（`lite-test-e@kltest.dev` / 公開ID `K8SMPEP4`、
+  test_marker 付き）を SQL 作成で追加し 4 人構成
+- **実バグを発見し修正**：0006 の参加者チェック
+  `me = any (select player_ids ...)` が `uuid = uuid[]` の型エラー
+  （42883）になり、ww_post_message / ww_cast_vote /
+  ww_player_view が常に失敗していた。修正マイグレーション
+  **0007_fix_membership_check.sql** を追加・実 DB へ適用済み
+  （runbook の適用順にも 7 番として追記）。sim は JS 実装のため
+  検出できなかった
+- 検証内容（セット `cd4ea8e4-…`）：ルーム作成→参加×3→開始→
+  intro/discussion 発言→**締め切り後の発言を DEADLINE_PASSED で
+  拒否**→投票（ウルフ追放）→逆転回答の正解でウルフ逆転勝ち→
+  ゲーム2（**締め切り後の投票も拒否**、無投票解決 no_votes）→
+  ゲーム3（全員スルー＝no_votes）→セット終了・ルーム lobby 復帰・
+  ww_results 12 行まで完走
+- 勝利数チェックは当初想定 3 に対し実測 4 で FAIL 表示になったが、
+  切り分けの結果こちらの想定ミス：初回（バグで中断）セットの
+  ゲーム1 を **pg_cron の ww_sweep が自律的に進行・終了**させて
+  おり（ウルフ勝ち +1）、検証セット分 3 と合わせて 4 が正しい。
+  各ゲームの won 件数（1件ずつ）とも一致
+- **pg_cron**：拡張あり、`cron.job` に `ww-sweep`（`* * * * *`、
+  active）が登録済みで、上記のとおり実動作も確認できた
+  （放置されたゲームが sweep だけで done まで進んだ）
+
+### 3. クライアント実DB接続モード：**PASS（8/8、新規スイート）**
+
+- `scripts/verify-supabase-mode.mjs` を追加（`npm run
+  verify:supabase-mode`、verify:all にも組み込み）。実プロジェクト
+  への接続で getSession（未ログイン=null・エラーなし）、未認証の
+  REST/RPC 拒否、jsdom での KL_CONFIG 読込と未ログイン時
+  Sim フォールバック＋ロビー描画を確認。全スイート合計
+  **151 件 PASS**（25+58+40+20+8）
+- **発見した不整合を修正**：`client/vendor/supabase.js` は ES
+  モジュール（`export { createClient }`）で、`index.html` が
+  読み込んでおらず `window.supabase` が常に undefined → 実ブラウザ
+  でも SupabaseBackend に入らず永久に Sim フォールバックする
+  状態だった。index.html に module スクリプトで
+  `window.supabase = { createClient }` を橋渡しする行を追加
+  （jsdom は module を実行しないため既存検証への影響なし。
+  実ブラウザでの Supabase モード実ログイン確認は課題1の
+  解除後に実施）
+
+### 残置テストデータ（今回追加分）
+
+- テストE：`lite-test-e@kltest.dev` / id
+  `c5fb79ef-7928-486c-8a72-4c4910b3a573` / 公開ID `K8SMPEP4`
+  （test_marker = "test/lite"、共通パスワードは既存テストと同一）
+- ワードウルフ検証ルーム2件（うち1件はバグ中断→sweep で
+  ゲーム2・discussion まで進行中。以後も sweep が進める）
+
+## 実セッションE2E リトライ（2026-11-24 追加）— **29/29 PASS**
+
+前回 BLOCKED だった実セッション E2E を、`mailer_autoconfirm = true`
+の適用（管理 API で PATCH 済み。`/auth/v1/settings` でも
+`mailer_autoconfirm: true` を実測）後にリトライし、全項目 PASS。
+検証スクリプトは `scripts/verify-e2e-session.mjs`
+（`npm run verify:e2e-session`。実行のたびにテストユーザー2名が
+増えるので、定期実行用ではなく節目の確認用）。
+
+- **Part 1（サインアップ→即セッション）**：gmail.com ドメイン
+  （MX あり）で通常サインアップすると確認メールなしで即
+  セッション（実 JWT）が返り、プロフィール自動作成（公開ID
+  付与・display_name はメタデータ反映）＋財布（無料100／課金0）
+  まで REST で確認。test_marker もメタデータに保持された
+- **Part 2（実 JWT での REST 実利用）**：公開ID検索（既存テストA、
+  relation=none）／A へのフレンド申請（requested）／新規ユーザー
+  同士の申請→**相手の実 JWT で承認**／承認前 DM は NOT_FRIENDS
+  拒否／DM 送信→相手側で未読表示→既読化→送信側へ反映／ログイン
+  ボーナス +10（同日二重受取は claimed=false）／ギフト heart(30)
+  で無料残高 110→80・相手の人気度 +30／**台帳合計＝財布残高**の
+  整合まで全て実 JWT 経由で PASS。前回の「未検証範囲」はこれで
+  解消（SQL 直接作成ユーザーのサインイン 500 件は、通常登録
+  ユーザーでは発生しないことも併せて確認できた）
+- **Part 3（データアダプタ）**：`window.supabase.createClient` が
+  実セッションを持つクライアントを返す形（index.html の module
+  橋渡し相当）で data-adapter.js を駆動し、Supabase モードで
+  bootstrap・自プロフィール（公開ID・残高80）・フレンド一覧・
+  検索 relation=requested_out・DM 履歴・カタログ8種が実データで
+  返ることを確認。実ブラウザそのもの（module スクリプト実行を
+  含む）での確認は未実施だが、橋渡し行自体は前回追加済みで、
+  本検証はその先のバックエンド経路を実データで担保した
+- 既存スイート（verify:all）も全て PASS を維持
+
+### 残置テストデータ（今回追加分）
+
+- テストF：`kl.lite.e2e.f20261124130947@gmail.com` /
+  id `e5dd3c08-419e-43b1-bb97-a7342eb4500c` / 公開ID `VX23MCN8`
+  （A へ申請中、G とフレンド成立・DM・ギフト送信済み、残高80）
+- テストG：`kl.lite.e2e.g20261124130947@gmail.com` /
+  id `370cdfff-a5ac-4751-be41-c3f5b6b51752` / 公開ID `R5PBPS6K`
+  （人気度30）
+- 両名とも test_marker = "test/lite"、パスワードは
+  `Lite-E2E-2026-Pass!`（テスト専用）
+
+## 対戦画面フェーズ（2026-11-24 夜）
+
+- 待機室画面（`#room-screen`）と対戦画面（`#game-screen`）を実装。
+  ロビーのルームカード／ランダム入室／オンライン友達帯／DM招待
+  カードから遷移できるよう配線済み。ルーム作成モーダルは作成後に
+  そのまま待機室へ入る形に変更（非公開はパスワード欄追加、空欄時は
+  自動発行。初心者歓迎・逆転回答 ON/OFF の選択も追加）
+- 進行追従はポーリング方式（待機室 1.2秒／対戦 600ms）。
+  フェーズ終了の合図（締め切り到達 or 投票全員完了）は
+  phaseVersion ごとに1回だけ ww_advance を送信。締め切り後は
+  UI 側も入力を無効化し、サーバー拒否（DEADLINE_PASSED）を前提に
+  閉じる。Realtime 購読は未実装（将来差し替え可能な形）
+- 準備OK（ready）は計画書に仕様が無かったため UI レベルの
+  ゲーティングとして実装：ホストの開始ボタンは「4〜8人＋
+  ホスト以外の全員が準備OK」で有効化。サーバー側 ww_start_set は
+  ready を見ない（ホスト権限のみ）。Sim ではボットホストのルームで
+  全員 ready になると自動開始する（デモ・検証用）
+- 追加マイグレーション（実DB適用済み・適用順は runbook 参照）：
+  - 0008：room_members.ready＋ww_set_ready＋ww_list_rooms
+    （room_members の RLS では他人のいる公開ルームの人数が数え
+    られないため一覧は RPC 経由が必須）
+  - 0009：ww_player_view 拡張（playerIds／myVoteCast／
+    myVoteTarget／終了後のみ reveal）
+- data-adapter にワードウルフ系メソッドを両バックエンド実装
+  （listRooms は Supabase モードで実データ化済み）。
+  SimBackend にはルール正本（sim/server.mjs）の移植エンジン＋
+  ボット（発言・投票・逆転回答・ホスト自動開始）を内蔵
+- 投票パネルにペナルティ警告文を常時表示（2026-11-24 おぎ決定：
+  スルーはロジック上可のまま、無投票はペナルティ加算、セット内
+  2回で強制退室）。ただしペナルティの実処理（加算・強制退室・
+  システムDM通知・ルーム内システムログ）は未実装
+- 新規検証 `scripts/verify-game-ui.mjs`（28項目、verify:all に
+  組み込み済み）：待機室→お題秘匿（相手陣営のお題が画面に出ない
+  こと）→話し合い→締め切り後発言の DEADLINE_PASSED 拒否→
+  投票（同票延長リトライ込み）→結果→3ゲーム完走→セット
+  まとめ→ロビー復帰／ホスト作成→開始／DM招待→入室。
+  全スイート PASS（25＋58＋40＋20＋28＋8＝179項目）
+
+## 残課題（次フェーズ以降）
+
+- ~~実 JWT での REST 実利用 E2E~~ → 上記リトライで解消（29/29 PASS）
+- `mailer_autoconfirm = true` は開発・検証フェーズ用設定。
+  リリース前に OAuth 前提で見直す（サインアップ経路の再設計）
+- ~~ワードウルフ画面（待機室・話し合い・投票）の UI と ww_* RPC 接続~~
+  → 上記対戦画面フェーズで実装（Supabase モードの画面動作は
+  実ブラウザ未確認。RPC は SQL レベルでスモーク確認済み）
+- ~~ルーム一覧の実データ化~~ → ww_list_rooms で解消
+- ~~ペナルティ実処理（無投票カウント・強制退室・セット強制終了・
+  システムDM通知・ルーム内システムログ・penalty_until 制限）~~
+  → 下記ペナルティフェーズで実装済み
+- DM 招待カードの発行フロー（非公開ルーム作成→招待送信）
+  ※受信カードからの入室は実装済み
+- Realtime 購読への差し替え（現在はポーリング）
+- ready ゲーティングのサーバー側強制（現在は UI のみ）
+- アイコンのプリセット選択（無料基本セット／勝利数解放／コイン直販）
+- コイン IAP（初回リリースに入れるかは計画書 §7 の判断ポイント）
+- 通報の実処理（自動モデレーションは G-C 前）、簡易チュートリアル
+
+## ペナルティフェーズ（2026-11-24 夜）
+
+計画書「ペナルティ」節（おぎ確定）のうち自動化対象を実装した。
+
+### 確定ルールの反映（最終決定で差し替え済み）
+- 離脱・放置系の階段は **1時間→3時間→6時間→12時間→24時間**
+  （上限、以降毎回24時間）。当初案（30分/1時間/3時間/6時間）と
+  最初に提示された叩き台（1時間/6時間/24時間/72時間）は不採用
+- リセット方式は「30日で累積リセット」を廃止し、**30日間違反が
+  なければ1段だけ下がる段階的軽減（執行猶予方式）**。実装上の
+  解釈：最後の違反から30日経過ごとに現在レベルが1段下がり、
+  何日経ってもレベルは 0 には戻らない（次回は最低2段目から）。
+  この解釈がおぎの意図と違う場合は kl__apply_penalty /
+  sim/penalty.mjs の nextStepFor の1箇所ずつで直せる
+- 嫌がらせ・セクハラ系は別トラックで定数だけ用意（7日→30日→
+  無期限）。処分の適用（自動調査）は処分フェーズの範囲外
+
+### 実装内容
+- マイグレーション **0010_penalty.sql**（実DB適用済み）：
+  - `penalty_events`（適用履歴。自分の分だけ RLS で読める）
+  - `profiles.penalty_until` / `rules_agreed_at`（ガードトリガの
+    巻き戻し対象に追加。更新は SECURITY DEFINER RPC のみ）
+  - `room_members.last_heartbeat_at` + `ww_heartbeat` RPC
+  - 離脱検知を `ww_sweep` 前段（`ww__detect_abandons`）に組み込み：
+    途絶→猶予2分→離脱確定→セット即時強制終了。進行中ゲームは
+    無効（win_reason='aborted'）、完了済みゲームの結果は保持。
+    ハートビートが誰からも無いセット（旧データ等）は判定しない
+  - 投票スルー記録（`ww__record_vote_skips`）：解決確定時に
+    「有効票なし（未投票／棄権）」を記録。セット内1回目は警告＋
+    加算のみ、2回目で強制退室リスト入り→当該ゲームの result
+    終了時に退室＋セット強制終了を確定（`ww__terminate_set`）
+  - 制限チェック：`ww_create_room` / `ww_join_room` が
+    penalty_until を見て `PENALTY_ACTIVE` で拒否（解除時刻つき）
+  - システムDM：`dm_messages` に kind='system'（sender_id NULL）
+    を追加。適用のたびに本人へ通知（理由・今回の制限・解除時刻・
+    累積で伸びる旨）。既読化は `kl_mark_system_dm_read`
+  - ルーム内システムログ：`ww_messages` に kind='system' を追加し
+    「◯◯さんがゲームルールに違反したため、強制退室となりまし
+    た」＋セット終了案内（詳細理由は出さない）
+  - 段階の定数は `kl_penalty_minutes` / `kl_penalty_max_step` に集約
+- クライアント：
+  - ハートビート送信（待機室1.2秒／対戦600ms のポーリング先頭）
+  - ロビーにペナルティバナー（解除日時つき）。参加・作成が
+    拒否された場合はサーバーの理由文をトースト表示
+  - トーク一覧に「システム」会話（未読バッジつき）。DM画面は
+    読み取り専用（入力欄・ギフトを隠す）。フレンドタブ表示時に
+    トーク一覧を再描画するよう改善（滞在中の着信を反映）
+  - 対戦画面：システムログを中央の帯で表示。セット強制終了時は
+    結果まとめに終了案内＋完了ゲームのみの成績を表示
+  - **初回ルール同意ポップアップ**：ルームカード／ランダム／
+    友達帯／DM招待／ルーム作成の各導線で、未同意なら入室前に
+    表示（同意しないと入室できない）。同意は Sim=localStorage、
+    実DB=profiles.rules_agreed_at（kl_agree_rules）に保持。
+    設定の「ルールを確認する」から閲覧モードで再表示可能
+  - SimBackend のボットは必ず投票するよう変更（スルーはペナル
+    ティ対象のため。スルー経路自体は sim/SQL の検証で担保）
+
+### 検証
+- 新規 `scripts/verify-penalty.mjs`（sim、66項目）：猶予内復帰=
+  無罪／猶予超過→離脱確定→勝敗保持／スルー1回=続行・2回=強制
+  退室＋ログ＋DM／制限中の参加・作成拒否／階段計算（上限・軽減・
+  ゼロリセットなし）。verify:all に組み込み済み
+- 新規 `scripts/verify-penalty-db.mjs`（実DB、34項目）：
+  実JWTでシナリオA（離脱）・B（スルー＋制限拒否）・C（猶予内
+  復帰）・D（段階計算・直接変更の巻き戻し）を通し、全PASS。
+  時間経過はオーナーSQLで締め切り／ハートビートを巻き戻して再現
+- 既存スイートも更新（同意ポップアップの分岐追加など）：
+  全スイート **260項目 PASS**（25→29 / 58 / 66 / 40 / 20 /
+  28→39 / 8）
+- 実DBテストの残骸：テストユーザー24名（test_marker="test/lite"、
+  3回分）が残っている。シナリオCの放置セットは cron の見回りで
+  終了し、参加テストユーザーに離脱ペナルティが付く（実害なし）
+
+## デプロイ準備（2026-11-24 夜）— おぎ操作待ち
+
+Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
+詳細手順は `docs/deploy-runbook.md`（本命＝GitHub 接続方式、
+近道＝直接アップロード方式の2本立て）。
+
+- できない理由（実測）：この VM の gh CLI は GitHub 未ログイン、
+  wrangler は Cloudflare 未認証、GitHub への SSH はプロキシ側で
+  リセット（kex_exchange_identification）。いずれもむぜたん側では
+  解決できない
+- 準備済み：ローカルブランチを main→**master** に改名（本家の
+  production branch に統一）、リモート origin に
+  `ssh://git@ssh.github.com:443/Ogitandao/kotoba-jinrou-lite.git`
+  を登録（リポジトリ本体はおぎが GitHub で作成する）
+- 検証済み：環境変数 KL_SUPABASE_URL / KL_SUPABASE_KEY からの
+  kl-config.js 生成、ローカル配信（index＝タイトル「ことば人狼」、
+  kl-config.js・CSS・vendor すべて 200）、verify:all 全 PASS
+- 直接アップロード用 zip を `~/workspace/
+  kotoba-jinrou-lite-client-upload.zip` に用意（client の中身が
+  ルート、kl-config.js 生成済み。publishable key のみ含む）。
+  ただし直接アップロードで作った Pages プロジェクトは後から
+  Git 接続に切り替えられない点に注意
+- おぎの操作：①GitHub で空リポジトリ `kotoba-jinrou-lite` 作成
+  → むぜたんが push を試行、②Cloudflare Pages でプロジェクト
+  作成＋GitHub 接続＋環境変数2件（値は runbook 参照、実値は
+  ダッシュボードから直接入力）＋build 設定
+  （command＝`node scripts/build-pages-config.mjs`、output＝
+  `client`、production branch＝`master`）
+- 公開 URL（予定）：https://kotoba-jinrou-lite.pages.dev
+
+### 残課題・注意（ペナルティ関連）
+- 同意ポップアップの**サーバー側強制はしていない**（参加・作成
+  RPC は rules_agreed_at を見ない）。クライアント導線では必須化
+  済み。RPC 直叩きでの回避を塞ぐかは認証フェーズで判断
+- 制限チェックは参加・作成のみ。ペナルティ発生前に参加済みの
+  待機室（他ルームで違反した場合）への再入室・開始は塞いでいない
+- ハートビートはポーリング間隔依存（対戦600ms）。モバイルで
+  バックグラウンド化するとタイマーが止まり、2分の猶予を超えて
+  離脱判定される可能性がある（仕様どおりの挙動。実機確認は
+  デプロイ後）
+- 嫌がらせ系トラックの処分適用（通報→自動調査→処分）は未実装
+
+## 2026-11-24 夜：実機フィードバック第1弾【1】〜【12】の反映
+
+おぎの実機確認で出た指摘12件を反映した（本セクションが今回バッチの記録）。
+
+### 反映内容
+- 【1】自分の吹き出しが狭く割れる問題：`.game-msg-row .dm-msg` の
+  max-width を行幅いっぱいにし、% 指定の二重掛け（行82%×バブル78%の
+  shrink-to-fit 競合）を解消
+- 【2】試合中の「‹ 待機室」戻り導線を削除（ペナルティ回避防止）。
+  セット結果画面からの復帰導線は存置
+- 【3】開始カウントダウンフロー：待機室の開始を「誰か1人が
+  『ゲーム開始』→全員に10秒カウントダウン表示→本人のキャンセル／
+  他メンバーの退室で停止→完走で開始」に置き換え。準備OKゲーティング
+  は廃止。実DBはマイグレーション0011、Sim も同一挙動。
+  **※おぎ決定（2026-11-24 23:37）で開始フローは次フェーズに
+  「準備OK！＋マスターの『ゲームスタート！』」方式へ作り替える。
+  本実装は到達点としてここで完了扱い（磨き込みはしない）**
+- 【4】挨拶タイム：セット開始直後の開始待機（intro、定数
+  INTRO_SECONDS=15秒）はお題を表示せず、チャットで挨拶できる。
+  画面に「あと○秒でお題が出ます…」。サーバー側も intro 中は
+  myTopic を返さない（0011／Sim 共通）
+- 【5】投票UIから「スルーする」ボタンを削除。スルーは時間切れ
+  未投票としてのみ発生し、サーバー側判定は従来どおり
+- 【6】フェーズ切替時の見切れ対策（CSS）：`.game-messages` に
+  min-height: 0、`.game-panel` に max-height 52%＋内部リストの
+  スクロール化。見出し・警告文・ボタンは固定表示
+- 【7】投票・逆転回答・結果発表フェーズでは参加者アイコン帯を
+  非表示（挨拶・話し合いのみ表示）
+- 【8】無発言警告バナー：話し合いフェーズで自分の発言0件＋
+  残り60秒未満のとき本人だけに表示。判定はサーバー時刻基準の
+  phaseRemainSec／myMessageCount（0012）を使用。文言・条件は
+  app.js の定数 AFK_WARNING_REMAIN_SEC／AFK_WARNING_TEXT に集約
+- 【9】発言ゼロ＋未投票は一発退室：おぎ確定のポイント制で実装
+  （補足決定含む）。発言0＋未投票（投票行そのものがない）=1.0／
+  発言0＋投票あり=0.5／発言あり＋未投票・棄権=0.5。ポイントは
+  セット内で累積し、合計1.0で強制退室＋ペナルティ階段+1
+  （退室・セット終了は従来どおり result 終了時に確定し、その
+  ゲームの結果も加算される）。1.0未満はポイント行（minutes=0）の
+  記録のみで制限・DMなし。棄権（target NULL の投票行）は
+  「投票なし」に数えない。警告バナー文言は「まだ発言がありません。
+  このまま発言も投票もないと、強制退室になります」に更新。
+  実装は3エンジン共通（sim/server.mjs、client Sim、SQL 0013）
+- 【10】吹き出し幅を「日本語15文字／行」基準に統一：DM・対戦
+  ともに max-width を calc(15em + 30px) 上限（狭い画面では % で
+  抑制）。自分・他人で同一基準
+- 【11】プレイヤー番号バッジ：参加順1〜N を小さい四角バッジで
+  名前の前に表示（待機室メンバー／アイコン帯／チャット発言者／
+  投票選択肢／結果リスト／文中の名前表記）。番号はデータ層が
+  付与（待機室＝room_members の joined_at 順、対戦中＝セットの
+  player_ids 順で固定。Sim／実DB とも同じ規則）。待機室で
+  退室者が出た場合は番号が詰まる（セット中は不変）
+- 【12】結果画面の説明文を2行化：1行目＝決着理由（追放・逆転
+  回答の結果を含む）、2行目＝お題開示
+
+### 検証結果（全PASS）
+- verify:all：lobby 29／wordwolf-db 58／penalty 80（ポイント制の
+  新シナリオ (f) 含む）／social 40／social-ui 20／game-ui 89
+  （【1】〜【12】の検証を含む）／supabase-mode 8
+- verify:penalty-db（実DB）：44/44（シナリオBをポイント制に更新、
+  シナリオE＝発言0＋未投票の一発退室を追加）
+- verify:countdown-db（実DB）：14/14
+- マイグレーション 0011／0012／0013 を実DBへ適用済み
+
+### 残課題・注意（今回バッチ分）
+- 【6】のレイアウトは jsdom にレイアウトエンジンがないため
+  CSS ルールの文字列確認まで。モバイル実機での見切れ最終確認は
+  おぎの実機確認待ち
+- Sim のボットホスト自動開始は、仮想時間を大きく進めると他
+  ルームのセットを開始して放置扱いの離脱ペナルティが積み重なる
+  ことがある（検証時の観察事項。実DBでは開始は人手のみ）
+- お題テキストの span の class が topic-word（CSS は topic-words）
+  と食い違っており大きな文字スタイルが当たっていない可能性が
+  ある（今回バッチ外として未修正。親へ報告済み）
+- 次フェーズ（おぎ決定済み）：開始フローを「準備OK！＋マスター
+  開始＋キック可」へ作り替え、3ゲーム1セット制を廃止して
+  ゲーム単位制へ（結果画面で継続選択、違反ポイントはルーム
+  滞在中の累積に変更）。待機室はチャット付きの待機チャット
+  として正式化し、ゲーム終了後は全員いったん待機室に戻る
+
+---
+
+## 次フェーズ：ゲーム単位制＋新開始フロー＋待機室チャット＋丸ゴシック（2026-11-24 深夜・実装完了）
+
+おぎ決定（23:31〜23:42、計画書 lite-plan-draft.md が正本）を受けて
+実装した。あわせて追加依頼のフォント採用も実施。
+
+### 実装内容
+- **ゲーム単位制**：3ゲーム1セット制を廃止。内部的には ww_sets を
+  「1ゲームだけのコンテナ」（games_per_set=1）として残し、勝敗・
+  結果・ペナルティ連携の既存基盤を壊さない形にした（最小解釈として
+  handover に記録）。ゲーム終了後は全員いったん待機室に戻り、結果
+  画面の導線は「待機室に戻る」「ロビーに戻る」（終了パネル）。
+  準備OKはゲーム終了時に全員リセットされる
+- **新開始フロー**（0011 カウントダウン方式を置き換え）：ルーム
+  作成時に人数（4〜8人、作成モーダルのセレクト、既定4人）を設定。
+  開始条件＝満室＋マスター以外の全員が「準備OK！」＋マスターが
+  「ゲームスタート！」。マスターは待機室でキック可（ww_kick_member）。
+  マスター退室時は参加順で最古参へ移譲（強制退室でマスターが
+  外れた場合も同様に移譲）。満室＋全員準備OKが揃った時刻を
+  rooms.all_ready_at に記録（通報判定用の証跡。処分処理は未実装）
+- **待機室チャット**：ww_room_messages（RLS：メンバーだけ閲覧、
+  投稿は ww_post_room_message RPC）。待機室に本編と同じLINE式の
+  チャットログ＋入力欄を追加（対戦中は非表示）
+- **違反ポイントの読み替え**：累積先を room_members.violation_points
+  に変更（ルーム滞在中累積）。退室・キック・強制退室でメンバー行が
+  消えれば実質リセット。ポイント配分・階段は従来どおり
+- **小バグ修正**：お題 span の class 不一致（topic-word→topic-words）
+  を修正し、大きな文字スタイルが当たるようにした
+- **フォント**：M PLUS Rounded 1c（Google Fonts、OFL）を採用。
+  読み込みは **Google Fonts CDN** を選択。理由：アプリ自体が常時
+  オンライン前提（Supabase 接続必須）で、日本語サブセットが
+  unicode-range で分割配信されるため転送量が小さく、同梱すると
+  配布 zip が数MB 肥大化する。見出し・ボタン・名前などは 800、
+  通常テキストは 700 を適用。長文の本文（ルール文・システムDM）は
+  読みやすさ優先で従来フォントのまま
+
+### マイグレーション
+- 0014_game_unit_start_flow.sql（カウントダウン基盤の撤去、
+  all_ready_at、violation_points、ww_start_game、ww_kick_member、
+  マスター移譲、result 終了時の待機室復帰）
+- 0015_room_chat.sql（ww_room_messages＋投稿 RPC＋Realtime）
+- いずれも実 DB へ Management API 経由で適用済み
+
+### 検証結果（全PASS）
+- verify:all：lobby 29／wordwolf-db 71／penalty 83／social 40／
+  social-ui 20／game-ui 93（新開始フロー・待機室チャット・キック・
+  人数選択・フォント・お題クラス修正の検証を含む）／supabase-mode 8
+- verify:startflow-db（実DB・新規）：24/24（満室/準備OK/マスター
+  開始の3条件、キック、移譲、all_ready_at、待機室チャット、定員）
+- verify:penalty-db（実DB）：48/48（シナリオをゲーム単位制＋
+  ルーム滞在中累積に合わせて更新。violation_points=0.5 の保持確認含む）
+- 旧 verify-countdown-db は方式廃止のため削除し startflow に置換
+
+### 判断メモ（最小解釈で進めた点）
+- セットは内部コンテナとして温存（games_per_set=1）。利用者からは
+  完全にゲーム単位に見える
+- ルーム作成の人数の既定値は4人（満室条件のもとで最も早く始め
+  られる人数。過疎対策にも合う）
+- マスター不在の空ルームは closed にする（ww_leave_room）
+- Sim（デモ）ではボットは待機室で常時準備OKとし、ボットがマスター
+  の部屋は満室＋全員準備OKで自動開始する（実環境では実ユーザーが
+  押す操作の代行）
+- 作業中に判明した注意：ファイルを書き込む経路によっては CSS の
+  子孫セレクタ（`A .b`）の空白が落ちることがあった。検証スクリプト
+  のセレクタは修正済み。今後ファイル書き込み後はセレクタ文字列を
+  grep で確認すること
+
+### 引き継ぎ
+- 配布 zip：~/workspace/kotoba-jinrou-lite-upload-20261124-v3.zip
+  （client の中身がルート、生成済み kl-config.js 入り、publishable
+  key のみ）。おぎ側で Worker へ再アップロードして実機確認する。
+  ※MEMORY.md 記録のとおり、スマホからの zip 更新は現実的に不可で
+  PC からか Pages＋Git 方式への移行が前提
+- Space「ことば人狼 Lite 開発メモ」は新仕様に合わせて更新済み
+- 残課題は従来どおり：OAuth 接続（認証フェーズ）、アイコンの
+  プリセット制、DM 招待カード発行フロー、お題の拡充、過疎対策の
+  具体策、マスター放置の通報処分（証跡記録まで実装済み）
+
+---
+
+## お題429組の投入＋ジャンル表示・選択（2026-11-25 実装完了）
+
+おぎ決定（2026-11-25）を受けて実装した。
+
+### タスク1：お題429組の DB 投入
+- 確定データ（おぎがスプレッドシートで ❌ 審査済み）：
+  `~/workspace/kotoba-jinrou-lite-data/topics-confirmed.csv`（429組）
+- マイグレーション **0016_topics_and_genre.sql** で ww_topics へ
+  投入。0006 と同じ insert ... select ... where not exists 方式で、
+  既存シード22組との (citizen, wolf) 重複は二重投入しない
+  （実際、重複は0組だった）。distance_note は審査用メモのため
+  DB には入れていない
+- 実 DB 検証済み：合計 **451組・19カテゴリ**（食べ物47／場所38／
+  遊び・趣味34／動物33／恋愛32／スポーツ28／季節・イベント28／
+  学校24／自然・天気22／飲み物21／乗り物20／家電・日用品18／
+  エンタメ18／仕事16／ファッション16／家・暮らし15／体・健康15／
+  家族・友人14／デジタル12）
+
+### タスク2：ジャンル表示・選択
+- **DB（0016）**：rooms.genre（text、NULL＝おまかせ）を追加。
+  ww_create_room に p_genre を追加（旧6引数版は drop して7引数版に
+  置換。実在しないカテゴリは INVALID_GENRE で拒否）。
+  ww_list_rooms の返却に genre を追加。ww__new_game の抽選を
+  ジャンル対応に：指定ルームはそのカテゴリからのみ抽選、
+  おまかせは「カテゴリを1つ抽選→そのカテゴリからペア抽選」の
+  2段抽選（ゲームごとにジャンルが変わる）。ww_player_view に
+  category を追加し全フェーズ（挨拶中も）で返す
+- **クライアント**：作成モーダルにジャンル select（おまかせ＋
+  19種。選択肢は起動時に DATA.listGenres() で先読み構築し、
+  モーダルを開く処理は同期のまま維持）。ロビーのルームカードと
+  待機室のタグにジャンル表示（🏷️ ジャンル名／🎲 おまかせ）。
+  対戦画面は phase ラベルの下に「ジャンル：◯◯」を常時表示
+- **Sim**：sim/server.mjs（createRoom の genre 保持・検証、
+  _pickPair の2段抽選、playerView.category）とクライアント
+  SimBackend の両方に同仕様を実装。お題プールも実 DB と同一の
+  451組に差し替えた（sim/topics.json と WW_TOPICS。初期22組＋
+  確定429組）
+
+### 検証結果（全PASS）
+- verify:all：lobby 29／wordwolf-db **81**（ジャンル検証10件を
+  追加：指定ルーム5ゲーム全て同ジャンル／おまかせ24ゲームで
+  複数ジャンル／個人ビュー category／INVALID_GENRE）／penalty 83／
+  social 40／social-ui 20／game-ui **98**（[19] ジャンル UI 検証
+  5件を追加）／supabase-mode 8
+- verify:genre-db（実DB・新規）：**9/9**（プール451組・19カテゴリ、
+  指定ルーム3ゲーム全て恋愛、list_rooms の genre、player_view の
+  category、おまかせ6ゲームで5種のジャンル、INVALID_GENRE）
+- verify:startflow-db（実DB）：24/24、verify:penalty-db（実DB）：
+  48/48（0016 の ww_create_room 署名変更に対する回帰確認。
+  penalty-db は初回実行時にシナリオBの開始で一過性クラッシュが
+  1回あったが、再実行2回とも全PASS）
+
+### 判断メモ（最小解釈で進めた点）
+- おまかせの抽選は「カテゴリ均等→ペア抽選」（件数比例ではない）。
+  タスク指示の「毎ゲーム抽選→そのジャンルからペア抽選」に忠実な
+  形で、小カテゴリ（デジタル12組）も均等に出る
+- ジャンルの表示順はお題数の多い順（WW_GENRE_LIST に固定。
+  ww_topics はクライアントから読めない設計のため、サーバー側の
+  実在チェックが正本）
+- デモ用シードルームには見本として r3=食べ物、r5=恋愛を設定
+- ジャンル選択肢の構築はモーダルを開く瞬間ではなく init 時の
+  先読みに変更した（開く処理を async 化すると検証・実機ともに
+  タイミング競合が出たため）
+
+### 作業中の注意（再発防止）
+- ファイル書き込み経路で平文のパスワードリテラルが `<redacted>`
+  に置換されて保存される事象があった（verify-genre-db.mjs の
+  signup 部）。テスト用パスワード等を新規ファイルに書くときは、
+  既存ファイルからの複製か文字コード経由の組み立てにし、書き込み
+  後に node --check で確認すること
+- verify-game-ui のフローE（[9]）は仮想時間の一括前進で自分の
+  ハートビートが追いつかず離脱判定になるフレークがあったため、
+  小刻み前進（advanceSlow）に変更して安定化済み
+
+### 引き継ぎ
+- 配布 zip：~/workspace/kotoba-jinrou-lite-upload-20261125-v4.zip
+  （client の中身がルート、生成済み kl-config.js 入り、publishable
+  key のみ）
+- Space「ことば人狼 Lite 開発メモ」のお題・ジャンル関連
+  セクションは本バッチで更新済み
+- 残課題：OAuth 接続（認証フェーズ）、アイコンのプリセット制、
+  DM 招待カード発行フロー、チュートリアル＋ようこそDM、過疎対策の
+  具体策、マスター放置の通報処分（証跡記録まで実装済み）
+
+---
+
+## アイコンシステム＋UI修正＋DM招待発行（2026-11-25 実装完了）
+
+おぎ決定・FB（2026-11-25）を受けて3タスクを実装した。
+配布 zip はおぎ指示により本バッチでは作成しない。
+
+### タスク1：アイコンシステム
+- **画像**：確定した無料プリセット15種（dog/cat/rabbit/bear/panda/
+  penguin/owl/fox/tanuki/chick/frog/koala/tiger/seal/wolf）を
+  `client/icons/icon-<key>.webp` に同梱（原画の正本は
+  ~/workspace/kotoba-jinrou-lite-data/icons-free/。bear と tiger は
+  最終調整で差し替えられた現行ファイルを使用）
+- **設計思想（将来の追加をアプリ更新なしで）**：カタログは DB 管理
+  （icons テーブル）が正本。将来の勝利数解放・コイン直販・おぎ
+  描き下ろしは「icons へ行を追加＋画像を配布側に足す」だけで対応
+  できる形にした。画像配信は当面クライアント同梱だが、Storage へ
+  移す場合も key は不変で、クライアント側は KL_ICON_SRC の向き先を
+  差し替えるだけで済む
+- **DB（0017）**：icons（key/name/tier[free|win|coin]/price_coins/
+  win_threshold/sort/active）＋ user_icons（free 以外の所有記録）。
+  無料15種を seed。profiles.icon_key は 0001 で既存のため FK を
+  追加し、選択の正本とした。変更は kl_set_icon 経由のみ（free は
+  無条件、それ以外は user_icons の所有がある場合だけ可。
+  ICON_NOT_FOUND / ICON_NOT_OWNED）。解放・購入の付与は未実装
+  （次フェーズ）。あわせて kl_search_user に icon_key、
+  ww_list_rooms に hostIconKey を追加
+- **選択 UI**：ロビーの自分のアイコンをタップ → 選択モーダル
+  （現在のアイコンの拡大プレビュー＋15種グリッド＋選択中表示）。
+  カタログに win / coin が無い間は「今後追加されます」の案内を
+  出す。将来行が増えれば未所有分は価格／解放条件つきのロック
+  表示で自動的に並ぶ
+- **反映**：avatarSpan / fillAvatar が iconKey を見て画像表示に
+  切り替わる（ロビー／ルームカード／待機室／対戦画面／投票・結果／
+  フレンド・トーク一覧／DM）。プリセットが無いユーザー（システム
+  通知・Sim の りす／もち 等）は従来の絵文字＋背景色にフォール
+  バック。他プレイヤー分は profiles.icon_key 経由で表示される
+- **Sim**：自分の選択は localStorage（kl_icon_key）で再読込維持
+  （実 DB では profiles.icon_key が正本）。ダミーユーザーのうち
+  対応がある者は iconKey を持たせた（みか=rabbit／けん=owl／
+  にゃん=cat／そら=chick）
+
+### タスク2：UI修正（おぎFB 2026-11-25 01:15-01:16）
+- **オンラインバッジ（緑ドット）**：待機室メンバー一覧と対戦画面の
+  参加者表示から削除。残すのはロビーの「オンラインの友達」枠と
+  DM 画面（ヘッダーの相手アイコン）のみ。avatarSpan は既定で
+  ドットを出さず、出す場所だけ opts.online を渡す形に変更した。
+  判断メモ：フレンド一覧・トーク一覧は「一覧画面」なので対象外と
+  解釈し、ドットは付けていない（おぎの指定は友達帯とチャット
+  画面の2か所）
+- **コイン／人気度ピル**：ラベル文字（「コイン」「人気度」）を
+  削除し、アイコン＋数字のみにした。子要素は nowrap＋
+  flex: 0 0 auto で、桁が増えても改行・縮小しない
+
+### タスク3：DM招待カードの発行フロー
+- **導線**：待機室（lobby かつ自分がメンバー）に「👥 友達を招待」
+  ボタン → フレンド一覧から選んで送信。送信先との DM に招待
+  カードが入る
+- **RPC（0017 の kl_send_invite）**：判定はサーバー側（メンバー
+  でなければ NOT_A_MEMBER／フレンドでなければ NOT_FRIENDS／
+  ブロックは BLOCKED／対戦中などは ROOM_BUSY）。非公開ルームは
+  DB がハッシュしか持たないため、発行時に入力されたパスワードを
+  crypt 照合し、一致した場合だけ平文を invite_payload に載せる
+  （WRONG_PASSWORD で不一致を拒否）。公開ルームは password=null
+- **受信側カードの小改善**：ルーム名を表示するようになり、
+  パスワード表示＋コピーボタンは非公開の招待だけに出る
+- **パスワードの初期値**：自分が作った部屋は作成時の平文、招待
+  カードで入った部屋はカードの平文を、メモリ上（state.
+  roomPasswords）にだけ保持して招待モーダルの初期値にする。
+  永続化はしないので、再読込後は本人入力に戻る
+- **Sim parity**：クライアント SimBackend に同一判定・同一
+  エラーコードの sendInvite を実装（sim/social.mjs はルームを
+  持たないため対象外。parity はクライアント Sim と SQL で担保）
+
+### 検証結果（全PASS）
+- verify:all：lobby 31／wordwolf-db 81／penalty 83／social 40／
+  social-ui 20／**icons 22（新規）**／game-ui **109**（[20] 招待
+  発行・[21] バッジ削除の検証を追加）／supabase-mode 8
+- verify:icons-invite-db（実DB・新規）：**16/16**（カタログ15種、
+  kl_set_icon の保存・拒否、検索への icon_key、WRONG_PASSWORD／
+  NOT_A_MEMBER、payload の中身、招待された側の入室、
+  hostIconKey、公開招待の password=null）
+- 回帰：verify:genre-db 9/9、verify:startflow-db 24/24
+  （0017 で再定義した ww_list_rooms／kl_search_user の確認。
+  初回実行時は Management API の一過性 502 で落ちたが、変更起因
+  ではなく再実行で全PASS。verify-icons-invite-db の sql() には
+  リトライを入れてある）
+
+### 残課題
+- アイコンの勝利数解放・コイン購入の付与（カタログと所有の器は
+  0017 で用意済み。解放判定と購入 RPC は次フェーズ）
+- OAuth 接続（認証フェーズ）、
+  過疎対策の具体策、マスター放置の通報処分（証跡記録まで実装済み）
+
+## チュートリアル＋ようこそDM（2026-11-25）
+
+おぎ承認仕様（計画書「チュートリアルとようこそDM」節＋モーダル
+仕様の追記分）を実装した。旧「初回入室時のルール同意ポップアップ」
+（modal-rules）は廃止し、チュートリアル同意に一本化した。
+
+### モーダル仕様（おぎ指定）
+- 一個の大きいポップアップ（modal-tutorial）内で5枚のスライドを
+  左右に送る（スワイプ／左右矢印／ドット。ドットタップでも移動可）
+- **枠の外をタップしても閉じられない**（backdrop クリックは
+  チュートリアル表示中だけ無効化。ESC ハンドラも付けていない）
+- 閉じる手段は2つだけ：「同意してはじめる」（**最後のスライド
+  にのみ**出現）と「キャンセル」（全スライドで表示）
+- スライド文面は計画書の文案ドラフトどおり（①ようこそ ②遊び方
+  ③話し合いの流れ ④マナーとルール ⑤コインとギフト）。
+  イラストは無料アイコン15種の動物画像（client/icons/）を流用
+- キャンセル＝同意せずに閉じる。未同意のままなので、入室系
+  アクション（入室／作成／ランダム／招待カード）を試みるたびに
+  **毎回再表示**される
+
+### 同意ゲートの範囲（おぎ追加指示）
+- **フレンドタブは同意するまで開けない**：下部メニューの
+  フレンドタブをグレーアウト（.locked）し、タップしても
+  切り替わらず「チュートリアルを完了すると使えます」の
+  トーストを出す。同意した瞬間に通常表示へ戻る。表示制御の正は
+  サーバー側の同意状態（bootstrap の rulesAgreed）
+- **サーバー側強制（0018）**：`kl__assert_rules_agreed` を新設し、
+  ww_create_room（0016 の再定義）／ww_join_room（0014 の再定義）
+  が未同意を `RULES_NOT_AGREED` で拒否する。ペナルティフェーズで
+  未解決だった「同意のサーバー側強制なし」をこれで解消
+- Sim parity：クライアント SimBackend の createRoom／joinRoom
+  にも同じ同意ガード（RULES_NOT_AGREED）を実装
+
+### ようこそDM
+- **実DB**：dm_messages に kind='welcome' を追加し、
+  handle_new_user（0003 の再定義）が新規登録時にシステム会話へ
+  1件送る。本文は「登録ボーナス100コインの案内＋チュートリアル
+  への導線」。kl_mark_system_dm_read の既読化対象に welcome も
+  含めた。クライアントは kind='welcome' をシステム会話にまとめ、
+  本文＋「📖 チュートリアルはこちら」ボタンで描画する
+  （ボタン→閲覧モードでチュートリアル再表示）
+- **Sim**：デモデータの DM シードに同じ本文の welcome を1件追加
+- 設定画面の導線は「チュートリアル・ルール」に改称し、閲覧
+  モード（「閉じる」で閉じられる通常表示）で開く。強制フロー
+  とは state.tutorialMode で分離
+
+### 検証結果（全PASS）
+- verify:all：lobby **40**（同意ゲート／再表示／backdrop 無効／
+  閲覧モードの検証を追加）／wordwolf-db 81／penalty 83／
+  social 40／social-ui **29**（同意フロー＋ようこそDM＋導線の
+  検証を追加。トーク一覧はシステム会話込みで3件に更新）／
+  icons 22（同意済みシードで起動するよう更新）／game-ui **112**
+  （[22] チュートリアルの検証を追加）／supabase-mode 8
+- verify:tutorial-db（実DB・新規）：**13/13**（ようこそDM 1件・
+  本文・REST 可視／未同意の作成・参加が RULES_NOT_AGREED 拒否／
+  同意記録／同意後の作成・参加／ようこそDMの既読化）
+- 回帰：verify:genre-db 9/9、verify:startflow-db 24/24、
+  verify:penalty-db 48/48、verify:icons-invite-db 16/16、
+  verify:e2e-session 29/29（各 DB スクリプトの signup 後に
+  kl_agree_rules を呼ぶよう更新。0018 のゲートが前提）

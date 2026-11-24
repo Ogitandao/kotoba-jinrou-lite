@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ことば人狼</title>
+<!-- 丸ゴシック M PLUS Rounded 1c（Google Fonts / OFL）。日本語サブセットが
+     unicode-range で分割配信されるため転送量が小さく、アプリ自体が
+     常時オンライン前提（Supabase 接続必須）なので CDN 読み込みを採用 -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./styles.css" />
+<!-- 配信時設定（Cloudflare Pages のビルドで環境変数から生成される。
+     ローカルでは存在せず 404 になるが無害：config.js 側の既定値に落ちる） -->
+<script src="./kl-config.js"></script>
+<script type="module">
+  // vendor/supabase.js は ES モジュールのため、window.supabase を
+  // ここで橋渡しする（data-adapter.js の getClient が参照する）。
+  // モジュールは遅延実行され、KL_DATA.bootstrap() の呼び出し前に完了する。
+  import { createClient } from './vendor/supabase.js';
+  window.supabase = { createClient };
+</script>
+<script src="./config.js"></script>
+<script src="./js/dummy-data.js"></script>
+<script src="./js/data-adapter.js"></script>
+</head>
+<body>
+<div class="phone">
+
+  <!-- スクロールしても右上に残る細いバー＋⚙️設定ボタン（おぎ案） -->
+  <header class="topbar">
+    <span class="topbar-title">ことば人狼</span>
+    <button id="btn-settings" class="gear-btn" type="button" aria-label="設定">⚙️</button>
+  </header>
+
+  <main id="scroll" class="scroll">
+    <!-- ============ タブ1：ロビー ============ -->
+    <section id="tab-lobby" class="tab-panel">
+      <!-- 自分のプロフィールカード -->
+      <div class="profile-card">
+        <button id="my-avatar" class="avatar avatar-lg" type="button" aria-label="自分のアイコン"></button>
+        <div class="profile-main">
+          <div class="profile-name-row">
+            <span id="my-name" class="profile-name">おぎ</span>
+            <span class="online-label"><span class="dot dot-on"></span>オンライン</span>
+          </div>
+          <div class="profile-id">ID: <span id="my-id">ogi_2847</span></div>
+          <p id="my-bio" class="profile-bio"></p>
+        </div>
+      </div>
+
+      <!-- ペナルティ期間中の案内（制限中のみ表示） -->
+      <div id="penalty-banner" class="penalty-banner hidden"></div>
+
+      <!-- コイン／人気度ピル（ラベル文字は置かない：アイコン＋数字のみ。
+           数字の桁が増えても改行して崩れないよう1行固定にする。
+           2026-11-25 おぎ） -->
+      <div class="pill-row">
+        <button id="pill-coins" class="pill" type="button">
+          <span class="pill-coin">🪙</span>
+          <span id="coin-count">1,240</span>
+          <span class="charge-chip">＋ チャージ</span>
+        </button>
+        <button id="pill-popularity" class="pill" type="button">
+          <span class="pill-sparkle">✨</span>
+          <span id="popularity-count">98</span>
+        </button>
+      </div>
+
+      <!-- ログインボーナス -->
+      <button id="bonus-banner" class="bonus-banner" type="button">
+        🎁 ログインボーナス +10コイン <span id="bonus-state">受け取る</span>
+      </button>
+
+      <!-- オンラインの友達 -->
+      <div class="section-head">
+        <h2>オンラインの友達</h2>
+        <button id="btn-friends-all" class="link-btn" type="button">すべて &gt;&gt;</button>
+      </div>
+      <div id="online-friends" class="friends-strip"></div>
+
+      <!-- ランダム入室 -->
+      <button id="btn-random" class="random-btn" type="button">
+        <span class="random-title">🔀 ランダムで入室</span>
+        <span class="random-sub">今すぐ誰かの部屋にjoin！</span>
+      </button>
+
+      <!-- ルーム一覧 -->
+      <div class="section-head">
+        <h2>ルーム一覧</h2>
+        <button id="btn-refresh" class="link-btn" type="button">🔄 更新</button>
+      </div>
+      <div id="room-list" class="room-list"></div>
+      <!-- スティッキーの作成ボタンに最後のカードが隠れないための余白 -->
+      <div class="list-end-spacer" aria-hidden="true"></div>
+    </section>
+
+    <!-- ============ タブ2：フレンド ============ -->
+    <section id="tab-friends" class="tab-panel hidden">
+      <div class="subtab-bar" role="tablist">
+        <button id="subtab-talk" class="subtab active" type="button">トーク</button>
+        <button id="subtab-friend" class="subtab" type="button">フレンド</button>
+      </div>
+      <div id="subpanel-talk" class="subpanel">
+        <div id="talk-list" class="talk-list"></div>
+        <div id="talk-empty" class="empty-state hidden">
+          <div class="empty-icon">💬</div>
+          <p>まだトークがありません</p>
+          <p class="empty-note">フレンドとメッセージを送り合うとここに表示されます</p>
+        </div>
+      </div>
+      <div id="subpanel-friend" class="subpanel hidden">
+        <div class="search-row">
+          <input id="friend-search-input" type="text" placeholder="公開IDで検索（例：mochi_9012）" />
+          <button id="btn-friend-search" class="primary-btn" type="button">検索</button>
+        </div>
+        <div id="search-result"></div>
+        <div id="request-section" class="hidden">
+          <h3 class="panel-head">届いている申請</h3>
+          <div id="request-list"></div>
+        </div>
+        <div id="outgoing-section" class="hidden">
+          <h3 class="panel-head">申請中</h3>
+          <div id="outgoing-list"></div>
+        </div>
+        <h3 class="panel-head">フレンド</h3>
+        <div id="friend-list"></div>
+        <div id="friend-empty" class="empty-state hidden">
+          <div class="empty-icon">👥</div>
+          <p>まだフレンドがいません</p>
+          <p class="empty-note">公開IDで検索して申請してみよう</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DM画面（フレンドタブ内のオーバーレイ） ============ -->
+    <div id="dm-screen" class="dm-screen hidden">
+      <div class="dm-header">
+        <button id="dm-back" class="link-btn" type="button">‹ 戻る</button>
+        <span id="dm-peer-avatar" class="avatar avatar-sm"></span>
+        <span id="dm-peer-name" class="dm-peer-name"></span>
+        <button id="dm-gift-btn" class="gift-open-btn" type="button">🎁 ギフト</button>
+      </div>
+      <!-- 本家のクランチャット様式：発言は下端寄せ（余白は上側） -->
+      <div id="dm-messages" class="dm-messages">
+        <div id="dm-msgs-inner" class="dm-msgs-inner"></div>
+      </div>
+      <div id="dm-input-row" class="dm-input-row">
+        <input id="dm-input" type="text" maxlength="500" placeholder="メッセージを入力（リンクは送れません）" />
+        <button id="dm-send" class="primary-btn" type="button">送信</button>
+      </div>
+    </div>
+
+    <!-- ============ 待機室 ============ -->
+    <div id="room-screen" class="room-screen hidden">
+      <div class="dm-header">
+        <button id="room-back" class="link-btn" type="button">‹ 退室</button>
+        <span id="room-screen-title" class="dm-peer-name"></span>
+        <span id="room-screen-count" class="room-count"></span>
+      </div>
+      <div class="room-body">
+        <div id="room-screen-tags" class="room-tags"></div>
+        <h3 class="panel-head">メンバー</h3>
+        <div id="room-members"></div>
+        <p id="room-status-note" class="modal-note"></p>
+        <div class="room-actions">
+          <button id="btn-invite" class="sub-btn hidden" type="button">👥 友達を招待</button>
+          <button id="btn-ready" class="primary-btn hidden" type="button">準備OK！</button>
+          <button id="btn-start-game" class="primary-btn hidden" type="button">ゲームスタート！</button>
+          <button id="btn-enter-game" class="primary-btn hidden" type="button">対戦画面へ</button>
+        </div>
+        <!-- 待機室チャット（ゲーム前・ゲーム間の雑談用） -->
+        <div id="room-chat">
+          <h3 class="panel-head">💬 待機室チャット</h3>
+          <div id="room-chat-messages" class="dm-messages room-chat-messages">
+            <div id="room-chat-msgs-inner" class="dm-msgs-inner"></div>
+          </div>
+        </div>
+      </div>
+      <div id="room-chat-input-row" class="dm-input-row">
+        <input id="room-chat-input" type="text" maxlength="200" placeholder="待機室で雑談しよう（200文字まで）" />
+        <button id="room-chat-send" class="primary-btn" type="button">送信</button>
+      </div>
+    </div>
+
+    <!-- ============ 対戦画面 ============ -->
+    <div id="game-screen" class="room-screen hidden">
+      <div class="dm-header">
+        <span id="game-title" class="dm-peer-name">第1ゲーム</span>
+        <span id="game-timer" class="game-timer"></span>
+      </div>
+      <div class="game-body">
+        <div id="game-phase-label" class="game-phase-label"></div>
+        <div id="game-genre-line" class="game-genre-line hidden">ジャンル：<span id="game-genre-name"></span></div>
+        <div id="game-topic-card" class="topic-card hidden">
+          <span class="topic-label">あなたのお題</span>
+          <span id="game-my-topic" class="topic-words"></span>
+        </div>
+        <div id="game-players" class="game-players"></div>
+        <div id="game-messages" class="dm-messages game-messages">
+          <div id="game-msgs-inner" class="dm-msgs-inner"></div>
+        </div>
+        <!-- 無発言警告（話し合い終盤・自分の発言0件のときだけ出す） -->
+        <div id="game-afk-warning" class="afk-warning hidden"></div>
+        <!-- 投票 -->
+        <div id="game-vote-panel" class="game-panel hidden">
+          <p class="panel-head">🗳️ ウルフだと思う人に投票しよう</p>
+          <div id="game-vote-list"></div>
+          <p id="game-vote-state" class="modal-note"></p>
+          <p class="vote-warning">⚠️ 投票がない場合（スルー・時間切れ）はペナルティポイントが加算されます。発言も投票もないと即強制退室、ポイント合計1.0でも強制退室になります</p>
+        </div>
+        <!-- 逆転回答 -->
+        <div id="game-reversal-panel" class="game-panel hidden">
+          <p id="game-reversal-text" class="panel-head"></p>
+          <div id="game-reversal-choices" class="reversal-choices"></div>
+        </div>
+        <!-- 結果発表 -->
+        <div id="game-result-panel" class="game-panel hidden">
+          <div id="game-result-banner" class="result-banner"></div>
+          <p id="game-result-detail" class="modal-note"></p>
+          <div id="game-reveal-list"></div>
+        </div>
+        <!-- ゲーム終了後の導線（ゲーム単位制：全員いったん待機室に戻る） -->
+        <div id="game-end-panel" class="game-panel hidden">
+          <p class="panel-head">🏁 ゲーム終了</p>
+          <p id="game-end-note" class="modal-note"></p>
+          <div class="modal-actions">
+            <button id="btn-end-towaiting" class="sub-btn" type="button">待機室に戻る</button>
+            <button id="btn-end-tolobby" class="primary-btn" type="button">ロビーに戻る</button>
+          </div>
+        </div>
+      </div>
+      <div id="game-input-row" class="dm-input-row">
+        <input id="game-input" type="text" maxlength="200" placeholder="お題について話そう（200文字まで）" />
+        <button id="game-send" class="primary-btn" type="button">送信</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ルームを作る（画面下部スティッキー、下部メニューの上） -->
+  <div id="create-bar" class="create-bar">
+    <button id="btn-create-room" class="create-btn" type="button">
+      <span class="create-title">＋ ルームを作る</span>
+      <span class="create-sub">非公開ルームは 100コイン</span>
+    </button>
+  </div>
+
+  <!-- 下部メニュー（2タブのみ） -->
+  <nav class="tabbar">
+    <button id="tabbtn-lobby" class="tabbtn active" type="button">🏠 ロビー</button>
+    <button id="tabbtn-friends" class="tabbtn" type="button">👥 フレンド</button>
+  </nav>
+</div>
+
+<!-- ============ モーダル類 ============ -->
+<div id="modal-backdrop" class="modal-backdrop hidden">
+  <!-- 設定 -->
+  <div id="modal-settings" class="modal hidden">
+    <h3>設定</h3>
+    <ul class="settings-list">
+      <li><button id="btn-rules" class="settings-row" type="button">チュートリアル・ルール <span class="row-arrow">›</span></button></li>
+      <li><button id="btn-blocklist" class="settings-row" type="button">ブロックリスト <span class="row-arrow">›</span></button></li>
+      <li><button id="btn-account" class="settings-row" type="button">アカウント <span class="row-arrow">›</span></button></li>
+      <li><button id="btn-logout" class="settings-row danger" type="button">ログアウト</button></li>
+    </ul>
+    <button class="modal-close" data-close type="button">閉じる</button>
+  </div>
+
+  <!-- チャージ -->
+  <div id="modal-charge" class="modal hidden">
+    <h3>コインをチャージ</h3>
+    <p class="modal-note">所持コイン：<span id="charge-balance">1,240</span>コイン</p>
+    <ul class="charge-list">
+      <li><span>120コイン</span><span class="charge-price">¥120</span></li>
+      <li><span>550コイン</span><span class="charge-price">¥550</span></li>
+      <li><span>1,200コイン</span><span class="charge-price">¥1,200</span></li>
+    </ul>
+    <p class="modal-note">購入（アプリ内課金）は次フェーズで実装します</p>
+    <button class="modal-close" data-close type="button">閉じる</button>
+  </div>
+
+  <!-- アイコン選択（プリセット制。カタログは DB 管理） -->
+  <div id="modal-avatar" class="modal hidden">
+    <h3>アイコンを選ぶ</h3>
+    <div id="avatar-modal-preview" class="avatar avatar-xl"></div>
+    <p class="modal-note"><span id="avatar-modal-name">おぎ</span> さんのアイコン</p>
+    <div id="icon-grid" class="icon-grid"></div>
+    <p id="icon-win-note" class="modal-note">🏆 勝利数で解放されるアイコンは今後追加されます</p>
+    <p id="icon-coin-note" class="modal-note">🪙 コインで買えるアイコンは今後追加されます</p>
+    <button class="modal-close" data-close type="button">閉じる</button>
+  </div>
+
+  <!-- 友達を招待（DM招待カードの発行） -->
+  <div id="modal-invite" class="modal hidden">
+    <h3>友達を招待</h3>
+    <p class="modal-note">「<span id="invite-room-title"></span>」に招待します</p>
+    <label id="invite-password-row" class="form-label hidden">ルームのパスワード
+      <input id="invite-password" type="text" maxlength="32" placeholder="パスワード" />
+    </label>
+    <div id="invite-friend-list"></div>
+    <p id="invite-empty" class="modal-note hidden">招待できるフレンドがいません</p>
+    <button class="modal-close" data-close type="button">閉じる</button>
+  </div>
+
+  <!-- ギフト -->
+  <div id="modal-gift" class="modal hidden">
+    <h3>ギフトを送る</h3>
+    <p class="modal-note"><span id="gift-target-name"></span> さんへ</p>
+    <p class="modal-note">所持コイン：<span id="gift-balance">0</span>コイン</p>
+    <div id="gift-grid" class="gift-grid"></div>
+    <p id="gift-error" class="form-error hidden">コインが足りません（チャージしますか？）</p>
+    <div class="modal-actions">
+      <button id="btn-gift-charge" class="sub-btn hidden" type="button">チャージ</button>
+      <button class="modal-close" data-close type="button">閉じる</button>
+    </div>
+  </div>
+
+  <!-- ブロックリスト -->
+  <div id="modal-blocklist" class="modal hidden">
+    <h3>ブロックリスト</h3>
+    <div id="blocklist-items"></div>
+    <p id="blocklist-empty" class="modal-note">ブロックしているユーザーはいません</p>
+    <button class="modal-close" data-close type="button">閉じる</button>
+  </div>
+
+  <!-- チュートリアル（初回入室時の強制同意フロー。設定／ようこそDMから
+       再表示もできる）。おぎ指定のモーダル仕様：
+       ・一個の大きいポップアップ内でスライドを左右に送る
+       ・枠の外をタップしても閉じられない（backdrop クリック無効）
+       ・閉じる手段は「同意してはじめる」（最後のスライドのみ）と
+         「キャンセル」だけ。再表示モードでは「閉じる」で閉じられる -->
+  <div id="modal-tutorial" class="modal modal-tutorial hidden">
+    <h3>チュートリアル</h3>
+    <div id="tutorial-viewport" class="tutorial-viewport">
+      <div id="tutorial-track" class="tutorial-track">
+        <section class="tutorial-slide">
+          <div class="tutorial-art">
+            <img src="./icons/icon-wolf.webp" alt="" />
+            <img src="./icons/icon-cat.webp" alt="" />
+            <img src="./icons/icon-dog.webp" alt="" />
+          </div>
+          <h4>ようこそ！</h4>
+          <p>ことば人狼へようこそ！全員にお題が配られるけど、1人だけ違うお題の人がいるよ。その人（ウルフ）を見つけるゲームです</p>
+        </section>
+        <section class="tutorial-slide">
+          <div class="tutorial-art">
+            <img src="./icons/icon-rabbit.webp" alt="" />
+            <img src="./icons/icon-bear.webp" alt="" />
+          </div>
+          <h4>遊び方</h4>
+          <p>ルームに入ったら待機室で雑談。人数がそろって全員が「準備OK！」を押したらマスターがゲームスタート。まずは15秒のごあいさつタイム</p>
+        </section>
+        <section class="tutorial-slide">
+          <div class="tutorial-art">
+            <img src="./icons/icon-owl.webp" alt="" />
+            <img src="./icons/icon-fox.webp" alt="" />
+          </div>
+          <h4>話し合いの流れ</h4>
+          <p>お題を確認したら話し合いスタート。お題そのものを言っちゃダメ。かみ合わない人を探して、最後に投票しよう。ウルフが追放されても「逆転回答」で一発逆転があるから最後までドキドキ</p>
+        </section>
+        <section class="tutorial-slide">
+          <div class="tutorial-art">
+            <img src="./icons/icon-penguin.webp" alt="" />
+            <img src="./icons/icon-panda.webp" alt="" />
+          </div>
+          <h4>マナーとルール</h4>
+          <p>初めての人にも優しく、みんなで気持ちよく遊びましょう。暴言や煽りはNG。試合中の離脱・放置と、発言ゼロ・投票なしはペナルティになるよ</p>
+        </section>
+        <section class="tutorial-slide">
+          <div class="tutorial-art">
+            <img src="./icons/icon-tiger.webp" alt="" />
+            <img src="./icons/icon-tanuki.webp" alt="" />
+          </div>
+          <h4>コインとギフト</h4>
+          <p>登録ボーナスで100コインプレゼント中。気に入った相手にはギフトを贈って人気度アップ。非公開ルーム作りには100コインが必要だよ</p>
+          <p id="tutorial-agree-note" class="modal-note">最後まで読んでくれてありがとう！同意するとルームに入れます</p>
+        </section>
+      </div>
+    </div>
+    <div class="tutorial-nav">
+      <button id="btn-tutorial-prev" class="tutorial-arrow" type="button" aria-label="前のスライド">‹</button>
+      <div id="tutorial-dots" class="tutorial-dots"></div>
+      <button id="btn-tutorial-next" class="tutorial-arrow" type="button" aria-label="次のスライド">›</button>
+    </div>
+    <div class="modal-actions">
+      <button id="btn-tutorial-cancel" class="sub-btn" type="button">キャンセル</button>
+      <button id="btn-tutorial-agree" class="primary-btn hidden" type="button">同意してはじめる</button>
+      <button id="btn-tutorial-close" class="primary-btn hidden" type="button">閉じる</button>
+    </div>
+  </div>
+
+  <!-- ルーム作成 -->
+  <div id="modal-create" class="modal hidden">
+    <h3>ルームを作る</h3>
+    <label class="form-label">ルーム名
+      <input id="create-title" type="text" maxlength="30" placeholder="例：はじめてさん集合！" />
+    </label>
+    <div class="radio-row">
+      <label><input type="radio" name="create-visibility" value="public" checked /> 公開</label>
+      <label><input type="radio" name="create-visibility" value="private" /> 非公開（100コイン）</label>
+    </div>
+    <label class="form-label">人数（満室になると開始できます）
+      <select id="create-capacity">
+        <option value="4" selected>4人</option>
+        <option value="5">5人</option>
+        <option value="6">6人</option>
+        <option value="7">7人</option>
+        <option value="8">8人</option>
+      </select>
+    </label>
+    <label class="form-label">お題のジャンル
+      <select id="create-genre">
+        <option value="" selected>🎲 おまかせ（ゲームごとに変わります）</option>
+      </select>
+    </label>
+    <label id="create-password-row" class="form-label hidden">パスワード（4文字以上）
+      <input id="create-password" type="text" maxlength="32" placeholder="パスワード" />
+    </label>
+    <div class="radio-row">
+      <label><input id="create-beginner" type="checkbox" checked /> 🔰 初心者歓迎</label>
+      <label><input id="create-reversal" type="checkbox" checked /> 逆転回答あり</label>
+    </div>
+    <p id="create-error" class="form-error hidden">コインが足りません（チャージしますか？）</p>
+    <div class="modal-actions">
+      <button id="btn-create-charge" class="sub-btn hidden" type="button">チャージ</button>
+      <button id="btn-create-cancel" class="sub-btn" type="button">キャンセル</button>
+      <button id="btn-create-confirm" class="primary-btn" type="button">作る</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="./js/app.js"></script>
+</body>
+</html>
