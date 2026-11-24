@@ -180,13 +180,18 @@
         b.appendChild(check);
       }
       if (!c.owned) {
-        b.disabled = true;
+        b.classList.add('locked');
         const lock = document.createElement('span');
         lock.className = 'icon-choice-lock';
         lock.textContent = c.tier === 'coin'
           ? `🪙${fmt(c.priceCoins ?? 0)}コイン`
           : `🏆${c.winThreshold ?? 0}勝で解放`;
         b.appendChild(lock);
+        b.addEventListener('click', () => {
+          toast(c.tier === 'coin'
+            ? `このアイコンは${fmt(c.priceCoins ?? 0)}コインで購入できます`
+            : `${c.winThreshold ?? 0}勝で解放されます`);
+        });
       } else {
         b.addEventListener('click', () => selectIcon(c.key));
       }

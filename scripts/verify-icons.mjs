@@ -103,9 +103,16 @@ check('[I2] 名前ラベルは無く、「今後追加」の案内文も無い�
   document.querySelectorAll('#icon-grid .icon-choice-name').length === 0
   && !$('icon-win-note') && !$('icon-coin-note'));
 check('[I2] 勝利数解放（こあら）はロック表示で条件が出る',
-  document.querySelector('#icon-grid .icon-choice[data-icon-key="koala"]')?.disabled === true
+  document.querySelector('#icon-grid .icon-choice[data-icon-key="koala"]')
+    ?.classList.contains('locked') === true
   && document.querySelector('#icon-grid .icon-choice[data-icon-key="koala"] .icon-choice-lock')
     ?.textContent.includes('5勝'));
+document.querySelector('#icon-grid .icon-choice[data-icon-key="koala"]').click();
+await tick(30);
+check('[I2] ロック中アイコンのタップで「5勝で解放されます」トーストが出る',
+  !$('toast').classList.contains('hidden')
+  && $('toast').textContent === '5勝で解放されます',
+  $('toast').textContent);
 document.querySelector('#icon-grid .icon-choice[data-icon-key="cat"]').click();
 await tick(60);
 check('[I3] ねこを選ぶとロビーの自分のアイコンが即変わる',
