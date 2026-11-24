@@ -1,7 +1,7 @@
 // アイコン＋DM招待発行の実 DB 検証（0017 適用済み Supabase に対して実施）。
 //
 // 2026-11-25 バッチ：
-// - icons カタログ（無料15種 seed）／user_icons／profiles.icon_key
+// - icons カタログ（無料21種 seed）／user_icons／profiles.icon_key
 // - kl_set_icon：選択の保存、存在しないキーは ICON_NOT_FOUND
 // - kl_search_user の返却に icon_key が含まれる
 // - ww_list_rooms の hostIconKey
@@ -90,8 +90,8 @@ async function rpc(user, fn, args) {
 
 // --- カタログ（オーナー SQL で確認） ---
 const cat = sql('select tier, count(*)::int as n from public.icons group by tier');
-check('icons カタログに無料15種が seed されている',
-  cat.length === 1 && cat[0].tier === 'free' && cat[0].n === 15, JSON.stringify(cat));
+check('icons カタログに無料21種が seed されている',
+  cat.length === 1 && cat[0].tier === 'free' && cat[0].n === 21, JSON.stringify(cat));
 
 const A = await signup('a');
 const B = await signup('b');

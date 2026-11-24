@@ -52,6 +52,12 @@
     { key: 'tiger', name: 'とら', tier: 'free', priceCoins: null, winThreshold: null, sort: 13 },
     { key: 'seal', name: 'あざらし', tier: 'free', priceCoins: null, winThreshold: null, sort: 14 },
     { key: 'wolf', name: 'おおかみ', tier: 'free', priceCoins: null, winThreshold: null, sort: 15 },
+    { key: 'man1', name: '男性・黒髪', tier: 'free', priceCoins: null, winThreshold: null, sort: 16 },
+    { key: 'man2', name: '男性・茶髪', tier: 'free', priceCoins: null, winThreshold: null, sort: 17 },
+    { key: 'man3', name: '男性・眼鏡', tier: 'free', priceCoins: null, winThreshold: null, sort: 18 },
+    { key: 'woman1', name: '女性・ロング', tier: 'free', priceCoins: null, winThreshold: null, sort: 19 },
+    { key: 'woman2', name: '女性・ボブ', tier: 'free', priceCoins: null, winThreshold: null, sort: 20 },
+    { key: 'woman3', name: '女性・ポニーテール', tier: 'free', priceCoins: null, winThreshold: null, sort: 21 },
   ];
   const ICON_KEY_SET = new Set(ICON_CATALOG.map((c) => c.key));
   // プリセット画像の URL を返す（同梱ファイルがある key のみ）。

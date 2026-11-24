@@ -964,3 +964,8 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
   verify:penalty-db 48/48、verify:icons-invite-db 16/16、
   verify:e2e-session 29/29（各 DB スクリプトの signup 後に
   kl_agree_rules を呼ぶよう更新。0018 のゲートが前提）
+
+## 2026-11-25 人物アイコン追加（0019）
+- おぎ承認の見本シート（男女各3・フラット人物）から6種を切り出し正式素材化。無料プリセットは動物15＋人物6＝21種に。
+- migration 0019 を実DBへ適用済み（free=21確認）。client/icons 同梱、data-adapter の ICON_CATALOG に sort 16-21 で追加。Drive「アイコン画像」にも21種揃えた。
+- 検証: verify-icons 22/22、verify-icons-invite-db 16/16。

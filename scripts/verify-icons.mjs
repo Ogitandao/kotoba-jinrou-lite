@@ -3,7 +3,7 @@
 //
 // 2026-11-25 バッチの検証：
 // [I1] 無料プリセット15種の同梱画像が揃っている
-// [I2] ロビーの自分のアイコンをタップ → 選択グリッド（15種・選択中表示）
+// [I2] ロビーの自分のアイコンをタップ → 選択グリッド（21種・選択中表示）
 // [I3] 選択すると即反映され、Sim でも再読込で維持される
 //      （実 DB では profiles.icon_key が正本）
 // [I4] 他プレイヤーのアイコンも画像で表示される（プリセットが無い
@@ -61,8 +61,8 @@ await tick(80);
 
 // --- データ層 ---
 const catalog = await KL().listIcons();
-check('[I2] カタログは無料15種・全て所有扱い',
-  catalog.length === 15 && catalog.every((c) => c.tier === 'free' && c.owned),
+check('[I2] カタログは無料21種・全て所有扱い',
+  catalog.length === 21 && catalog.every((c) => c.tier === 'free' && c.owned),
   `n=${catalog.length}`);
 check('[I2] 初期選択は おおかみ（wolf）',
   catalog.find((c) => c.selected)?.key === 'wolf');
@@ -91,8 +91,8 @@ check('[I5] オンラインの友達帯：画像アイコン＋緑ドットが�
 $('my-avatar').click();
 await tick(60);
 check('[I2] アイコンをタップすると選択モーダルが開く', visible($('modal-avatar')));
-check('[I2] グリッドに15種が出て、おおかみに選択中が付く',
-  document.querySelectorAll('#icon-grid .icon-choice').length === 15
+check('[I2] グリッドに21種が出て、おおかみに選択中が付く',
+  document.querySelectorAll('#icon-grid .icon-choice').length === 21
   && document.querySelector('#icon-grid .icon-choice[data-icon-key="wolf"]')
     ?.classList.contains('selected'));
 check('[I2] 勝利数解放・コイン購入は「今後追加」の案内が出る',
