@@ -983,10 +983,11 @@
   function openJoinConfirm(room) {
     state.joinTarget = room;
     $('jc-title').textContent = room.title;
-    // ジャンルはこのポップアップには出さない（レイアウトを崩さない優先。おぎ）
+    // 2段組み（おぎ決定）：1段目＝人数＋初心者歓迎、2段目＝ジャンルチップ
     $('jc-meta').innerHTML =
-      `<span>${IC.people} ${room.players}/${room.capacity}人</span>` +
-      (room.beginner ? `<span>${IC.wakaba} 初心者歓迎</span>` : '');
+      `<span class="jc-row"><span>${IC.people} ${room.players}/${room.capacity}人</span>` +
+      (room.beginner ? `<span>${IC.wakaba} 初心者歓迎</span>` : '') + `</span>` +
+      (room.genre ? `<span class="tag tag-genre">${IC.tag} ${room.genre}</span>` : '');
     openModal('modal-join-confirm');
   }
 
