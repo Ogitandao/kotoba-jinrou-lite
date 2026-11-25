@@ -124,15 +124,29 @@
     return p.no != null ? `[${p.no}]${p.name}` : p.name;
   }
 
-  // ---------- モーダル ----------
-  function openModal(id) {
-    $('modal-backdrop').classList.remove('hidden');
+  // ---------- モーダル（履歴スタック式：閉じる＝1つ前に戻る） ----------
+  let modalStack = [];
+  function showTopModal() {
+    const top = modalStack[modalStack.length - 1];
+    $('modal-backdrop').classList.toggle('hidden', !top);
     for (const m of document.querySelectorAll('.modal')) m.classList.add('hidden');
-    $(id).classList.remove('hidden');
+    if (top) $(top).classList.remove('hidden');
   }
+  function openModal(id) {
+    const at = modalStack.indexOf(id);
+    if (at >= 0) modalStack = modalStack.slice(0, at + 1);
+    else modalStack.push(id);
+    showTopModal();
+  }
+  // 1つ前のポップアップに戻る（無ければ全部閉じる）
+  function backModal() {
+    modalStack.pop();
+    showTopModal();
+  }
+  // 全部閉じる（送信完了・画面遷移など、戻る必要がない場面用）
   function closeModal() {
-    $('modal-backdrop').classList.add('hidden');
-    for (const m of document.querySelectorAll('.modal')) m.classList.add('hidden');
+    modalStack = [];
+    showTopModal();
   }
 
   // ---------- プロフィール ----------
@@ -839,7 +853,8 @@
       const res = await DATA.sendGift(target.id, gift.key);
       state.coins = res.coins;
       renderCoins();
-      closeModal();
+      // 連続で贈れるよう、ギフト選択画面は閉じずに残す（残高表示だけ更新）
+      $('gift-balance').textContent = fmt(state.coins);
       toast(`${target.name}さんに${gift.name}を送りました`);
       if (state.dmPeer?.id === target.id) {
         renderMessages(await DATA.listMessages(target.id));
@@ -1677,7 +1692,6 @@
     $('btn-settings').addEventListener('click', () => openModal('modal-settings'));
     $('fm-profile').addEventListener('click', () => {
       const u = state.menuUser;
-      closeModal();
       if (u) openUserProfile(u);
     });
     $('fm-join').addEventListener('click', () => {
@@ -1695,7 +1709,6 @@
     });
     $('up-gift').addEventListener('click', () => {
       const u = state.profileUser;
-      closeModal();
       if (u) openGift(u);
     });
     $('btn-rules').addEventListener('click', () => openTutorial('view'));
@@ -1930,7 +1943,7 @@
       if (g) sendGift(g);
     });
     for (const c of document.querySelectorAll('[data-close]')) {
-      c.addEventListener('click', closeModal);
+      c.addEventListener('click', backModal);
     }
     $('modal-backdrop').addEventListener('click', (e) => {
       if (e.target !== $('modal-backdrop')) return;
@@ -1939,7 +1952,7 @@
       // 名前決定ポップアップ（新規登録後）も外タップでは閉じられない
       if (!$('modal-name').classList.contains('hidden')
         && $('name-x').classList.contains('hidden')) return;
-      closeModal();
+      backModal();
     });
     // 新規登録後、名前が未決定なら最初に決めてもらう（1回だけ）
     if (state.me && !state.me.nameDecidedAt) openNameModal(true);

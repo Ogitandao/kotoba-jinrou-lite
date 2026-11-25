@@ -153,7 +153,11 @@ check('ギフト送信でコインピルが30減る',
 check('DMにギフトカードが差し込まれる',
   msgs().length === 4 && msgs()[3].classList.contains('dm-gift-card')
   && msgs()[3].textContent.includes('ハート'));
-check('ギフトモーダルは閉じる', !visible($('modal-gift')));
+check('送信後もギフト選択画面は開いたまま（連続で贈れる）',
+  visible($('modal-gift')) && $('gift-balance').textContent === '1,210');
+document.querySelector('#modal-gift [data-close]').click();
+await tick();
+check('ギフト画面の閉じるでモーダルが閉じる', !visible($('modal-gift')));
 $('dm-back').click();
 check('戻るでDM画面が閉じる', !visible($('dm-screen')));
 
