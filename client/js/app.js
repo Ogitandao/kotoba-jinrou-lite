@@ -2567,6 +2567,9 @@
       timer.textContent = `${Math.floor(remain / 60)}:${String(remain % 60).padStart(2, '0')}`;
       timer.classList.toggle('urgent', remain <= 10);
     }
+    // 終了（done）では制限時間タイマーを隠す：止まった数字が別の
+    // タイマーに見えて紛らわしいため（2026-11-26 おぎ）
+    timer.classList.toggle('hidden', v.phase === 'done');
     const closed = remain !== null && remain <= 0 && v.phase !== 'done';
     // 補足（あと○秒など）は（）をやめて小さい文字で別要素に。
     // 行に収まらない時はジャンルが2行目に回る（おぎ指定）
