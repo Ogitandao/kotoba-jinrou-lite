@@ -895,7 +895,7 @@
   // 1回だけ描く。ポーリングは回さないので、そのまま眺めて確認できる
   async function showResultDemo() {
     let others = [];
-    try { others = (await DATA.listFriends() ?? []).slice(0, 6); } catch { /* 空でも続行 */ }
+    try { others = (await DATA.listFriends() ?? []).slice(0, 3); } catch { /* 空でも続行 */ }
     const mk = (u, no) => ({ id: u.id, name: u.name, iconKey: u.iconKey, emoji: u.emoji, no });
     const players = [mk(state.me, 1), ...others.map((u, i) => mk(u, i + 2))];
     const wolfId = players[2]?.id ?? players[1]?.id;
