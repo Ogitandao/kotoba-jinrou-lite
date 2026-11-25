@@ -273,6 +273,10 @@ check('＋ボタンでグループ作成モーダルが開き、フレンド一�
 $('group-name-input').value = 'テスト組';
 $('btn-group-create').click();
 await tick();
+check('グループ作成にも確認ポップアップを挟む',
+  visible($('modal-confirm')) && $('confirm-text').textContent.includes('テスト組'));
+$('confirm-yes').click();
+await tick();
 check('グループを作成するとそのままグループチャットが開く',
   visible($('dm-screen')) && $('dm-peer-name').textContent === 'テスト組');
 $('dm-members-btn').click();

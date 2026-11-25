@@ -1079,6 +1079,18 @@
     for (const f of friends) list.appendChild(pickRow(f, groupPick));
     openModal('modal-group-create');
   }
+  function askCreateGroup() {
+    // メンバー未選択なら、確認ではなくそのままエラー（理由が伝わる）
+    if (!groupPick.size) { doCreateGroup(); return; }
+    const input = $('group-name-input').value.trim();
+    const names = [...groupPick]
+      .map((id) => state.users.get(id)?.name ?? '')
+      .filter(Boolean);
+    const autoName = names.length > 3
+      ? `${names.slice(0, 3).join('・')} ほか`
+      : names.join('・');
+    openConfirm(`グループ「${input || autoName}」を作りますか？`, '作る', doCreateGroup);
+  }
   async function doCreateGroup() {
     try {
       const g = await DATA.createGroup($('group-name-input').value, [...groupPick]);
@@ -2430,7 +2442,7 @@
       if (state.dmPeer) openGift(state.dmPeer);
     });
     $('btn-group-new').addEventListener('click', openGroupCreate);
-    $('btn-group-create').addEventListener('click', doCreateGroup);
+    $('btn-group-create').addEventListener('click', askCreateGroup);
     $('dm-members-btn').addEventListener('click', openGroupMembers);
     $('btn-group-add').addEventListener('click', askAddGroupMembers);
     $('btn-group-rename').addEventListener('click', doRenameGroup);
