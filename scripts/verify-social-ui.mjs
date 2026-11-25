@@ -41,6 +41,9 @@ check('ギフトが届くとスライド通知が出る（送り主とギフト�
   $('gift-notify').classList.contains('show')
   && $('gn-title').textContent.includes('けん')
   && $('gn-gift').textContent.includes('王冠'));
+check('王冠（3,000）は中額エフェクト：ポップアップにキラキラ＋グロー',
+  $('gift-notify').classList.contains('fx-glow')
+  && document.querySelectorAll('#gift-notify .gn-spark').length === 14);
 
 // --- チュートリアル同意（フレンドタブは同意するまで開けない） ---
 check('未同意ではフレンドタブがグレーアウトしている',

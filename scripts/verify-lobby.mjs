@@ -54,7 +54,8 @@ check('人気度ピルに「人気度」のラベル文字が無い（アイコ�
 await new Promise((r) => setTimeout(r, 60));
 check('ギフト帯が価格順に専用アート＋個数（2行表示）で並ぶ',
   document.querySelectorAll('#gift-strip .gift-strip-item').length === 11 &&
-  document.querySelector('#gift-strip .gift-strip-item .gift-icon-img')?.getAttribute('src') === 'gifts/gift-diamond.webp' &&
+  (!!document.querySelector('#gift-strip .gift-strip-item [data-gift-art="diamond"]')
+    || document.querySelector('#gift-strip .gift-strip-item img')?.getAttribute('src') === 'gifts/gift-diamond.webp') &&
   document.querySelector('#gift-strip .gift-strip-item .gift-count')?.textContent === '×1' &&
   $('gift-strip').textContent.includes('×34'));
 check('ギフト帯は表示専用（ボタンではない・すべて見るも無い）',

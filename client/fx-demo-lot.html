@@ -114,6 +114,11 @@
     82% { opacity: 1; transform: translate(-50%,-53%) scale(1.02); }
     100% { opacity: 0; transform: translate(-50%,-58%) scale(1.04); }
   }
+  .glow-wrap { position: absolute; left: 50%; top: 44%; width: 135vmax; height: 135vmax; transform: translate(-50%,-50%); pointer-events: none; }
+  .glow { position: absolute; inset: 0; border-radius: 50%; animation: bloom 2.6s ease-out forwards; opacity: 0; }
+  .glow.halo { background: radial-gradient(circle, rgba(255,246,200,.8) 0%, rgba(160,225,255,.38) 36%, rgba(160,225,255,0) 68%); }
+  .glow.core { background: radial-gradient(circle, rgba(255,255,255,.95) 0%, rgba(255,240,190,.5) 30%, rgba(255,240,190,0) 60%); animation-delay: .08s; }
+  @keyframes bloom { 0% { transform: scale(.3); opacity: 0; } 20% { opacity: 1; } 58% { transform: scale(1.05); opacity: .95; } 100% { transform: scale(1.25); opacity: 0; } }
 </style>
 </head>
 <body>
@@ -136,7 +141,7 @@
     document.getElementById('gn-text').textContent = 'ダイヤモンドが届きました';
     document.getElementById('gn-art').src = 'gifts/gift-diamond.webp';
     const fx = document.getElementById('fullfx');
-    fx.innerHTML = '<div class="dim"></div><div class="rays-wrap"><div class="rays a"></div><div class="rays b"></div></div>' +
+    fx.innerHTML = '<div class="dim"></div><div class="glow-wrap"><div class="glow halo"></div><div class="glow core"></div></div>' +
       '<div class="lotpop" id="lot-box"></div>' +
       '<div class="cap">けんさんから ダイヤモンド！</div>';
     if (lotAnim) { lotAnim.destroy(); lotAnim = null; }

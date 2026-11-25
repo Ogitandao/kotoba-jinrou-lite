@@ -268,7 +268,9 @@
       return;
     }
     el.innerHTML = items
-      .map((g) => `<span class="gift-strip-item"><img class="gift-icon-img" src="gifts/gift-${g.giftKey}.webp" alt="${g.name}" data-emoji="${g.icon}" /><span class="gift-count">×${g.count}</span></span>`)
+      .map((g) => (g.giftKey === 'diamond'
+        ? `<span class="gift-strip-item"><span class="gift-icon-lot" data-gift-art="diamond"></span><span class="gift-count">×${g.count}</span></span>`
+        : `<span class="gift-strip-item"><img class="gift-icon-img" src="gifts/gift-${g.giftKey}.webp" alt="${g.name}" data-emoji="${g.icon}" /><span class="gift-count">×${g.count}</span></span>`))
       .join('');
     // 専用アートが無いギフトは絵文字表示にフォールバックする
     el.querySelectorAll('.gift-icon-img').forEach((img) => {
@@ -279,6 +281,7 @@
         img.replaceWith(s);
       });
     });
+    mountDiamondArt(el);
   }
 
   // ---------- フレンドメニュー／他人のプロフィール ----------
@@ -652,7 +655,166 @@
     pumpGiftNotify();
   }
 
-  function pumpGiftNotify() {
+  // ギフト価格表（段階エフェクトの判定用にカタログを1回だけ引く）
+  let giftPriceMap = null;
+  async function ensureGiftPrices() {
+    if (giftPriceMap) return;
+    try {
+      const cat = await DATA.giftCatalog();
+      giftPriceMap = new Map(cat.map((g) => [g.key, g.price]));
+    } catch {
+      giftPriceMap = new Map();
+    }
+  }
+
+  let lottieLoading = null;
+  function ensureLottie() {
+    if (window.lottie) return Promise.resolve();
+    if (!lottieLoading) {
+      lottieLoading = new Promise((res, rej) => {
+        const sc = document.createElement('script');
+        sc.src = 'lot/lottie.min.js';
+        sc.onload = res;
+        sc.onerror = rej;
+        document.head.appendChild(sc);
+      });
+    }
+    return lottieLoading;
+  }
+
+  // ダイヤは一覧表示でも Lottie で回し続ける（おぎ案）。プレースホルダ
+  // [data-gift-art="diamond"] にアニメを載せ、画面から消えた分は止める
+  let artAnims = [];
+  function mountDiamondArt(root) {
+    const spots = root.querySelectorAll('[data-gift-art="diamond"]:not([data-mounted])');
+    if (spots.length === 0) return;
+    spots.forEach((s) => s.setAttribute('data-mounted', '1'));
+    ensureLottie()
+      .then(() => {
+        artAnims = artAnims.filter((a) => {
+          if (a.container.isConnected) return true;
+          a.anim.destroy();
+          return false;
+        });
+        spots.forEach((s) => {
+          if (!s.isConnected) return;
+          const anim = window.lottie.loadAnimation({
+            container: s, renderer: 'svg', loop: true, autoplay: true,
+            path: 'lot/diamond.json',
+          });
+          artAnims.push({ container: s, anim });
+        });
+      })
+      .catch(() => {
+        // 読み込めなければ静止画に落とす
+        spots.forEach((s) => {
+          const img = document.createElement('img');
+          img.src = 'gifts/gift-diamond.webp';
+          img.alt = '';
+          img.className = s.className;
+          s.replaceWith(img);
+        });
+      });
+  }
+
+  // 段階エフェクト本体：中額はポップアップにキラキラ、高額は全画面
+  let gfxTimer = null;
+  let gfxAnim = null;
+  function playGiftFx(partner, gift) {
+    const price = gift.price ?? giftPriceMap?.get(gift.giftKey) ?? 0;
+    const el = $('gift-notify');
+    el.querySelectorAll('.gn-spark').forEach((n) => n.remove());
+    el.classList.remove('fx-glow');
+    if (price >= 5000) {
+      playGiftFxFull(partner, gift);
+      return;
+    }
+    if (price < 1000) return;
+    void el.offsetWidth;
+    el.classList.add('fx-glow');
+    for (let i = 0; i < 14; i++) {
+      const sp = document.createElement('i');
+      sp.className = 'gn-spark';
+      const ang = (i / 14) * Math.PI * 2 + Math.random() * 0.5;
+      const dist = 62 * (0.6 + Math.random() * 0.7);
+      sp.style.setProperty('--dx', `${Math.cos(ang) * dist}px`);
+      sp.style.setProperty('--dy', `${Math.sin(ang) * dist}px`);
+      sp.style.left = `${15 + Math.random() * 70}%`;
+      sp.style.top = `${10 + Math.random() * 70}%`;
+      sp.style.animationDelay = `${Math.random() * 0.25}s`;
+      sp.style.background = ['#ffc93c', '#ff9d5c', '#7cc7f5'][i % 3];
+      el.appendChild(sp);
+    }
+  }
+
+  function playGiftFxFull(partner, gift) {
+    const fx = $('gift-fx');
+    fx.innerHTML = '';
+    fx.classList.remove('hidden');
+    const mk = (cls) => {
+      const d = document.createElement('div');
+      d.className = cls;
+      return d;
+    };
+    let bg;
+    let center;
+    if (gift.giftKey === 'diamond') {
+      // ダイヤはストライプでなくグロー背景（おぎ指定）
+      bg = mk('gfx-glow-wrap');
+      bg.append(mk('gfx-glow halo'), mk('gfx-glow core'));
+      center = mk('gfx-lot');
+      ensureLottie()
+        .then(() => {
+          if (!center.isConnected) return;
+          gfxAnim = window.lottie.loadAnimation({
+            container: center, renderer: 'svg', loop: true, autoplay: true,
+            path: 'lot/diamond.json',
+          });
+        })
+        .catch(() => {
+          if (center.isConnected) center.replaceWith(gfxBigImg(gift));
+        });
+    } else {
+      bg = mk('gfx-rays-wrap');
+      bg.append(mk('gfx-rays a'), mk('gfx-rays b'));
+      center = gfxBigImg(gift);
+    }
+    const cap = mk('gfx-cap');
+    cap.textContent = `${partner.name}さんから ${gift.name}！`;
+    fx.append(mk('gfx-dim'), bg, center, cap);
+    for (let i = 0; i < 22; i++) {
+      const f = document.createElement('i');
+      f.className = 'gfx-fall';
+      f.style.left = `${Math.random() * 100}%`;
+      f.style.animationDuration = `${1.5 + Math.random() * 1.1}s`;
+      f.style.animationDelay = `${Math.random() * 0.7}s`;
+      f.style.background = ['#ffd75e', '#9adcff', '#fff'][i % 3];
+      fx.appendChild(f);
+    }
+    clearTimeout(gfxTimer);
+    gfxTimer = setTimeout(() => {
+      fx.classList.add('hidden');
+      fx.innerHTML = '';
+      if (gfxAnim) {
+        gfxAnim.destroy();
+        gfxAnim = null;
+      }
+    }, 2750);
+  }
+
+  function gfxBigImg(gift) {
+    const img = document.createElement('img');
+    img.className = 'gfx-big';
+    img.alt = '';
+    img.src = `gifts/gift-${gift.giftKey}-fx.webp`;
+    img.onerror = () => {
+      img.onerror = null;
+      img.src = `gifts/gift-${gift.giftKey}.webp`;
+    };
+    return img;
+  }
+
+  async function pumpGiftNotify() {
     if (giftNotifyBusy || giftNotifyQueue.length === 0) return;
     if (!$('game-screen').classList.contains('hidden')) {
       // 試合中は出さない。少し後に再試行する
@@ -663,6 +825,7 @@
     }
     const { partner, gift } = giftNotifyQueue.shift();
     giftNotifyBusy = true;
+    await ensureGiftPrices();
     const el = $('gift-notify');
     $('gn-avatar').replaceChildren(avatarSpan(partner, 'avatar-sm'));
     $('gn-title').textContent = `${partner.name}さんから`;
@@ -680,6 +843,7 @@
     };
     el.classList.remove('bye');
     el.classList.add('show');
+    playGiftFx(partner, gift);
     setTimeout(dismissGiftNotify, 2450);
   }
 
@@ -1439,12 +1603,16 @@
       b.type = 'button';
       b.className = 'gift-item';
       b.dataset.giftKey = g.key;
-      b.innerHTML = `<span class="gift-cell-art"><span class="gift-cell-emoji">${g.icon}</span><img src="gifts/gift-${g.key}.webp" alt="" onerror="this.remove()"></span>` +
+      const artHtml = g.key === 'diamond'
+        ? '<span class="gift-cell-art"><span class="gift-cell-lot" data-gift-art="diamond"></span></span>'
+        : `<span class="gift-cell-art"><span class="gift-cell-emoji">${g.icon}</span><img src="gifts/gift-${g.key}.webp" alt="" onerror="this.remove()"></span>`;
+      b.innerHTML = artHtml +
         `<span class="gift-price"><svg class="gift-coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#ffc93c"/><circle cx="12" cy="12" r="9" fill="none" stroke="#dfa40f" stroke-width="2"/><circle cx="12" cy="12" r="3.6" fill="#dfa40f"/></svg>${fmt(g.price)}</span>`;
       b.setAttribute('aria-label', g.name);
       b.addEventListener('click', () => confirmGift(g));
       grid.appendChild(b);
     }
+    mountDiamondArt(grid);
     openModal('modal-gift');
   }
   // 送信前に確認ポップアップを挟む（外側タップでは閉じない）
