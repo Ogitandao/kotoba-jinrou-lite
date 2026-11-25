@@ -1828,7 +1828,7 @@
   // 最後のスライドの「同意してはじめる」と「キャンセル」だけ。
   // キャンセルしても未同意のままなので、入室を試みるたびに再表示される。
   // 設定／ようこそDMからは閲覧モード（「閉じる」で閉じられる）で開く。
-  const TUTORIAL_LAST = 4; // スライドは5枚（0始まり）
+  const TUTORIAL_LAST = 5; // スライドは6枚（0始まり）
   function ensureRulesConsent(action) {
     if (state.rulesAgreed) { action(); return; }
     state.pendingEntry = action;

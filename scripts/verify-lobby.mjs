@@ -126,7 +126,7 @@ $('btn-create-room').click();
 check('初回の作成前にはチュートリアルが出る（作成モーダルはまだ出ない）',
   visible($('modal-tutorial')) && !visible($('modal-create')));
 check('チュートリアルは5枚のスライド構成',
-  document.querySelectorAll('#tutorial-track .tutorial-slide').length === 5);
+  document.querySelectorAll('#tutorial-track .tutorial-slide').length === 6);
 check('チュートリアルに遊び方とマナー（ペナルティ）の説明が入っている',
   $('modal-tutorial').textContent.includes('ウルフ')
   && $('modal-tutorial').textContent.includes('ペナルティ'));
@@ -141,7 +141,7 @@ check('キャンセルで同意せずに閉じられる（作成モーダルは�
 $('btn-create-room').click();
 check('キャンセル後は未同意のまま、再度試すとチュートリアルが再表示される',
   visible($('modal-tutorial')));
-for (let i = 0; i < 4; i++) $('btn-tutorial-next').click();
+for (let i = 0; i < 5; i++) $('btn-tutorial-next').click();
 check('最後のスライドでのみ「同意してはじめる」が出る',
   visible($('btn-tutorial-agree')));
 $('btn-tutorial-agree').click();

@@ -198,7 +198,7 @@ firstCard.click();
 await tick(30);
 check('キャンセルしても未同意のまま、入室を試みると再表示される',
 visible($('modal-tutorial')));
-for (let i = 0; i < 4; i++) $('btn-tutorial-next').click();
+for (let i = 0; i < 5; i++) $('btn-tutorial-next').click();
 check('最後のスライドで同意ボタンが出る', visible($('btn-tutorial-agree')));
 $('btn-tutorial-agree').click();
 await tick(30);
