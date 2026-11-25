@@ -118,7 +118,7 @@
     <!-- ============ タブ2：フレンド ============ -->
     <section id="tab-friends" class="tab-panel hidden">
       <div class="subtab-bar" role="tablist">
-        <button id="subtab-talk" class="subtab active" type="button">トーク</button>
+        <button id="subtab-talk" class="subtab active" type="button">トーク<span id="badge-subtab-talk" class="nav-badge hidden"></span></button>
         <button id="subtab-friend" class="subtab" type="button">フレンド</button>
       </div>
       <div id="subpanel-talk" class="subpanel">
@@ -268,7 +268,7 @@
   <!-- 下部メニュー（2タブのみ） -->
   <nav class="tabbar">
     <button id="tabbtn-lobby" class="tabbtn active" type="button"><svg class="svg-ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.3 10.9 12 4l7.7 6.9"/><path d="M6.7 9.2V20h10.6V9.2"/></svg> ロビー</button>
-    <button id="tabbtn-friends" class="tabbtn" type="button"><svg class="svg-ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.4"/><path d="M3.2 19.8c.7-3.2 3-4.9 5.8-4.9s5.1 1.7 5.8 4.9"/><circle cx="17.2" cy="9.8" r="2.7"/><path d="M15.6 15.1c2.4.2 4.4 1.8 5 4.7"/></svg> フレンド</button>
+    <button id="tabbtn-friends" class="tabbtn" type="button"><svg class="svg-ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.4"/><path d="M3.2 19.8c.7-3.2 3-4.9 5.8-4.9s5.1 1.7 5.8 4.9"/><circle cx="17.2" cy="9.8" r="2.7"/><path d="M15.6 15.1c2.4.2 4.4 1.8 5 4.7"/></svg> フレンド<span id="badge-tab-friends" class="nav-badge hidden"></span></button>
   </nav>
 </div>
 
@@ -362,6 +362,17 @@
     <div class="fm-actions">
       <button id="fm-profile" class="primary-btn" type="button">プロフを見る</button>
       <button id="fm-join" class="sub-btn" type="button">ルームに参加</button>
+    </div>
+  </div>
+
+  <!-- 入室確認（カード／ランダム入室は即入室せず1回挟む。2026-11-25 おぎ） -->
+  <div id="modal-join-confirm" class="modal hidden">
+    <h3>このルームに入りますか？</h3>
+    <div id="jc-title" class="jc-title"></div>
+    <div id="jc-meta" class="jc-meta"></div>
+    <div class="modal-actions">
+      <button id="jc-join" class="primary-btn" type="button">入室する</button>
+      <button class="modal-close" data-close type="button">キャンセル</button>
     </div>
   </div>
 

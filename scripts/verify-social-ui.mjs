@@ -82,6 +82,12 @@ $('room-back').click();
 await tick();
 check('待機室からロビーへ戻れる', !visible($('room-screen')));
 
+// --- 未読バッジ（下部メニュー／トークタブ） ---
+check('起動直後から下部メニューのフレンドに未読バッジ（3）が出る',
+  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '3');
+check('トークタブにも未読バッジ（3）が出る',
+  visible($('badge-subtab-talk')) && $('badge-subtab-talk').textContent === '3');
+
 // --- フレンドタブ：トーク一覧 ---
 $('tabbtn-friends').click();
 await tick();
@@ -107,6 +113,8 @@ await tick();
 const mikaRow = rowByName($('talk-list'), 'みか');
 check('みかの行に未読バッジ（1）が出る',
   mikaRow?.querySelector('.unread-badge')?.textContent === '1');
+check('システムDMを読むとナビの未読バッジが2に減る',
+  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '2');
 check('最新メッセージのプレビューが出る',
   mikaRow?.textContent.includes('部屋立てるから来て'));
 
@@ -121,6 +129,8 @@ check('DMの発言は下端寄せコンテナ（dm-msgs-inner）の中に時系�
   && msgs()[1].textContent.includes('部屋立てるから来て'));
 check('DMを開くと未読バッジが消える',
   !rowByName($('talk-list'), 'みか')?.querySelector('.unread-badge'));
+check('みかを読むとナビの未読バッジが1に減る（けんの招待分が残る）',
+  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '1');
 
 $('dm-input').value = 'うん、行く行く！';
 $('dm-send').click();

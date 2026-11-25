@@ -202,7 +202,11 @@ for (let i = 0; i < 4; i++) $('btn-tutorial-next').click();
 check('最後のスライドで同意ボタンが出る', visible($('btn-tutorial-agree')));
 $('btn-tutorial-agree').click();
 await tick(30);
-check('同意すると待機室が開く', visible($('room-screen')));
+check('同意すると入室確認が出る（即入室はしない）',
+  visible($('modal-join-confirm')) && !visible($('room-screen')));
+$('jc-join').click();
+await tick(30);
+check('入室確認で「入室する」を押すと待機室が開く', visible($('room-screen')));
 check('待機室ではルーム作成バーが消える', !visible($('create-bar')));
 check('待機室にメンバー一覧が出る（既存6人＋自分=7人・満室）',
 document.querySelectorAll('#room-members .member-row').length === 7,

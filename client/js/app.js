@@ -392,7 +392,7 @@
       `<span class="room-main"><span class="room-title-row"><span class="room-title"></span>${lock}</span>` +
       `<span class="room-meta"><span class="meta-row"><span class="room-players">${IC.people} ${room.players}/${room.capacity}人</span>${genre}</span>${metaRow2}</span></span>`;
     b.querySelector('.room-title').textContent = room.title;
-    b.addEventListener('click', () => enterRoom(room));
+    b.addEventListener('click', () => requestJoin(room));
     return b;
   }
   function renderRooms() {
@@ -517,8 +517,21 @@
     if (m.kind === 'invite') return '📩 ルームへの招待カード';
     return m.body ?? '';
   }
+  // 未読DMの合計を、下部メニューのフレンドタブとトークタブの
+  // 赤バッジに反映する（2026-11-25 おぎ）
+  function updateNavBadges(convs) {
+    const total = (convs ?? []).reduce((s, c) => s + (c.unread ?? 0), 0);
+    for (const id of ['badge-tab-friends', 'badge-subtab-talk']) {
+      const b = $(id);
+      if (!b) continue;
+      b.textContent = total > 99 ? '99+' : String(total);
+      b.classList.toggle('hidden', total <= 0);
+    }
+  }
+
   async function renderTalkList() {
     const convs = await DATA.listConversations();
+    updateNavBadges(convs);
     rememberUsers(convs.map((c) => c.partner));
     const list = $('talk-list');
     list.innerHTML = '';
@@ -954,6 +967,27 @@
   // 判定の正はサーバー側の同意状態（bootstrap で state.rulesAgreed へ反映）
   function renderFriendsLock() {
     $('tabbtn-friends').classList.toggle('locked', !state.rulesAgreed);
+  }
+
+  // カード／ランダム入室の入口：即入室せず入室確認を1回挟む（2026-11-25 おぎ）。
+  // 自分の部屋への再入室は確認なし。非公開・対戦中・満室は理由を伝えて終わる
+  function requestJoin(room) {
+    if (room.isMember || room.isHost) { enterRoom(room); return; }
+    if (room.isPrivate) { toast('非公開ルームは招待から入室します'); return; }
+    if (room.status === 'playing') { toast('対戦中です'); return; }
+    // ペナルティ中は確認を挟まず、サーバー判定の理由をすぐトーストで出す
+    if (state.penaltyUntilMs && state.penaltyUntilMs > Date.now()) { enterRoom(room); return; }
+    if (room.players >= room.capacity) { toast('満室です'); return; }
+    ensureRulesConsent(() => openJoinConfirm(room));
+  }
+  function openJoinConfirm(room) {
+    state.joinTarget = room;
+    $('jc-title').textContent = room.title;
+    $('jc-meta').innerHTML =
+      `${IC.people} ${room.players}/${room.capacity}人` +
+      (room.genre ? `　${IC.tag} ${room.genre}` : '') +
+      (room.beginner ? `　${IC.wakaba} 初心者歓迎` : '');
+    openModal('modal-join-confirm');
   }
 
   // ロビーのカード／ランダム入室／友達帯からの入室導線
@@ -1659,7 +1693,12 @@
   }
 
   // ---------- 初期化 ----------
+  let inited = false;
   async function init() {
+    // 二重初期化ガード（リスナーが二重登録されると、同意後の処理が
+    // 2回目の closeModal で打ち消される等の事故になる）
+    if (inited) return;
+    inited = true;
     const boot = await DATA.bootstrap();
     state.me = { id: 'me', ...boot.me };
     // アダプタ内部の自ID（sim では 'me'、実 DB では auth uid）に合わせる
@@ -1827,8 +1866,12 @@
         (r) => !r.isPrivate && r.status === 'lobby' && r.players < r.capacity);
       if (!open.length) { toast('今は入れる公開ルームがありません'); return; }
       const room = open[Math.floor(Math.random() * open.length)];
-      toast(`🎲 ランダム入室：${room.title}`);
-      enterRoom(room);
+      requestJoin(room);
+    });
+    $('jc-join').addEventListener('click', () => {
+      const room = state.joinTarget;
+      closeModal();
+      if (room) doEnterRoom(room);
     });
     $('btn-refresh').addEventListener('click', async () => {
       await refreshRooms();

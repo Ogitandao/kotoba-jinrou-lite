@@ -191,6 +191,26 @@ if (visible($('room-screen'))) { $('room-back').click(); await tick(); }
 check('ルームを退室するとロビーに戻り、作成バーも戻る',
   !visible($('room-screen')) && visible($('create-bar')));
 
+// --- 入室確認（他人のルームはカードタップで即入室しない） ---
+const r1Card2 = [...document.querySelectorAll('#room-list .room-card')]
+  .find((c) => c.dataset.roomId === 'r1');
+r1Card2.click();
+await tick();
+check('ルームカードをタップすると入室確認が出る（即入室しない）',
+  visible($('modal-join-confirm')) && !visible($('room-screen')));
+check('入室確認にルーム名と人数が出る',
+  $('jc-title').textContent.includes('はじめてさん集合') && $('jc-meta').textContent.includes('人'));
+document.querySelector('#modal-join-confirm [data-close]').click();
+await tick();
+check('入室確認でキャンセルするとロビーのまま', !visible($('room-screen')));
+r1Card2.click();
+await tick();
+$('jc-join').click();
+await tick();
+check('入室確認で「入室する」を押すと待機室が開く', visible($('room-screen')));
+$('room-back').click();
+await tick();
+
 // --- タブ切り替え ---
 $('tabbtn-friends').click();
 check('フレンドタブへ切り替わる（ロビーが隠れ、作成バーも隠れる）',
