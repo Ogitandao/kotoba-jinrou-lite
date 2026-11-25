@@ -148,6 +148,12 @@
     // システム通知の送信者（ペナルティ通知など。返信不可の読み取り専用）
     addUser({ id: 'system', publicId: 'system', name: 'システム', icon: '📢', iconBg: '#eef4ff', bio: '', popularity: 0, online: false });
 
+    // シード会話の日付指定用（◯日前の◯時◯分）
+    const atSeed = (daysAgo, h, m) => {
+      const d = new Date();
+      d.setHours(h, m, 0, 0);
+      return d.getTime() - daysAgo * 86400e3;
+    };
     const state = {
       coins: D.me.coins,
       bonusClaimed: D.me.bonusClaimed,
@@ -204,13 +210,40 @@
       // 並び順用（DM は配列 index、グループはこの値で合流させる）
       groups: [
         { id: 'g-1', name: 'ワードウルフ同好会', memberIds: ['me', 'u-mika', 'u-ken', 'u-risu'] },
+        { id: 'g-2', name: '週末ワードウルフ会', memberIds: ['me', 'u-mika', 'u-ken', 'u-risu', 'u-nyan'] },
       ],
       groupMessages: [
         { id: 'gm-1', groupId: 'g-1', from: 'u-mika', kind: 'text', body: '今夜21時から集まろ〜！', read: true, ord: 35.1 },
         { id: 'gm-2', groupId: 'g-1', from: 'u-ken', kind: 'text', body: 'おれは22時からなら行ける', read: true, ord: 35.2 },
         { id: 'gm-3', groupId: 'g-1', from: 'u-risu', kind: 'text', body: 'じゃあ22時に集合ね', read: true, ord: 35.3 },
+        // 検証用シード（おぎ依頼）：日付バラバラの長い会話。
+        // 日付区切り・上からスクロール・「最新へ」ボタンの確認用
+        { id: 'gw-1', groupId: 'g-2', from: 'u-mika', kind: 'text', body: '週末の夜、ワードウルフやらない？', read: true, ord: 60.01, at: atSeed(5, 20, 12) },
+        { id: 'gw-2', groupId: 'g-2', from: 'u-ken', kind: 'text', body: 'いいね、土曜なら行ける', read: true, ord: 60.02, at: atSeed(5, 20, 15) },
+        { id: 'gw-3', groupId: 'g-2', from: 'u-nyan', kind: 'text', body: '私も参加したい！', read: true, ord: 60.03, at: atSeed(5, 20, 31) },
+        { id: 'gw-4', groupId: 'g-2', from: 'u-risu', kind: 'text', body: '人数そろうといいな', read: true, ord: 60.04, at: atSeed(5, 21, 2) },
+        { id: 'gw-5', groupId: 'g-2', from: 'u-mika', kind: 'text', body: 'あと1人、誰か誘える？', read: true, ord: 60.05, at: atSeed(5, 21, 20) },
+        { id: 'gw-6', groupId: 'g-2', from: 'u-risu', kind: 'text', body: '土曜21時で決定ね', read: true, ord: 60.06, at: atSeed(3, 19, 44) },
+        { id: 'gw-7', groupId: 'g-2', from: 'u-mika', kind: 'text', body: 'お題のリクエストある？', read: true, ord: 60.07, at: atSeed(3, 19, 45) },
+        { id: 'gw-8', groupId: 'g-2', from: 'u-ken', kind: 'text', body: '恋愛系がいい', read: true, ord: 60.08, at: atSeed(3, 19, 52) },
+        { id: 'gw-9', groupId: 'g-2', from: 'u-nyan', kind: 'text', body: 'わかる、恋愛系いちばん盛り上がる', read: true, ord: 60.09, at: atSeed(3, 19, 58) },
+        { id: 'gw-10', groupId: 'g-2', from: 'u-ken', kind: 'text', body: 'この前の「元カレ」の話、まだ笑える', read: true, ord: 60.10, at: atSeed(3, 20, 11) },
+        { id: 'gw-11', groupId: 'g-2', from: 'me', kind: 'text', body: '昨日はありがとう、めっちゃ笑った', read: true, ord: 60.11, at: atSeed(1, 22, 3) },
+        { id: 'gw-12', groupId: 'g-2', from: 'u-mika', kind: 'text', body: '逆転回答当てられたの悔しい〜', read: true, ord: 60.12, at: atSeed(1, 22, 5) },
+        { id: 'gw-13', groupId: 'g-2', from: 'u-ken', kind: 'text', body: 'あれは名勝負だった', read: true, ord: 60.13, at: atSeed(1, 22, 9) },
+        { id: 'gw-14', groupId: 'g-2', from: 'u-risu', kind: 'text', body: '次は負けないからね', read: true, ord: 60.14, at: atSeed(1, 22, 15) },
+        { id: 'gw-15', groupId: 'g-2', from: 'u-nyan', kind: 'text', body: 'また今週末もやろうよ', read: true, ord: 60.15, at: atSeed(1, 22, 21) },
+        { id: 'gw-16', groupId: 'g-2', from: 'u-mika', kind: 'text', body: 'やろうやろう！金曜の夜はどう？', read: true, ord: 60.16, at: atSeed(1, 22, 26) },
+        { id: 'gw-17', groupId: 'g-2', from: 'u-mika', kind: 'text', body: 'おはよ〜、今日の夜も部屋立てるよ', read: true, ord: 60.17, at: atSeed(0, 9, 12) },
+        { id: 'gw-18', groupId: 'g-2', from: 'u-ken', kind: 'text', body: '21時集合で', read: true, ord: 60.18, at: atSeed(0, 9, 40) },
+        { id: 'gw-19', groupId: 'g-2', from: 'me', kind: 'text', body: '行く行く！', read: true, ord: 60.19, at: atSeed(0, 10, 5) },
+        { id: 'gw-20', groupId: 'g-2', from: 'u-risu', kind: 'text', body: '私も行ける〜', read: true, ord: 60.20, at: atSeed(0, 12, 48) },
+        { id: 'gw-21', groupId: 'g-2', from: 'u-nyan', kind: 'text', body: '今日は絶対ウルフ引く気がする', read: true, ord: 60.21, at: atSeed(0, 13, 15) },
+        { id: 'gw-22', groupId: 'g-2', from: 'u-mika', kind: 'text', body: 'そういう時のにゃん、大体市民だよｗ', read: true, ord: 60.22, at: atSeed(0, 13, 17) },
+        { id: 'gw-23', groupId: 'g-2', from: 'u-nyan', kind: 'text', body: 'ひどいｗｗ', read: true, ord: 60.23, at: atSeed(0, 13, 18) },
+        { id: 'gw-24', groupId: 'g-2', from: 'u-ken', kind: 'text', body: 'じゃあ今夜21時、遅れる人は先に言ってね', read: true, ord: 60.24, at: atSeed(0, 14, 2) },
       ],
-      groupSeq: 1,
+      groupSeq: 2,
       gmSeq: 3,
       ordSeq: 1000,
       seq: 100,
@@ -231,7 +264,7 @@
         'dm-5': now - 2 * H, 'dm-6': now - 30 * M,
       };
       state.dm.forEach((m, i) => { m.at = atMap[m.id] ?? (now - (state.dm.length - i) * 9 * M); });
-      state.groupMessages.forEach((m, i) => { m.at = now - (state.groupMessages.length - i) * 12 * M - 40 * M; });
+      state.groupMessages.forEach((m, i) => { if (m.at == null) m.at = now - (state.groupMessages.length - i) * 12 * M - 40 * M; });
     }
     const pub = (u) => ({
       id: u.id, publicId: u.publicId, name: u.name, icon: u.icon,

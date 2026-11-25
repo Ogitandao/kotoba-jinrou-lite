@@ -99,7 +99,7 @@ check('トークタブにも未読バッジ（4）が出る',
 $('tabbtn-friends').click();
 await tick();
 const talkRows = document.querySelectorAll('#talk-list .talk-row');
-check('トーク一覧に会話が30件出る（システム＋フレンド28人＋グループ1件）', talkRows.length === 30, `${talkRows.length}件`);
+check('トーク一覧に会話が31件出る（システム＋フレンド28人＋グループ2件）', talkRows.length === 31, `${talkRows.length}件`);
 
 // --- システム会話：ようこそDM＋チュートリアル導線 ---
 const sysRow = rowByName($('talk-list'), 'システム');
