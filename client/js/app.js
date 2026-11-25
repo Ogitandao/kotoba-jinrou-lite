@@ -899,11 +899,31 @@
     if (m.kind === 'gift' && m.gift) {
       const card = document.createElement('div');
       card.className = `dm-gift-card ${mine ? 'mine' : 'theirs'}`;
-      card.innerHTML =
-        `<span class="gift-card-icon">${m.gift.icon}</span>` +
-        `<span class="gift-card-main"><span class="gift-card-name"></span>` +
-        `<span class="gift-card-price">${fmt(m.gift.price)}コイン</span></span>`;
-      card.querySelector('.gift-card-name').textContent = m.gift.name;
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'gift-card-icon';
+      if (m.gift.giftKey) {
+        // 専用アート（gifts/gift-<key>.webp）を出す。無い場合だけ絵文字に落とす
+        const img = document.createElement('img');
+        img.className = 'gift-card-img';
+        img.src = `gifts/gift-${m.gift.giftKey}.webp`;
+        img.alt = m.gift.name;
+        img.addEventListener('error', () => {
+          img.replaceWith(document.createTextNode(m.gift.icon ?? '🎁'));
+        });
+        iconSpan.appendChild(img);
+      } else {
+        iconSpan.textContent = m.gift.icon ?? '🎁';
+      }
+      const main = document.createElement('span');
+      main.className = 'gift-card-main';
+      const nm = document.createElement('span');
+      nm.className = 'gift-card-name';
+      nm.textContent = m.gift.name;
+      const pr = document.createElement('span');
+      pr.className = 'gift-card-price';
+      pr.textContent = `${fmt(m.gift.price)}コイン`;
+      main.append(nm, pr);
+      card.append(iconSpan, main);
       return card;
     }
     if (m.kind === 'invite' && m.invite) {
