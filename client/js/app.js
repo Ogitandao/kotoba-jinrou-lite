@@ -2248,11 +2248,37 @@
 
   // ---------- 初期化 ----------
   let inited = false;
+  // キーボードを開いたとき、画面全体がずるっと上にずれる対策
+  // （2026-11-25 おぎ実機指摘）：ブラウザが入力欄を見せようとして
+  // 表示領域ごとずらす機種では、見えている範囲に枠をぴったり合わせる。
+  // レイアウト側が縮む機種（interactive-widget 対応）では何もしない
+  function fitPhoneToViewport() {
+    const vv = window.visualViewport;
+    const phone = document.querySelector('.phone');
+    if (!vv || !phone) return;
+    if (window.innerHeight - vv.height > 80) {
+      phone.style.height = `${vv.height}px`;
+      phone.style.top = `${vv.offsetTop}px`;
+    } else {
+      phone.style.height = '';
+      phone.style.top = '';
+    }
+  }
+
   async function init() {
     // 二重初期化ガード（リスナーが二重登録されると、同意後の処理が
     // 2回目の closeModal で打ち消される等の事故になる）
     if (inited) return;
     inited = true;
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', fitPhoneToViewport);
+      window.visualViewport.addEventListener('scroll', fitPhoneToViewport);
+    }
+    // 入力中にドキュメント側がスクロールしたら戻す（ずれの残り対策）
+    window.addEventListener('scroll', () => {
+      const a = document.activeElement;
+      if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) window.scrollTo(0, 0);
+    }, { passive: true });
     const boot = await DATA.bootstrap();
     state.me = { id: 'me', ...boot.me };
     // アダプタ内部の自ID（sim では 'me'、実 DB では auth uid）に合わせる
