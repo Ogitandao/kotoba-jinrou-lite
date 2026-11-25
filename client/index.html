@@ -54,7 +54,7 @@
         <div class="profile-main">
           <div class="profile-name-row">
             <button id="my-name-btn" class="profile-name-btn" type="button" aria-label="名前を編集">
-              <span id="my-name" class="profile-name">おぎ</span><span class="name-pencil" aria-hidden="true">✎</span>
+              <span id="my-name" class="profile-name">おぎ</span><span class="name-pencil" aria-hidden="true"><svg class="svg-ic" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 19.5l.8-3.9L16.6 4.3a2.05 2.05 0 0 1 2.9 0l.2.2a2.05 2.05 0 0 1 0 2.9L8.4 18.7l-3.9.8z"/><path d="M14.8 6.1l2.9 2.9"/></svg></span>
             </button>
           </div>
           <div class="profile-id">ID: <span id="my-id">ogi_2847</span></div>
@@ -70,12 +70,12 @@
            2026-11-25 おぎ） -->
       <div class="pill-row">
         <button id="pill-coins" class="pill" type="button">
-          <span class="pill-coin">🪙</span>
+          <span class="pill-coin"><svg class="svg-ic" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#ffc93c" stroke="#dfa40f" stroke-width="2"/><circle cx="12" cy="12" r="4.2" fill="#dfa40f"/></svg></span>
           <span id="coin-count">1,240</span>
           <span class="charge-chip">＋ チャージ</span>
         </button>
         <button id="pill-popularity" class="pill" type="button">
-          <span class="pill-sparkle">✨</span>
+          <span class="pill-sparkle"><svg class="svg-ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.6c.7 4.3 2.3 6.9 9.4 9.4-7.1 2.5-8.7 5.1-9.4 9.4-.7-4.3-2.3-6.9-9.4-9.4C9.7 9.5 11.3 6.9 12 2.6z" fill="#ffb020"/></svg></span>
           <span id="popularity-count">98</span>
         </button>
       </div>
@@ -89,7 +89,7 @@
 
       <!-- ログインボーナス -->
       <button id="bonus-banner" class="bonus-banner" type="button">
-        <span class="bonus-label">🎁 ログインボーナス +10コイン</span> <span id="bonus-state">受け取る</span>
+        <span class="bonus-label"><svg class="svg-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg> ログインボーナス +10コイン</span> <span id="bonus-state">受け取る</span>
       </button>
 
       <!-- オンラインの友達 -->
@@ -146,7 +146,7 @@
         <h3 class="panel-head">フレンド</h3>
         <div id="friend-list"></div>
         <div id="friend-empty" class="empty-state hidden">
-          <div class="empty-icon">👥</div>
+          <div class="empty-icon"><svg class="svg-ic" width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.4"/><path d="M3.2 19.8c.7-3.2 3-4.9 5.8-4.9s5.1 1.7 5.8 4.9"/><circle cx="17.2" cy="9.8" r="2.7"/><path d="M15.6 15.1c2.4.2 4.4 1.8 5 4.7"/></svg></div>
           <p>まだフレンドがいません</p>
           <p class="empty-note">公開IDで検索して申請してみよう</p>
         </div>
@@ -159,7 +159,7 @@
         <button id="dm-back" class="link-btn" type="button">‹ 戻る</button>
         <span id="dm-peer-avatar" class="avatar avatar-sm"></span>
         <span id="dm-peer-name" class="dm-peer-name"></span>
-        <button id="dm-gift-btn" class="gift-open-btn" type="button">🎁 ギフト</button>
+        <button id="dm-gift-btn" class="gift-open-btn" type="button"><svg class="svg-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg> ギフト</button>
       </div>
       <!-- 本家のクランチャット様式：発言は下端寄せ（余白は上側） -->
       <div id="dm-messages" class="dm-messages">
@@ -184,7 +184,7 @@
         <div id="room-members"></div>
         <p id="room-status-note" class="modal-note"></p>
         <div class="room-actions">
-          <button id="btn-invite" class="sub-btn hidden" type="button">👥 友達を招待</button>
+          <button id="btn-invite" class="sub-btn hidden" type="button"><svg class="svg-ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.4"/><path d="M3.2 19.8c.7-3.2 3-4.9 5.8-4.9s5.1 1.7 5.8 4.9"/><circle cx="17.2" cy="9.8" r="2.7"/><path d="M15.6 15.1c2.4.2 4.4 1.8 5 4.7"/></svg> 友達を招待</button>
           <button id="btn-ready" class="primary-btn hidden" type="button">準備OK！</button>
           <button id="btn-start-game" class="primary-btn hidden" type="button">ゲームスタート！</button>
           <button id="btn-enter-game" class="primary-btn hidden" type="button">対戦画面へ</button>
@@ -267,8 +267,8 @@
 
   <!-- 下部メニュー（2タブのみ） -->
   <nav class="tabbar">
-    <button id="tabbtn-lobby" class="tabbtn active" type="button">🏠 ロビー</button>
-    <button id="tabbtn-friends" class="tabbtn" type="button">👥 フレンド</button>
+    <button id="tabbtn-lobby" class="tabbtn active" type="button"><svg class="svg-ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.3 10.9 12 4l7.7 6.9"/><path d="M6.7 9.2V20h10.6V9.2"/></svg> ロビー</button>
+    <button id="tabbtn-friends" class="tabbtn" type="button"><svg class="svg-ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.4"/><path d="M3.2 19.8c.7-3.2 3-4.9 5.8-4.9s5.1 1.7 5.8 4.9"/><circle cx="17.2" cy="9.8" r="2.7"/><path d="M15.6 15.1c2.4.2 4.4 1.8 5 4.7"/></svg> フレンド</button>
   </nav>
 </div>
 
@@ -372,8 +372,8 @@
     <p class="modal-note up-center">ID: <span id="up-id"></span></p>
     <p id="up-bio" class="up-bio"></p>
     <div class="up-stats">
-      <span>✨ 人気度 <b id="up-popularity">0</b></span>
-      <span>🏆 ワードウルフ <b id="up-wins">0</b>勝</span>
+      <span><svg class="svg-ic" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 2.6c.7 4.3 2.3 6.9 9.4 9.4-7.1 2.5-8.7 5.1-9.4 9.4-.7-4.3-2.3-6.9-9.4-9.4C9.7 9.5 11.3 6.9 12 2.6z" fill="#ffb020"/></svg> 人気度 <b id="up-popularity">0</b></span>
+      <span><svg class="svg-ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 4h9v5.2a4.5 4.5 0 0 1-9 0V4z"/><path d="M7.5 5.6H4.6c0 2.7 1.1 4.1 3.4 4.5"/><path d="M16.5 5.6h2.9c0 2.7-1.1 4.1-3.4 4.5"/><path d="M12 13.7v3.6"/><path d="M8.6 20.4h6.8"/><path d="M12 17.3l-1.4 3.1h2.8L12 17.3z"/></svg> ワードウルフ <b id="up-wins">0</b>勝</span>
     </div>
     <div class="gift-frame up-gift-frame">
       <div class="gift-strip-label">もらったギフト</div>
@@ -493,14 +493,14 @@
     </label>
     <label class="form-label">お題のジャンル
       <select id="create-genre">
-        <option value="" selected>🎲 おまかせ（ゲームごとに変わります）</option>
+        <option value="" selected>おまかせ（ゲームごとに変わります）</option>
       </select>
     </label>
     <label id="create-password-row" class="form-label hidden">パスワード（4文字以上）
       <input id="create-password" type="text" maxlength="32" placeholder="パスワード" />
     </label>
     <div class="radio-row">
-      <label><input id="create-beginner" type="checkbox" checked /> 🔰 初心者歓迎</label>
+      <label><input id="create-beginner" type="checkbox" checked /> <svg class="svg-ic" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 21.2C7.2 17.3 4.7 12.7 4.7 6.4c4.3.5 7.6 2.9 7.3 14.8z" fill="#35b558"/><path d="M12 21.2c4.8-3.9 7.3-8.5 7.3-14.8-4.3.5-7.6 2.9-7.3 14.8z" fill="#ffd83d"/></svg> 初心者歓迎</label>
       <label><input id="create-reversal" type="checkbox" checked /> 逆転回答あり</label>
     </div>
     <p id="create-error" class="form-error hidden">コインが足りません（チャージしますか？）</p>

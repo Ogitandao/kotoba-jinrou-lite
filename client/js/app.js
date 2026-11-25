@@ -41,6 +41,15 @@
 
   const $ = (id) => document.getElementById(id);
   const fmt = (n) => n.toLocaleString('ja-JP');
+  const IC = {
+    lock: '<svg class="svg-ic" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8 10.5V7.6a4 4 0 0 1 8 0v2.9"/></svg>',
+    people: '<svg class="svg-ic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.4"/><path d="M3.2 19.8c.7-3.2 3-4.9 5.8-4.9s5.1 1.7 5.8 4.9"/><circle cx="17.2" cy="9.8" r="2.7"/><path d="M15.6 15.1c2.4.2 4.4 1.8 5 4.7"/></svg>',
+    tag: '<svg class="svg-ic" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 11 3.8a2 2 0 0 0-1.4-.6H4.2A1.2 1.2 0 0 0 3 4.4v5.4c0 .5.2 1 .6 1.4l9.6 9.6a2 2 0 0 0 2.8 0l4.6-4.6a2 2 0 0 0 0-2.8z"/><circle cx="7.6" cy="7.6" r="1.4" fill="currentColor" stroke="none"/></svg>',
+    dice: '<svg class="svg-ic" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.3" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4.5"/><circle cx="9.2" cy="9.2" r="1.6" fill="currentColor" stroke="none"/><circle cx="14.8" cy="9.2" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="9.2" cy="14.8" r="1.6" fill="currentColor" stroke="none"/><circle cx="14.8" cy="14.8" r="1.6" fill="currentColor" stroke="none"/></svg>',
+    wakaba: '<svg class="svg-ic" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M12 21.2C7.2 17.3 4.7 12.7 4.7 6.4c4.3.5 7.6 2.9 7.3 14.8z" fill="#35b558"/><path d="M12 21.2c4.8-3.9 7.3-8.5 7.3-14.8-4.3.5-7.6 2.9-7.3 14.8z" fill="#ffd83d"/></svg>',
+    coin: '<svg class="svg-ic" viewBox="0 0 24 24" width="10" height="10" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#ffc93c" stroke="#dfa40f" stroke-width="2"/><circle cx="12" cy="12" r="4.2" fill="#dfa40f"/></svg>',
+    trophy: '<svg class="svg-ic" viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 4h9v5.2a4.5 4.5 0 0 1-9 0V4z"/><path d="M7.5 5.6H4.6c0 2.7 1.1 4.1 3.4 4.5"/><path d="M16.5 5.6h2.9c0 2.7-1.1 4.1-3.4 4.5"/><path d="M12 13.7v3.6"/><path d="M8.6 20.4h6.8"/></svg>',
+  };
 
   let toastTimer = null;
   let toastFadeTimer = null;
@@ -258,9 +267,9 @@
         b.classList.add('locked');
         const lock = document.createElement('span');
         lock.className = 'icon-choice-lock';
-        lock.textContent = c.tier === 'coin'
-          ? `🪙${fmt(c.priceCoins ?? 0)}コイン`
-          : `🏆${c.winThreshold ?? 0}勝で解放`;
+        lock.innerHTML = c.tier === 'coin'
+          ? `${IC.coin}${fmt(c.priceCoins ?? 0)}コイン`
+          : `${IC.trophy}${c.winThreshold ?? 0}勝で解放`;
         inner.appendChild(lock);
         b.addEventListener('click', () => {
           toast(c.tier === 'coin'
@@ -342,10 +351,10 @@
     b.dataset.roomId = room.id;
     // 公開はデフォルトなのでタグ自体を廃止。非公開だけ鍵アイコンを
     // タイトル行の右端に小さく置く（2026-11-25 おぎ：公開タグの形が崩れる問題）
-    const lock = room.isPrivate ? '<span class="room-lock">🔒</span>' : '';
-    const beginner = room.beginner ? '<span class="tag tag-beginner">🔰 初心者歓迎</span>' : '';
+    const lock = room.isPrivate ? `<span class="room-lock">${IC.lock}</span>` : '';
+    const beginner = room.beginner ? `<span class="tag tag-beginner">${IC.wakaba} 初心者歓迎</span>` : '';
     const playing = room.status === 'playing' ? '<span class="tag tag-playing"><span class="pulse-dot"></span>対戦中</span>' : '';
-    const genre = `<span class="tag tag-genre">${room.genre ? `🏷️ ${room.genre}` : '🎲 おまかせ'}</span>`;
+    const genre = `<span class="tag tag-genre">${room.genre ? `${IC.tag} ${room.genre}` : `${IC.dice} おまかせ`}</span>`;
     const hostSrc = window.KL_ICON_SRC ? window.KL_ICON_SRC(room.hostIconKey) : null;
     const hostAvatar = hostSrc
       ? `<span class="avatar avatar-md"><img class="avatar-img" src="${hostSrc}" alt="" /></span>`
@@ -358,7 +367,7 @@
     b.innerHTML =
       hostAvatar +
       `<span class="room-main"><span class="room-title-row"><span class="room-title"></span>${lock}</span>` +
-      `<span class="room-meta"><span class="meta-row"><span class="room-players">👥 ${room.players}/${room.capacity}人</span>${genre}</span>${metaRow2}</span></span>`;
+      `<span class="room-meta"><span class="meta-row"><span class="room-players">${IC.people} ${room.players}/${room.capacity}人</span>${genre}</span>${metaRow2}</span></span>`;
     b.querySelector('.room-title').textContent = room.title;
     b.addEventListener('click', () => enterRoom(room));
     return b;
@@ -973,9 +982,16 @@
       s.textContent = text;
       tags.appendChild(s);
     };
-    addTag(d.isPrivate ? 'tag-private' : 'tag-public', d.isPrivate ? '🔒 非公開' : '公開');
-    addTag('tag-genre', d.genre ? `🏷️ ジャンル：${d.genre}` : '🎲 ジャンル：おまかせ');
-    if (d.beginner) addTag('tag-beginner', '🔰 初心者歓迎');
+    const addTagHtml = (cls, html) => {
+      const s = document.createElement('span');
+      s.className = `tag ${cls}`;
+      s.innerHTML = html;
+      tags.appendChild(s);
+    };
+    if (d.isPrivate) addTagHtml('tag-private', `${IC.lock} 非公開`);
+    else addTag('tag-public', '公開');
+    addTagHtml('tag-genre', d.genre ? `${IC.tag} ジャンル：${d.genre}` : `${IC.dice} ジャンル：おまかせ`);
+    if (d.beginner) addTagHtml('tag-beginner', `${IC.wakaba} 初心者歓迎`);
     addTag('tag-public', d.reversalEnabled ? '逆転回答あり' : '逆転回答なし');
     if (d.status === 'playing') addTag('tag-private', '対戦中');
 
