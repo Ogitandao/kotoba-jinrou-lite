@@ -1133,3 +1133,8 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
 - manifest.webmanifest（standalone／portrait／テーマ色 #e4fbf0）＋アイコン4種（狼マークv3を #0098E4 で再着色しミント→空グラデ背景に配置。icons/pwa-icon-192/512/maskable-512/apple-touch-icon）
 - Service Worker（sw.js）はキャッシュしない素通し型＝常に最新版が届く（更新が反映されない事故を避けるため）。インストール条件だけ満たす
 - index.htmlにmanifest/theme-color/apple系メタ＋SW登録を追加
+
+## 2026-11-25 午後（15）フレンドタブ完成＋PWA実機の学び
+- フレンドタブはおぎ確認で完成（フレンドカード2行構成・オンライン優先ソート・緑ドット・確認ポップアップ群）
+- PWA：ホーム画面追加で全画面起動OK。注意点＝manifestのtheme_color/background_colorは「追加した時点」で端末に焼き込まれ、ページ側を直しても再追加するまで色が変わらない（下部の帯が緑のままだった原因。上の帯はHTMLのmeta theme-colorなので先に変わる）
+- アプリ枠は position:fixed（inset:0）に変更済み：100dvhだと引っ張って更新後に下部メニューが画面外に落ちる端末があった
