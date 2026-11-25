@@ -1103,6 +1103,12 @@
         try { localStorage.setItem('kl_rules_agreed', '1'); } catch { /* メモリのみ */ }
         return ok(true);
       },
+      // デモ用：同意状態を未同意に戻す（初回チュートリアルの確認用）
+      resetRulesConsent() {
+        rulesAgreed = false;
+        try { localStorage.removeItem('kl_rules_agreed'); } catch { /* メモリのみ */ }
+        return ok(true);
+      },
       heartbeat(roomId) {
         const room = wwState.rooms.get(roomId);
         const mine = room?.members.find((m) => m.userId === 'me');
@@ -1756,6 +1762,7 @@
         return p.rules_agreed_at != null;
       },
       agreeRules() { return rpc('kl_agree_rules'); },
+      resetRulesConsent() { return Promise.resolve(true); }, // 実DBでは使わない（デモ専用行）
       heartbeat(roomId) { return rpc('ww_heartbeat', { p_room: roomId }); },
       async claimLoginBonus() {
         const r = await rpc('kl_claim_login_bonus');
@@ -2373,6 +2380,7 @@
     heartbeat: (roomId) => (active.heartbeat ? active.heartbeat(roomId) : Promise.resolve(null)),
     getRulesAgreed: () => active.getRulesAgreed(),
     agreeRules: () => active.agreeRules(),
+    resetRulesConsent: () => active.resetRulesConsent(),
     // テスト専用：SimBackend の仮想時計を進める（実 DB では無効）
     __simAdvanceTime: (sec) => active.__simAdvanceTime(sec),
     // テスト専用：自分へペナルティを適用する（SimBackend のみ）

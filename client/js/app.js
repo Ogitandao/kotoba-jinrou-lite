@@ -880,6 +880,37 @@
     pumpGiftNotify();
   }
 
+  // 結果ポップアップのデモ表示（Sim専用）：ダミーの結果で対戦画面を
+  // 1回だけ描く。ポーリングは回さないので、そのまま眺めて確認できる
+  async function showResultDemo() {
+    let others = [];
+    try { others = (await DATA.listFriends() ?? []).slice(0, 6); } catch { /* 空でも続行 */ }
+    const mk = (u, no) => ({ id: u.id, name: u.name, iconKey: u.iconKey, emoji: u.emoji, no });
+    const players = [mk(state.me, 1), ...others.map((u, i) => mk(u, i + 2))];
+    const wolfId = players[2]?.id ?? players[1]?.id;
+    state.gameView = {
+      gameId: 'demo-result', roomId: null, phase: 'done',
+      phaseDeadlineMs: Date.now() + 60000, phaseRemainSec: 0,
+      category: '恋愛', messages: [], myMessageCount: 1,
+      players, playerCount: players.length, votesCast: players.length,
+      winner: 'wolves', winReason: 'citizen_exiled',
+      topicPair: { citizen: '趣味の相性', wolf: '食の相性' },
+      exiledId: players[1]?.id,
+      reveal: players.map((p) => ({
+        id: p.id, isWolf: p.id === wolfId,
+        topic: p.id === wolfId ? '食の相性' : '趣味の相性',
+      })),
+      setStatus: 'finished', terminatedUserIds: [],
+    };
+    state.endShownGameId = 'demo-result';
+    slideInScreen($('game-screen'));
+    updateCreateBar();
+    renderGame();
+    $('game-title').textContent = '結果デモ';
+    $('game-end-note').textContent = '（デモ表示中）おつかれさまでした！';
+    $('btn-end-towaiting').classList.add('hidden');
+  }
+
   function dismissGiftNotify() {
     const el = $('gift-notify');
     if (!el.classList.contains('show')) return;
@@ -2849,11 +2880,24 @@
     $('btn-settings').addEventListener('click', () => {
       // ギフト通知テストはデモ（Sim）モード専用。本番では行ごと出さない
       $('row-gift-test').classList.toggle('hidden', DATA.mode !== 'sim');
+      $('row-consent-reset').classList.toggle('hidden', DATA.mode !== 'sim');
+      $('row-result-test').classList.toggle('hidden', DATA.mode !== 'sim');
       openModal('modal-settings');
     });
     $('btn-gift-test').addEventListener('click', () => {
       closeModal();
       setTimeout(fireGiftTest, 380);
+    });
+    $('btn-consent-reset').addEventListener('click', async () => {
+      await DATA.resetRulesConsent();
+      state.rulesAgreed = false;
+      renderFriendsLock();
+      closeModal();
+      toast('同意をリセットしました。ルームに入ろうとすると初回チュートリアルが出ます');
+    });
+    $('btn-result-test').addEventListener('click', () => {
+      closeModal();
+      setTimeout(showResultDemo, 380);
     });
     $('fm-profile').addEventListener('click', () => {
       const u = state.menuUser;
