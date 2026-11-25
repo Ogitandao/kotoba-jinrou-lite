@@ -517,9 +517,19 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   display: flex; flex-direction: column;
 }
 .modal h3 { font-size: 18px; font-weight: 800; margin-bottom: 12px; text-align: center; }
-/* 入室確認ポップアップ */
-.jc-title { font-size: 19px; font-weight: 800; text-align: center; margin: 2px 0 4px; }
-.jc-meta { text-align: center; color: var(--ink-soft); font-size: 13.5px; margin-bottom: 8px; white-space: nowrap; }
+/* 入室確認ポップアップ：どれだけ画面が小さくても改行させない（2026-11-25 おぎ）。
+   部屋名は長い場合に「…」で省略し、人数＋初心者歓迎の行は横並び固定 */
+#modal-join-confirm h3 { white-space: nowrap; }
+.jc-title {
+  font-size: 19px; font-weight: 800; text-align: center; margin: 2px 0 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.jc-meta {
+  display: flex; justify-content: center; align-items: center; gap: 8px;
+  flex-wrap: nowrap; white-space: nowrap;
+  color: var(--ink-soft); font-size: clamp(11px, 3.6vw, 13.5px); margin-bottom: 8px;
+}
+.jc-meta > span { white-space: nowrap; }
 .modal-note { font-size: 13.5px; color: var(--ink-soft); text-align: center; margin: 8px 0; }
 .modal-close {
   width: 100%; margin-top: 14px;
