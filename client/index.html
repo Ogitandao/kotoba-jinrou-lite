@@ -165,10 +165,9 @@
     <!-- ============ DM画面（フレンドタブ内のオーバーレイ） ============ -->
     <div id="dm-screen" class="dm-screen hidden">
       <div class="dm-header">
-        <button id="dm-back" class="link-btn" type="button">‹ 戻る</button>
-        <span id="dm-peer-avatar" class="avatar avatar-sm"></span>
+        <button id="dm-back" class="dm-back-btn" type="button" aria-label="戻る"><svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4.5 L7.5 12 l7 7.5"/></svg></button>
         <span id="dm-peer-name" class="dm-peer-name"></span>
-        <button id="dm-members-btn" class="gift-open-btn hidden" type="button"><svg class="svg-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.4"/><path d="M3.2 19.8c.7-3.2 3-4.9 5.8-4.9s5.1 1.7 5.8 4.9"/><circle cx="17.2" cy="9.8" r="2.7"/><path d="M15.6 15.1c2.4.2 4.4 1.8 5 4.7"/></svg> メンバー</button>
+        <button id="dm-members-btn" class="gift-open-btn icon-only hidden" type="button" aria-label="メンバー"><svg class="svg-ic" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.4"/><path d="M3.2 19.8c.7-3.2 3-4.9 5.8-4.9s5.1 1.7 5.8 4.9"/><circle cx="17.2" cy="9.8" r="2.7"/><path d="M15.6 15.1c2.4.2 4.4 1.8 5 4.7"/></svg></button>
         <button id="dm-gift-btn" class="gift-open-btn" type="button"><svg class="svg-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg> ギフト</button>
       </div>
       <!-- 本家のクランチャット様式：発言は下端寄せ（余白は上側） -->

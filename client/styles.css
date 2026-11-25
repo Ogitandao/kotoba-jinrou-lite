@@ -750,7 +750,12 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   background: rgba(255, 255, 255, 0.85);
   border-bottom: 1px solid var(--line);
 }
-#dm-back { white-space: nowrap; flex: 0 0 auto; }
+/* 戻るは大きめのシェブロンだけ（文字なし。2026-11-25 おぎ） */
+.dm-back-btn {
+  flex: 0 0 auto; width: 38px; height: 38px; margin-left: -9px;
+  display: flex; align-items: center; justify-content: center; color: var(--sky);
+}
+.gift-open-btn.icon-only { padding: 7px 9px; }
 .dm-peer-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dm-peer-name { flex: 1 1 auto; font-weight: 800; }
 .gift-open-btn {
@@ -790,14 +795,19 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .invite-card-pw { font-size: 13.5px; }
 .dm-input-row {
   flex: 0 0 auto;
-  display: flex; gap: 8px; padding: 10px 12px;
+  display: flex; gap: 8px; padding: 8px 12px; align-items: center;
   background: rgba(255, 255, 255, 0.9);
   border-top: 1px solid var(--line);
 }
 .dm-input-row input {
-  flex: 1 1 auto; min-width: 0;
+  flex: 1 1 auto; min-width: 0; height: 42px;
   border: 1.5px solid var(--line); border-radius: 999px;
-  padding: 10px 14px; font: inherit; background: #fff; color: var(--ink);
+  padding: 0 16px; font: inherit; background: #fff; color: var(--ink);
+}
+/* 送信ボタンは潰れない（固定幅・改行なし。2026-11-25 おぎ） */
+.dm-input-row .primary-btn {
+  flex: 0 0 auto; white-space: nowrap; height: 42px;
+  padding: 0 20px; display: inline-flex; align-items: center; justify-content: center;
 }
 
 /* ギフト選択 */

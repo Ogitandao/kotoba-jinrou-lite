@@ -132,13 +132,7 @@
     }
     return s;
   }
-  function fillGroupAvatar(el, g) {
-    const tmp = groupAvatarEl(g, el.className.match(/avatar-\w+/)?.[0] ?? 'avatar-md');
-    el.className = tmp.className;
-    el.innerHTML = tmp.innerHTML;
-    el.style.background = '';
-    return el;
-  }
+
   // プレイヤー番号バッジ（2026-11-24 おぎ）：ルーム内での参加順番号を
   // 名前の前に出す小さい四角バッジ。番号はデータ層が参加順で一意に
   // 決める（待機室＝現在の参加順／対戦中＝セット開始時の順で固定）
@@ -977,9 +971,6 @@
     state.dmGroup = null;
     rememberUsers([user]);
     $('dm-peer-name').textContent = user.name;
-    // DM 画面はオンラインバッジを出す場所のひとつ（2026-11-25 おぎ）
-    $('dm-peer-avatar').classList.remove('group-avatar');
-    fillAvatar($('dm-peer-avatar'), user, { online: true });
     // システムからのお知らせは読み取り専用（入力欄とギフトを隠す）
     const isSystem = user.id === 'system';
     $('dm-input-row').classList.toggle('hidden', isSystem);
@@ -1029,7 +1020,6 @@
     state.dmPeer = null;
     rememberUsers(g.members);
     $('dm-peer-name').textContent = g.name;
-    fillGroupAvatar($('dm-peer-avatar'), g);
     $('dm-input-row').classList.remove('hidden');
     $('dm-gift-btn').classList.add('hidden');
     $('dm-members-btn').classList.remove('hidden');
@@ -1121,7 +1111,6 @@
       state.dmGroup = updated;
       rememberUsers(updated.members);
       $('dm-peer-name').textContent = updated.name;
-      fillGroupAvatar($('dm-peer-avatar'), updated);
       renderGroupMessages(await DATA.listGroupMessages(g.id));
       renderTalkList();
       openGroupMembers();

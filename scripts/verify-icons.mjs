@@ -146,9 +146,8 @@ check('[I5] トーク一覧に緑ドットは出ない（画像アイコンは�
   && talkRow('みか')?.querySelector('img.avatar-img') != null);
 talkRow('みか').click();
 await tick(40);
-check('[I5] DM画面：相手アイコンに画像＋緑ドットが出る',
-  $('dm-peer-avatar').querySelector('img.avatar-img')?.getAttribute('src') === 'icons/icon-rabbit.webp'
-  && !!$('dm-peer-avatar').querySelector('.dot.dot-on'));
+check('[I5] DM画面：ヘッダーにアイコンは出さない（2026-11-25 おぎの直し）',
+  !$('dm-peer-avatar') && $('dm-peer-name').textContent === 'みか');
 $('dm-back').click();
 await tick(20);
 
