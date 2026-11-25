@@ -1103,16 +1103,22 @@
       },
       listConversations() {
         const byPartner = new Map();
-        for (const m of state.dm) {
+        state.dm.forEach((m, i) => {
           const partner = m.from === 'me' ? m.to : m.to === 'me' ? m.from : null;
-          if (!partner) continue;
-          const cur = byPartner.get(partner) ?? { partnerId: partner, last: null, unread: 0 };
+          if (!partner) return;
+          const cur = byPartner.get(partner) ?? { partnerId: partner, last: null, unread: 0, lastIdx: -1 };
           cur.last = m;
+          cur.lastIdx = i;
           if (m.to === 'me' && !m.read) cur.unread += 1;
           byPartner.set(partner, cur);
-        }
-        return ok([...byPartner.values()].map((c) => ({ ...c, partner: pub(users.get(c.partnerId)) })));
+        });
+        // 実 DB と同じく「最新のやり取りがある相手が上」に並べる
+        return ok([...byPartner.values()]
+          .sort((a, b) => b.lastIdx - a.lastIdx)
+          .map(({ lastIdx, ...c }) => ({ ...c, partner: pub(users.get(c.partnerId)) })));
       },
+      // Sim には相手の実在がないため Realtime 購読は no-op
+      subscribeDm() { return () => {}; },
       listMessages(userId) {
         return ok(state.dm.filter(
           (m) => (m.from === 'me' && m.to === userId) || (m.from === userId && m.to === 'me'),
@@ -1523,6 +1529,7 @@
     const cfg = window.KL_CONFIG ?? {};
     let client = null;
     let meId = null;
+    let dmChannel = null;
     function getClient() {
       if (!cfg.supabaseUrl || !cfg.supabaseKey || !window.supabase?.createClient) {
         throw fail('NOT_CONFIGURED', 'Supabase が未設定です');
@@ -1712,6 +1719,29 @@
       markRead(userId) {
         if (userId === 'system') return rpc('kl_mark_system_dm_read');
         return rpc('kl_mark_dm_read', { p_other: userId });
+      },
+      // DM の即時反映（2026-11-25 導入）：自分宛ての INSERT を
+      // Postgres Changes で購読する。dm_messages は publication 済み。
+      // 届いた行はクライアント共通のメッセージ形に直して渡す
+      subscribeDm(onInsert) {
+        if (!meId || dmChannel) return () => {};
+        dmChannel = getClient().channel('kl-dm-inbox')
+          .on('postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'dm_messages', filter: `recipient_id=eq.${meId}` },
+            (payload) => {
+              const m = payload.new;
+              if (!m) return;
+              onInsert({
+                id: m.id,
+                from: (m.kind === 'system' || m.kind === 'welcome' || !m.sender_id) ? 'system' : m.sender_id,
+                to: m.recipient_id, kind: m.kind, body: m.body,
+                gift: m.gift_payload, invite: m.invite_payload,
+              });
+            })
+          .subscribe();
+        return () => {
+          if (dmChannel) { getClient().removeChannel(dmChannel); dmChannel = null; }
+        };
       },
       async myGiftSummary() {
         const rows = await rpc('kl_my_gift_summary');
@@ -2032,6 +2062,7 @@
     listMessages: (id) => active.listMessages(id),
     sendMessage: (id, body) => active.sendMessage(id, body),
     markRead: (id) => active.markRead(id),
+    subscribeDm: (cb) => active.subscribeDm(cb),
     giftCatalog: () => active.giftCatalog(),
     myGiftSummary: () => active.myGiftSummary(),
     userProfile: (userId) => active.userProfile(userId),

@@ -30,7 +30,7 @@ await tick(60);
 
 const { document } = dom.window;
 const $ = (id) => document.getElementById(id);
-const visible = (el) => el && !el.classList.contains('hidden');
+const visible = (el) => el && !el.classList.contains('hidden') && !el.classList.contains('panel-off');
 const rowByName = (container, name) =>
   [...container.querySelectorAll('.user-row, .talk-row')]
     .find((r) => r.textContent.includes(name));

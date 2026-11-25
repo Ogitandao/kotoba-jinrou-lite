@@ -504,12 +504,31 @@
     updateCreateBar();
     $('scroll').scrollTop = 0;
   }
+  // サブタブは LINE 式に横スライドで切り替える（おぎ要望 2026-11-25）。
+  // 両パネルを横並びのトラックに入れて滑らせる。非アクティブ側は
+  // visibility で消す（display:none は flex の並び位置をずらすため不可）。
+  // 高さはアクティブ側に合わせ、ResizeObserver で内容の増減にも追随する
+  let subtabAnimTimer = null;
+  function finalizeSubtabAnim() {
+    if (subtabAnimTimer) { clearTimeout(subtabAnimTimer); subtabAnimTimer = null; }
+    const off = state.subtab === 'friend' ? $('subpanel-talk') : $('subpanel-friend');
+    off.classList.add('panel-off');
+  }
+  function syncSubtabHeight() {
+    const active = state.subtab === 'friend' ? $('subpanel-friend') : $('subpanel-talk');
+    $('subpanel-track').style.height = active.offsetHeight + 'px';
+  }
   function switchSubtab(sub) {
+    if (state.subtab === sub) return;
+    finalizeSubtabAnim();
     state.subtab = sub;
     $('subtab-talk').classList.toggle('active', sub === 'talk');
     $('subtab-friend').classList.toggle('active', sub === 'friend');
-    $('subpanel-talk').classList.toggle('hidden', sub !== 'talk');
-    $('subpanel-friend').classList.toggle('hidden', sub !== 'friend');
+    const to = sub === 'friend' ? $('subpanel-friend') : $('subpanel-talk');
+    to.classList.remove('panel-off');
+    $('subpanel-track').classList.toggle('to-friend', sub === 'friend');
+    syncSubtabHeight();
+    subtabAnimTimer = setTimeout(finalizeSubtabAnim, 360);
   }
 
   // ---------- トーク一覧 ----------
@@ -874,6 +893,18 @@
     state.dmPeer = null;
     $('dm-screen').classList.add('hidden');
     updateCreateBar();
+  }
+  // Realtime で届いた新着DM（実 DB モードのみ。Sim では発火しない）。
+  // 開いている相手からならその場で末尾に追加して既読化し、常に
+  // トーク一覧を更新する（並び替え・バッジ・ギフト通知が即時になる）
+  async function onIncomingDm(msg) {
+    if (state.dmPeer && msg.from === state.dmPeer.id
+      && !$('dm-screen').classList.contains('hidden')) {
+      $('dm-msgs-inner').appendChild(messageNode(msg));
+      $('dm-messages').scrollTop = $('dm-messages').scrollHeight;
+      try { await DATA.markRead(msg.from); } catch { /* 一覧更新でも追随する */ }
+    }
+    renderTalkList();
   }
   async function sendDm() {
     const peer = state.dmPeer;
@@ -1795,6 +1826,14 @@
     renderRooms();
     renderTicker();
     refreshSocial();
+    DATA.subscribeDm(onIncomingDm);
+    // サブタブのトラック高さをアクティブ側に追随させる
+    syncSubtabHeight();
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => syncSubtabHeight());
+      ro.observe($('subpanel-talk'));
+      ro.observe($('subpanel-friend'));
+    }
     // ジャンル選択肢（おまかせ＋全19種）は起動時に先読みして構築する
     // （作成モーダルを開く処理を同期に保つため）
     {

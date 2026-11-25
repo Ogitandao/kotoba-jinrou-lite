@@ -512,6 +512,19 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .subtab.active { background: var(--mint-bg); color: #128a54; }
 .subpanel { padding: 26px 10px; }
+/* サブタブ切り替えは LINE 式の横スライド（おぎ要望 2026-11-25）。
+   2枚のパネルを横並びのトラックに入れ、トラックごと滑らせる。
+   高さも同時に追随させ、切り替え後の余白が残らないようにする */
+#subpanel-viewport { overflow: hidden; }
+#subpanel-track {
+  display: flex; align-items: flex-start;
+  transition: transform .33s cubic-bezier(.25, .9, .25, 1), height .33s cubic-bezier(.25, .9, .25, 1);
+}
+#subpanel-track.to-friend { transform: translateX(-100%); }
+#subpanel-track .subpanel { flex: 0 0 100%; min-width: 0; }
+/* 非アクティブ側は visibility で消す（display:none にすると flex の
+   並び位置がずれて、アクティブ側まで画面外へ押し出されるため） */
+#subpanel-track .subpanel.panel-off { visibility: hidden; pointer-events: none; }
 .empty-state { text-align: center; color: var(--ink-soft); }
 .empty-icon { font-size: 44px; margin-bottom: 10px; }
 .empty-state p { font-weight: 700; }

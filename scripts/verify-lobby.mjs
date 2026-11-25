@@ -31,7 +31,7 @@ await new Promise((r) => setTimeout(r, 50));
 
 const { document } = dom.window;
 const $ = (id) => document.getElementById(id);
-const visible = (el) => el && !el.classList.contains('hidden');
+const visible = (el) => el && !el.classList.contains('hidden') && !el.classList.contains('panel-off');
 
 // --- 表示要素 ---
 check('タイトルバー＋⚙️設定ボタンが表示される',
@@ -239,6 +239,7 @@ check('フレンドタブへ切り替わる（ロビーが隠れ、作成バー�
   !visible($('tab-lobby')) && visible($('tab-friends')) && !visible($('create-bar')));
 check('初期サブタブはトーク', visible($('subpanel-talk')) && !visible($('subpanel-friend')));
 $('subtab-friend').click();
+await new Promise((r) => setTimeout(r, 400)); // スライドアニメーション完了待ち
 check('サブタブ（フレンド）へ切り替わる',
   visible($('subpanel-friend')) && !visible($('subpanel-talk')));
 $('subtab-talk').click();

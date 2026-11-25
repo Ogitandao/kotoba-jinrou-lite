@@ -495,9 +495,9 @@ document.querySelectorAll('#room-members .dot').length === 0);
 check('[20] 待機室に「友達を招待」導線が出る', visible($('btn-invite')));
 $('btn-invite').click();
 await tick(60);
-check('[20] 招待モーダルが開き、フレンド一覧（4人）が出る',
+check('[20] 招待モーダルが開き、フレンド一覧（30人）が出る',
 visible($('modal-invite'))
-&& document.querySelectorAll('#invite-friend-list .user-row').length === 4,
+&& document.querySelectorAll('#invite-friend-list .user-row').length === 30,
 `rows=${document.querySelectorAll('#invite-friend-list .user-row').length}`);
 check('[20] 非公開なのでパスワード欄が出て、作成時のパスワードが初期値に入る',
 visible($('invite-password-row')) && $('invite-password').value === 'invite123',
