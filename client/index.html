@@ -347,14 +347,12 @@
   <!-- フレンドメニュー（アイコンタップで出す2択。いきなり入室を防ぐ。
        2026-11-25 おぎ） -->
   <div id="modal-friend-menu" class="modal hidden">
-    <div class="friend-menu-head">
-      <span id="fm-avatar" class="avatar avatar-md"></span>
-      <span class="friend-menu-main">
-        <span id="fm-name" class="friend-menu-name"></span>
-        <span id="fm-status" class="friend-menu-status"></span>
-      </span>
+    <div class="fm-head">
+      <span id="fm-avatar" class="avatar avatar-lg"></span>
+      <div id="fm-name" class="fm-name"></div>
+      <div id="fm-status" class="fm-status"></div>
     </div>
-    <div class="menu-list">
+    <div class="fm-actions">
       <button id="fm-profile" class="primary-btn" type="button">プロフを見る</button>
       <button id="fm-join" class="sub-btn" type="button">ルームに参加</button>
       <button class="sub-btn" data-close type="button">キャンセル</button>

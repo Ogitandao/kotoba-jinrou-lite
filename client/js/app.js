@@ -191,8 +191,8 @@
       : null;
     state.menuRoom = room ?? null;
     $('fm-status').textContent = room
-      ? `ルーム『${u.roomTitle}』にいます`
-      : (u.online ? 'オンライン中（ルームには入っていません）' : 'オフラインです');
+      ? `ルーム：『${u.roomTitle}』にいます`
+      : (u.online ? 'オンライン中です' : 'オフラインです');
     $('fm-join').disabled = !room;
     openModal('modal-friend-menu');
   }
