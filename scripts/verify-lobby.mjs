@@ -166,6 +166,11 @@ $('pill-coins').click();
 check('コインピルでチャージモーダルが開く', visible($('modal-charge')));
 document.querySelector('#modal-charge [data-close]').click();
 
+// --- 退室するとロビーに戻り、作成バーも戻る（作成で入室した状態から） ---
+if (visible($('room-screen'))) { $('room-back').click(); await tick(); }
+check('ルームを退室するとロビーに戻り、作成バーも戻る',
+  !visible($('room-screen')) && visible($('create-bar')));
+
 // --- タブ切り替え ---
 $('tabbtn-friends').click();
 check('フレンドタブへ切り替わる（ロビーが隠れ、作成バーも隠れる）',

@@ -203,6 +203,7 @@ check('最後のスライドで同意ボタンが出る', visible($('btn-tutoria
 $('btn-tutorial-agree').click();
 await tick(30);
 check('同意すると待機室が開く', visible($('room-screen')));
+check('待機室ではルーム作成バーが消える', !visible($('create-bar')));
 check('待機室にメンバー一覧が出る（既存6人＋自分=7人・満室）',
 document.querySelectorAll('#room-members .member-row').length === 7,
 `rows=${document.querySelectorAll('#room-members .member-row').length}`);
@@ -359,6 +360,7 @@ $('btn-ready').textContent === '準備OK！', $('btn-ready').textContent);
 $('room-back').click();
 await tick(30);
 check('待機室から退室してロビーに戻れる',!visible($('room-screen')));
+check('ロビーに戻るとルーム作成バーが戻る', visible($('create-bar')));
 
 // ============ フローB：ホストとして作成 → 開始 → [8] 無発言警告 ============
 $('btn-create-room').click();

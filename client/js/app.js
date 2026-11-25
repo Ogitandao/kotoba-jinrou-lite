@@ -302,6 +302,16 @@
     for (const r of state.rooms) list.appendChild(roomCard(r));
   }
 
+  // ルーム作成バーは「ロビー表示中」だけ出す。ルーム／対戦／DM など
+  // ロビーから一歩でも出たら消す（2026-11-25 おぎ：入室しても付いてくる不具合）
+  function updateCreateBar() {
+    const onLobby = state.tab === 'lobby'
+      && $('room-screen').classList.contains('hidden')
+      && $('game-screen').classList.contains('hidden')
+      && $('dm-screen').classList.contains('hidden');
+    $('create-bar').classList.toggle('hidden', !onLobby);
+  }
+
   // ---------- タブ切り替え ----------
   function switchTab(tab) {
     state.tab = tab;
@@ -309,8 +319,7 @@
     $('tab-friends').classList.toggle('hidden', tab !== 'friends');
     $('tabbtn-lobby').classList.toggle('active', tab === 'lobby');
     $('tabbtn-friends').classList.toggle('active', tab === 'friends');
-    // ルーム作成バーはロビーでのみ表示（下部メニューの上に固定）
-    $('create-bar').classList.toggle('hidden', tab !== 'lobby');
+    updateCreateBar();
     $('scroll').scrollTop = 0;
   }
   function switchSubtab(sub) {
@@ -585,6 +594,7 @@
     $('dm-input-row').classList.toggle('hidden', isSystem);
     $('dm-gift-btn').classList.toggle('hidden', isSystem);
     $('dm-screen').classList.remove('hidden');
+    updateCreateBar();
     try {
       const messages = await DATA.listMessages(user.id);
       renderMessages(messages);
@@ -595,6 +605,7 @@
   function closeDm() {
     state.dmPeer = null;
     $('dm-screen').classList.add('hidden');
+    updateCreateBar();
   }
   async function sendDm() {
     const peer = state.dmPeer;
@@ -760,6 +771,7 @@
     closeDm();
     closeGameScreen();
     $('room-screen').classList.remove('hidden');
+    updateCreateBar();
     renderRoomScreen();
     DATA.heartbeat(detail.id).catch(() => {});
     stopRoomPoll();
@@ -770,6 +782,7 @@
     state.roomId = null;
     state.roomDetail = null;
     $('room-screen').classList.add('hidden');
+    updateCreateBar();
   }
   function stopRoomPoll() {
     if (state.roomPoll) { clearInterval(state.roomPoll); state.roomPoll = null; }
@@ -1036,6 +1049,7 @@
     state.signaledVersion = -1;
     stopRoomPoll();
     $('game-screen').classList.remove('hidden');
+    updateCreateBar();
     stopGamePoll();
     state.gamePoll = setInterval(pollGame, 600);
     pollGame();
@@ -1045,6 +1059,7 @@
     state.gameId = null;
     state.gameView = null;
     $('game-screen').classList.add('hidden');
+    updateCreateBar();
   }
   function stopGamePoll() {
     if (state.gamePoll) { clearInterval(state.gamePoll); state.gamePoll = null; }
