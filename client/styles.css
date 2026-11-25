@@ -957,6 +957,21 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .room-actions .primary-btn { flex: 0 0 auto; padding: 13px 0; font-size: 16px; }
 .room-actions .sub-btn { flex: 0 0 auto; padding: 11px 0; }
 .room-actions .primary-btn:disabled { opacity: 0.5; }
+/* 全員準備OKでスタートが押せるようになったら、LIVEバッジと同じ
+   赤オレンジ＋ゆるい鼓動で「今だよ」と知らせる（おぎ案） */
+#btn-start-game:not(:disabled) {
+  background: linear-gradient(180deg, #ff8a5c, #ff5a3c);
+  animation: start-glow 1.4s ease-in-out infinite;
+}
+@keyframes start-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 90, 60, 0.45); }
+  50% { box-shadow: 0 0 0 10px rgba(255, 90, 60, 0); }
+}
+/* 参加者の「準備OK！」は青だと画面に馴染んで埋もれるので緑に
+   （準備OKのリング・✓バッジと同じ緑。おぎ案） */
+#btn-ready {
+  background: linear-gradient(180deg, #4ad98f, #2bb673);
+}
 /* 席は上部グリッド（4列）＋お題・チャット全幅（おぎのスケッチ案・
    2026-11-25 採用）。待機室・対戦画面で共通 */
 .slot-grid {

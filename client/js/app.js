@@ -743,7 +743,7 @@
   }
 
   // ---------- フレンドパネル（検索／申請／一覧） ----------
-  function userRow(u, actions) {
+  function userRow(u, actions, opts = {}) {
     const row = document.createElement('div');
     row.className = 'user-row';
     row.dataset.userId = u.id;
@@ -756,7 +756,7 @@
     sub.className = 'user-sub';
     sub.textContent = `ID: ${u.publicId}`;
     main.append(name, sub);
-    row.append(avatarSpan(u), main);
+    row.append(avatarSpan(u, 'avatar-md', opts), main);
     for (const a of actions) row.appendChild(a);
     return row;
   }
@@ -1916,7 +1916,7 @@
           renderTalkList();
         } catch (e) { toastError(e); }
       });
-      list.appendChild(userRow(f, [btn]));
+      list.appendChild(userRow(f, [btn], { online: true }));
     }
     openModal('modal-invite');
   }
