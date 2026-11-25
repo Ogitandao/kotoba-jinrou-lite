@@ -2152,7 +2152,7 @@
       bubble.className = `dm-msg${mine ? ' mine' : ''}`;
       bubble.textContent = m.body;
       attachMsgPress(bubble, {
-        kind: 'room_message', ref: m.id, userId: m.from, body: m.body, mine,
+        kind: m.game ? 'game_message' : 'room_message', ref: m.id, userId: m.from, body: m.body, mine,
         name: sender?.name ?? state.users.get(m.from)?.name ?? '',
       });
       row.append(nameEl, bubble);
@@ -2491,7 +2491,7 @@
       bubble.className = `dm-msg${mine ? ' mine' : ''}`;
       bubble.textContent = m.body;
       attachMsgPress(bubble, {
-        kind: 'game_message', ref: m.id, userId: m.from, body: m.body, mine,
+        kind: m.room ? 'room_message' : 'game_message', ref: m.id, userId: m.from, body: m.body, mine,
         name: nameOf(m.from),
       });
       row.append(sender, bubble);

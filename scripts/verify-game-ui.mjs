@@ -285,9 +285,9 @@ $('game-input').value = 'こんばんは';
 $('game-send').click();
 await tick(60);
 {
-const myBubble = document.querySelector('#game-msgs-inner .game-msg-row.mine .dm-msg');
-check('挨拶タイムでも発言でき、自分の吹き出しが出る',
-!!myBubble && myBubble.textContent.includes('こんばんは'));
+const myBubble = [...document.querySelectorAll('#game-msgs-inner .game-msg-row.mine .dm-msg')]
+.find((b) => b.textContent.includes('こんばんは'));
+check('挨拶タイムでも発言でき、自分の吹き出しが出る',!!myBubble);
 const senderBadge = document.querySelector('#game-msgs-inner .game-msg-row.mine .game-msg-sender .no-badge');
 check('[11] チャットの発言者名の左にも番号バッジ（自分=7）',
 senderBadge?.textContent === '7', senderBadge?.textContent?? 'バッジなし');
@@ -324,6 +324,9 @@ $('game-send').click();
 await tick(30);
 check('話し合いで発言でき、吹き出しが表示される',
 $('game-msgs-inner').textContent.includes('週末によく使います'));
+check('[23] 対戦画面でもゲーム前のルーム会話が残っている（消えない）',
+$('game-msgs-inner').textContent.includes('よろしくお願いします！'),
+$('game-msgs-inner').textContent.slice(0, 60));
 
 // 締め切り後の発言はサーバー（Sim）に拒否される
 const roomDetailA = await KL().getRoom('r1');
@@ -388,6 +391,10 @@ visible($('room-screen')) &&!visible($('game-screen'))
 `rows=${document.querySelectorAll('#room-members .slot').length}`);
 check('[13] ゲーム後は自分の準備OKがリセットされている',
 $('btn-ready').textContent === '準備OK！', $('btn-ready').textContent);
+check('[23] ルームに戻ってもゲーム前の会話と対戦中の発言が両方残っている',
+$('room-chat-msgs-inner').textContent.includes('よろしくお願いします！')
+&& $('room-chat-msgs-inner').textContent.includes('週末によく使います'),
+$('room-chat-msgs-inner').textContent.slice(0, 80));
 check('[22] 終了直後は参加者が「操作中…」（帯つき）でキック不可',
 document.querySelectorAll('#room-members .slot.in-result').length === 6
 && document.querySelector('#room-members .slot.in-result .slot-result-band')?.textContent === '操作中…'

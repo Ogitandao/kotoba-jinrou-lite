@@ -632,13 +632,20 @@
           no: i + 1,
         })),
         allReadyAtMs: room.allReadyAtSec == null ? null : room.allReadyAtSec * 1000,
-        // 待機室チャット（直近100件）
-        roomMessages: wwState.roomMessages
-          .filter((m) => m.roomId === room.id)
-          .slice(-100)
-          .map((m) => ({
-            id: m.id, from: m.senderId, kind: m.kind ?? 'chat', body: m.body, atMs: m.at * 1000,
-          })),
+        // ルームのログは1本：待機中の会話と対戦中の発言を時刻順に混ぜて
+        // 返す（ルームがある限り消えない）。直近200件
+        roomMessages: [
+          ...wwState.roomMessages
+            .filter((m) => m.roomId === room.id)
+            .map((m) => ({
+              id: m.id, from: m.senderId, kind: m.kind ?? 'chat', body: m.body, atMs: m.at * 1000,
+            })),
+          ...wwState.messages
+            .filter((m) => wwState.games.get(m.gameId)?.roomId === room.id)
+            .map((m) => ({
+              id: m.id, from: m.senderId, kind: m.kind ?? 'chat', body: m.body, atMs: m.at * 1000, game: true,
+            })),
+        ].sort((a, b) => a.atMs - b.atMs).slice(-200),
         currentGame: null,
       };
       if (room.status === 'playing' && room.currentSetId) {
@@ -1063,9 +1070,16 @@
         winner: finished ? game.winner : null,
         winReason: finished ? game.winReason : null,
         reversalChoices: null, topicPair: null, reversalOutcome: null, reveal: null,
-        messages: wwState.messages
-          .filter((m) => m.gameId === game.id)
-          .map((m) => ({ id: m.id, from: m.senderId, kind: m.kind ?? 'chat', body: m.body, atMs: m.at * 1000 })),
+        // ログはルーム単位で1本：このゲーム開始前のルーム会話も
+        // 先頭に残す（ゲームが始まっても消えない・通報もできる）
+        messages: [
+          ...wwState.roomMessages
+            .filter((m) => m.roomId === game.roomId && m.at < set.createdAtSec && m.senderId)
+            .map((m) => ({ id: m.id, from: m.senderId, kind: 'chat', body: m.body, atMs: m.at * 1000, room: true })),
+          ...wwState.messages
+            .filter((m) => m.gameId === game.id)
+            .map((m) => ({ id: m.id, from: m.senderId, kind: m.kind ?? 'chat', body: m.body, atMs: m.at * 1000 })),
+        ],
       };
       if (game.phase === 'reversal' && playerId === game.exiledId) {
         view.reversalChoices = [...(game.reversalChoices ?? [])];
@@ -2195,6 +2209,27 @@
             atMs: Date.parse(m.created_at),
           }));
         } catch { /* テーブル未適用などの場合は空のまま */ }
+        // 対戦中の発言も同じルームログに混ぜる（ルームがある限り残す）
+        try {
+          const { data: gameRows } = await sb
+            .from('ww_games').select('id').eq('room_id', roomId);
+          const gids = (gameRows ?? []).map((g) => g.id);
+          if (gids.length) {
+            const { data: gMsgRows } = await sb
+              .from('ww_messages')
+              .select('id, sender_id, kind, body, created_at, hidden_at')
+              .in('game_id', gids)
+              .order('created_at')
+              .limit(200);
+            const gMsgs = (gMsgRows ?? []).map((m) => ({
+              id: m.id, from: m.kind === 'system' ? null : m.sender_id,
+              kind: m.kind ?? 'chat', body: maskHidden(m),
+              atMs: Date.parse(m.created_at), game: true,
+            }));
+            detail.roomMessages = [...detail.roomMessages, ...gMsgs]
+              .sort((a, b) => a.atMs - b.atMs).slice(-200);
+          }
+        } catch { /* 取れなければルーム分だけ */ }
         if (room.status === 'playing') {
           const { data: sets } = await sb
             .from('ww_sets').select('id').eq('room_id', roomId)
@@ -2234,7 +2269,7 @@
         const sb = getClient();
         const v = await rpc('ww_player_view', { p_game: gameId });
         const { data: gameRow, error } = await sb
-          .from('ww_games').select('set_id, room_id').eq('id', gameId).single();
+          .from('ww_games').select('set_id, room_id, created_at').eq('id', gameId).single();
         if (error || !gameRow) throw fail('GAME_NOT_FOUND', 'ゲームが存在しません');
         const { data: setRow } = await sb
           .from('ww_sets').select('games_per_set, status').eq('id', gameRow.set_id).single();
@@ -2251,6 +2286,20 @@
         }));
         const { data: msgRows } = await sb
           .from('ww_messages').select('*').eq('game_id', gameId).order('created_at');
+        // ルームの会話履歴（このゲーム開始前分）も同じログの先頭に残す
+        const { data: roomMsgRows } = await sb
+          .from('ww_room_messages')
+          .select('id, sender_id, kind, body, created_at, hidden_at')
+          .eq('room_id', gameRow.room_id)
+          .lt('created_at', gameRow.created_at)
+          .order('created_at')
+          .limit(100);
+        const roomHistory = (roomMsgRows ?? [])
+          .filter((m) => m.sender_id)
+          .map((m) => ({
+            id: m.id, from: m.sender_id, kind: 'chat', body: maskHidden(m),
+            atMs: Date.parse(m.created_at), room: true,
+          }));
         return {
           gameId, setId: gameRow.set_id, roomId: gameRow.room_id,
           gameIndex: v.gameIndex,
@@ -2279,10 +2328,13 @@
               won: (v.winner === 'wolves') === r.isWolf,
             }))
             : null,
-          messages: (msgRows ?? []).map((m) => ({
-            id: m.id, from: m.kind === 'system' ? null : m.sender_id,
-            kind: m.kind ?? 'chat', body: maskHidden(m), atMs: Date.parse(m.created_at),
-          })),
+          messages: [
+            ...roomHistory,
+            ...(msgRows ?? []).map((m) => ({
+              id: m.id, from: m.kind === 'system' ? null : m.sender_id,
+              kind: m.kind ?? 'chat', body: maskHidden(m), atMs: Date.parse(m.created_at),
+            })),
+          ],
         };
       },
       async postGameMessage(gameId, body) {
