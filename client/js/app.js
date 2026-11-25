@@ -908,7 +908,7 @@
     renderGame();
     $('game-title').textContent = '結果デモ';
     $('game-end-note').textContent = '（デモ表示中）おつかれさまでした！';
-    $('btn-end-towaiting').classList.add('hidden');
+    $('btn-end-towaiting').classList.remove('hidden');
   }
 
   function dismissGiftNotify() {
@@ -3127,6 +3127,13 @@
       if (e.key === 'Enter' && !e.isComposing) sendGameMessage();
     });
     $('btn-end-towaiting').addEventListener('click', async () => {
+      // 結果デモ表示中は戻る先の待機室がないので、閉じて知らせるだけ
+      if (state.gameView?.gameId === 'demo-result') {
+        closeGameScreen();
+        state.endShownGameId = null;
+        toast('デモ表示では待機室に戻れません');
+        return;
+      }
       // 待機室に戻る：最新のルーム状態を取り直して待機室を開き直す
       const roomId = state.gameView?.roomId ?? state.roomId;
       closeGameScreen();
