@@ -678,6 +678,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.15) rotate(140deg); }
 }
 .gift-fx { position: fixed; inset: 0; z-index: 85; pointer-events: none; overflow: hidden; }
+/* 結果画面の紙吹雪（市民の勝ち／通常のウルフの勝ち）。操作は塞がない */
+.confetti-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 84; pointer-events: none; }
 .gift-fx .gfx-dim { position: absolute; inset: 0; background: rgba(16, 42, 80, .38); animation: gfx-dimf 3.2s ease forwards; opacity: 0; }
 @keyframes gfx-dimf { 0% { opacity: 0; } 10% { opacity: 1; } 68% { opacity: 1; } 100% { opacity: 0; } }
 .gift-fx .gfx-rays-wrap {

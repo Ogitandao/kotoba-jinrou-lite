@@ -914,7 +914,7 @@
 
   // 結果ポップアップのデモ表示（Sim専用）：ダミーの結果で対戦画面を
   // 1回だけ描く。ポーリングは回さないので、そのまま眺めて確認できる
-  async function showResultDemo() {
+  async function showResultDemo(variant = 'reversal') {
     let others = [];
     try { others = (await DATA.listFriends() ?? []).slice(0, 3); } catch { /* 空でも続行 */ }
     const mk = (u, no) => ({ id: u.id, name: u.name, iconKey: u.iconKey, emoji: u.emoji, no });
@@ -936,8 +936,27 @@
       })),
       setStatus: 'finished', terminatedUserIds: [],
     };
+    // バリエーション：市民の勝ち／通常のウルフの勝ち（紙吹雪の確認用）、
+    // 強制退室された本人／他人の違反で強制終了（ペナルティ系の確認用）
+    if (variant === 'citizens') {
+      Object.assign(state.gameView, {
+        winner: 'citizens', winReason: 'wolf_exiled', reversalOutcome: undefined,
+      });
+    } else if (variant === 'wolves') {
+      Object.assign(state.gameView, {
+        winner: 'wolves', winReason: 'citizen_exiled', reversalOutcome: undefined,
+        exiledId: players[1]?.id ?? wolfId,
+      });
+    } else if (variant === 'removed' || variant === 'terminated') {
+      Object.assign(state.gameView, {
+        winner: 'citizens', winReason: 'wolf_exiled', reversalOutcome: undefined,
+        setStatus: 'terminated',
+        terminatedUserIds: variant === 'removed' ? [state.me.id] : [wolfId],
+      });
+    }
     state.endShownGameId = null;
     state.cutinShownGameId = null; // カットインを毎回再生する
+    state.confettiShownGameId = null; // 紙吹雪も毎回再生する
     slideInScreen($('game-screen'));
     updateCreateBar();
     renderGame();
@@ -951,13 +970,17 @@
       state.endShownGameId = 'demo-result';
       renderGame();
       $('game-title').textContent = '結果デモ';
-      paintDemoEnd();
+      paintDemoEnd(variant === 'removed'
+        ? { note: 'ルール違反のため強制退室となりました。', hideToWaiting: true }
+        : variant === 'terminated'
+          ? { note: 'ルール違反があったため、この対戦は終了しました。完了した勝敗は記録されています。' }
+          : undefined);
     }, 2500);
   }
 
   // デモ共通：確定後の見た目（カウントダウンは20→0を1回だけ数え、
   // 0になったらデモを閉じてロビーへ戻る。ループさせない）
-  function paintDemoEnd() {
+  function paintDemoEnd(opts = {}) {
     const cd = $('game-end-countdown');
     let demoLeft = 20;
     const paintDemo = () => { cd.innerHTML = `<span class="cd-num">${demoLeft}</span>秒後にルームに戻ります`; };
@@ -978,8 +1001,43 @@
       }
       paintDemo();
     }, 1000);
-    $('game-end-note').textContent = '（デモ表示中）おつかれさまでした！';
-    $('btn-end-towaiting').classList.remove('hidden');
+    $('game-end-note').textContent = opts.note ?? '（デモ表示中）おつかれさまでした！';
+    $('btn-end-towaiting').classList.toggle('hidden', !!opts.hideToWaiting);
+  }
+
+  // 無発言警告のデモ（Sim専用）：話し合い終盤・自分だけ0発言の状態を
+  // 再現する。試しに1回発言すると警告が消えるところまで見られる
+  async function showAfkDemo() {
+    let others = [];
+    try { others = (await DATA.listFriends() ?? []).slice(0, 3); } catch { /* 空でも続行 */ }
+    rememberUsers([state.me, ...others]);
+    const mk = (u, no) => ({ id: u.id, name: u.name, iconKey: u.iconKey, emoji: u.emoji, no });
+    const players = [mk(state.me, 1), ...others.map((u, i) => mk(u, i + 2))];
+    const now = Date.now();
+    state.gameView = {
+      gameId: 'demo-afk', roomId: null, phase: 'discussion',
+      phaseDeadlineMs: now + 45_000, phaseRemainSec: 45,
+      category: '飲み物', myTopic: 'コーヒー', myMessageCount: 0,
+      players, playerCount: players.length, votesCast: 0,
+      setStatus: 'playing', terminatedUserIds: [],
+      messages: [
+        { id: 'afk-m1', from: players[1]?.id, kind: 'chat', body: '休みの日に飲むイメージ', atMs: now - 40000 },
+        { id: 'afk-m2', from: players[2]?.id, kind: 'chat', body: '温かいのが好き', atMs: now - 25000 },
+        { id: 'afk-m3', from: players[3]?.id ?? players[1]?.id, kind: 'chat', body: '朝によく飲む！', atMs: now - 10000 },
+      ].filter((m) => m.from),
+    };
+    state.endShownGameId = null;
+    slideInScreen($('game-screen'));
+    updateCreateBar();
+    renderGame();
+    $('game-title').textContent = '無発言警告デモ';
+    clearInterval(demoTickTimer);
+    demoTickTimer = setInterval(() => {
+      if (state.gameView?.gameId !== 'demo-afk') {
+        clearInterval(demoTickTimer); demoTickTimer = null; return;
+      }
+      renderGame();
+    }, 500);
   }
 
   // 逆転回答画面のデモ（Sim専用）：自分が追放されたウルフとして
@@ -2502,6 +2560,7 @@
     if (demoCdTimer) { clearInterval(demoCdTimer); demoCdTimer = null; }
     if (demoPhaseTimer) { clearTimeout(demoPhaseTimer); demoPhaseTimer = null; }
     if (demoTickTimer) { clearInterval(demoTickTimer); demoTickTimer = null; }
+    stopConfetti();
     stopGamePoll();
     state.gameId = null;
     state.gameView = null;
@@ -2730,6 +2789,7 @@
     if (showResult && v.winner) {
       renderGameResult(v);
       if (v.winner === 'wolves' && v.winReason === 'reversal') maybeShowCutin(v);
+      else maybeConfetti(v);
     }
     const showTally = v.phase === 'result'
       || (v.phase === 'reversal' && !v.reversalChoices);
@@ -2835,6 +2895,72 @@
     setTimeout(() => { el.classList.add('hidden'); el.classList.remove('play'); }, 2150);
   }
 
+  // 紙吹雪：市民の勝ち／通常のウルフの勝ちで1回だけ、下から勢いよく
+  // 上がって落ちてくる（2026-11-26 おぎ）。逆転勝ちはカットイン担当、
+  // 強制終了（terminated）は対象外
+  let confettiRaf = null;
+  function maybeConfetti(v) {
+    if (state.confettiShownGameId === v.gameId) return;
+    const celebrate = v.setStatus !== 'terminated'
+      && (v.winner === 'citizens' || (v.winner === 'wolves' && v.winReason !== 'reversal'));
+    if (!celebrate) return;
+    state.confettiShownGameId = v.gameId;
+    fireConfetti();
+  }
+  function fireConfetti() {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const cv = $('confetti-canvas');
+    if (!cv) return;
+    const ctx = cv.getContext?.('2d');
+    if (!ctx) return; // 描画できない環境では何もしない
+    const W = cv.width = window.innerWidth;
+    const H = cv.height = window.innerHeight;
+    cv.classList.remove('hidden');
+    const COLORS = ['#0098e4', '#00c2a8', '#ffd93d', '#ff8fa3', '#b388ff', '#ffffff'];
+    const pieces = Array.from({ length: 110 }, () => ({
+      x: Math.random() * W,
+      y: H + 12 + Math.random() * H * 0.25,
+      vx: (Math.random() - 0.5) * 130,
+      vy: -(H * (0.95 + Math.random() * 0.55)),
+      w: 6 + Math.random() * 6, h: 8 + Math.random() * 8,
+      rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 12,
+      color: COLORS[(Math.random() * COLORS.length) | 0],
+      circle: Math.random() < 0.3,
+    }));
+    const GRAV = H * 1.9; // px/s^2：勢いよく上がって、ふわりと落ちる
+    let last = performance.now();
+    const t0 = last;
+    if (confettiRaf) cancelAnimationFrame(confettiRaf);
+    const tick = (now) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      ctx.clearRect(0, 0, W, H);
+      let alive = false;
+      for (const p of pieces) {
+        p.vy += GRAV * dt;
+        p.vx *= (1 - 0.35 * dt);
+        p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+        if (p.y >= H + 24) continue;
+        alive = true;
+        const fade = p.y > H * 0.82 ? Math.max(0, 1 - (p.y - H * 0.82) / (H * 0.18)) : 1;
+        ctx.save();
+        ctx.globalAlpha = fade;
+        ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        if (p.circle) { ctx.beginPath(); ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2); ctx.fill(); }
+        else ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * (0.3 + 0.7 * Math.abs(Math.sin(p.rot * 2))));
+        ctx.restore();
+      }
+      if (alive && now - t0 < 4500) confettiRaf = requestAnimationFrame(tick);
+      else { ctx.clearRect(0, 0, W, H); cv.classList.add('hidden'); confettiRaf = null; }
+    };
+    confettiRaf = requestAnimationFrame(tick);
+  }
+  function stopConfetti() {
+    if (confettiRaf) { cancelAnimationFrame(confettiRaf); confettiRaf = null; }
+    $('confetti-canvas')?.classList.add('hidden');
+  }
+
   // ゲーム終了パネル（ゲーム単位制）：全員いったん待機室に戻る導線。
   // 強制退室された本人には「待機室に戻る」を出さない（もうメンバーではない）
   function showEndPanel(view) {
@@ -2891,6 +3017,15 @@
     if (!v) return;
     const input = $('game-input');
     if (!input.value.trim()) return;
+    // 無発言警告デモ：ローカルで発言を足し、警告が消える様子を見せる
+    if (v.gameId === 'demo-afk') {
+      v.messages = [...(v.messages ?? []),
+        { id: `afk-${Date.now()}`, from: state.me.id, kind: 'chat', body: input.value, atMs: Date.now() }];
+      v.myMessageCount = (v.myMessageCount ?? 0) + 1;
+      input.value = '';
+      renderGame();
+      return;
+    }
     try {
       await DATA.postGameMessage(v.gameId, input.value);
       input.value = '';
@@ -3109,6 +3244,13 @@
       $('row-consent-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       $('row-result-test').classList.toggle('hidden', DATA.mode !== 'sim');
       $('row-reversal-test').classList.toggle('hidden', DATA.mode !== 'sim');
+      $('row-citizens-test').classList.toggle('hidden', DATA.mode !== 'sim');
+      $('row-wolves-test').classList.toggle('hidden', DATA.mode !== 'sim');
+      $('row-afk-test').classList.toggle('hidden', DATA.mode !== 'sim');
+      $('row-removed-test').classList.toggle('hidden', DATA.mode !== 'sim');
+      $('row-terminated-test').classList.toggle('hidden', DATA.mode !== 'sim');
+      $('row-penalty-test').classList.toggle('hidden', DATA.mode !== 'sim');
+      $('row-result-room-test').classList.toggle('hidden', DATA.mode !== 'sim');
       openModal('modal-settings');
     });
     $('btn-gift-test').addEventListener('click', () => {
@@ -3129,6 +3271,41 @@
     $('btn-reversal-test').addEventListener('click', () => {
       closeModal();
       setTimeout(showReversalDemo, 380);
+    });
+    $('btn-citizens-test').addEventListener('click', () => {
+      closeModal();
+      setTimeout(() => showResultDemo('citizens'), 380);
+    });
+    $('btn-wolves-test').addEventListener('click', () => {
+      closeModal();
+      setTimeout(() => showResultDemo('wolves'), 380);
+    });
+    $('btn-afk-test').addEventListener('click', () => {
+      closeModal();
+      setTimeout(showAfkDemo, 380);
+    });
+    $('btn-removed-test').addEventListener('click', () => {
+      closeModal();
+      setTimeout(() => showResultDemo('removed'), 380);
+    });
+    $('btn-terminated-test').addEventListener('click', () => {
+      closeModal();
+      setTimeout(() => showResultDemo('terminated'), 380);
+    });
+    $('btn-penalty-test').addEventListener('click', async () => {
+      closeModal();
+      try {
+        await DATA.__simApplyMyPenalty();
+        await refreshPenalty();
+        toast('ペナルティを適用しました。ロビーのバナーと、トークのシステム通知を見てください（リロードでリセットされます）');
+      } catch (e) { toastError(e); }
+    });
+    $('btn-result-room-test').addEventListener('click', async () => {
+      closeModal();
+      try {
+        const room = await DATA.__simResultRoomDemo();
+        setTimeout(() => openRoomScreen(room), 380);
+      } catch (e) { toastError(e); }
     });
     $('fm-profile').addEventListener('click', () => {
       const u = state.menuUser;

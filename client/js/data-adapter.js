@@ -1716,6 +1716,23 @@
         });
         return ok({ ...r, penaltyUntilMs: penInfo('me') });
       },
+      // テスト専用：自分がマスターの待機室を作り、メンバー3人を結果
+      // 確認中（操作中…）にする（20秒で自然に解除される）
+      __simResultRoomDemo() {
+        const bots = BOT_POOL.slice(0, 4);
+        const room = {
+          id: 'r-demo-result', title: '操作中テスト部屋', isPrivate: false,
+          beginner: true, capacity: 5, genre: null, status: 'lobby',
+          reversalEnabled: true, hostId: 'me',
+          seq: 1000 + ++wwState.seq,
+          members: [{ userId: 'me', ready: false, lastHeartbeatAt: null },
+            ...bots.map((userId) => ({ userId, ready: false, lastHeartbeatAt: null }))],
+          currentSetId: null, allReadyAtSec: null,
+          lastResult: { playerIds: bots.slice(0, 3), atSec: wwNow() },
+        };
+        wwState.rooms.set(room.id, room);
+        return ok(wwRoomDetail(room));
+      },
     };
   }
 
@@ -2493,6 +2510,10 @@
     // テスト専用：自分へペナルティを適用する（SimBackend のみ）
     __simApplyMyPenalty: () => (active.__simApplyMyPenalty
       ? active.__simApplyMyPenalty()
+      : Promise.reject(new Error('NOT_SUPPORTED'))),
+    // テスト専用：操作中メンバーがいる待機室を作る（SimBackend のみ）
+    __simResultRoomDemo: () => (active.__simResultRoomDemo
+      ? active.__simResultRoomDemo()
       : Promise.reject(new Error('NOT_SUPPORTED'))),
   };
 })();
