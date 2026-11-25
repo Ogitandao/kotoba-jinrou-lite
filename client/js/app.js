@@ -832,8 +832,12 @@
 
   async function pumpGiftNotify() {
     if (giftNotifyBusy || giftNotifyQueue.length === 0) return;
-    if (!$('game-screen').classList.contains('hidden')) {
-      // 試合中は出さない。少し後に再試行する
+    // 対戦中は出さない（保留して少し後に再試行）。ただし結果画面
+    // （result/done）では出す：もらった事が分かるとお礼ギフトに
+    // つながるため（2026-11-25 おぎ）
+    const inMatch = !$('game-screen').classList.contains('hidden')
+      && !(state.gameView && (state.gameView.phase === 'result' || state.gameView.phase === 'done'));
+    if (inMatch) {
       if (!giftNotifyRetry) {
         giftNotifyRetry = setTimeout(() => { giftNotifyRetry = null; pumpGiftNotify(); }, 3000);
       }
