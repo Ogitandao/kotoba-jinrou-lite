@@ -76,8 +76,10 @@ check('逆転回答あり（標準）の部屋のカードには逆転ラベル�
 check('最長サンプル部屋は 7/8人 と表示される',
   r8CardEl?.textContent.includes('7/8人'));
 const firstCard = document.querySelector('#room-list .room-card');
-check('対戦中ルームに点滅ドット付き「対戦中」タグが入っている',
-  firstCard.textContent.includes('対戦中') && !!firstCard.querySelector('.pulse-dot'));
+check('対戦中ルームはアバターに点滅ドット付き LIVE バッジが付く',
+  !!firstCard.querySelector('.live-badge .pulse-dot') && firstCard.querySelector('.live-badge').textContent.includes('対戦中'));
+check('対戦中バッジはタグ行には出ない（横幅対策）',
+  !firstCard.querySelector('.room-meta').textContent.includes('対戦中'));
 const r1Card = [...document.querySelectorAll('#room-list .room-card')]
   .find((c) => c.textContent.includes('はじめてさん集合'));
 check('ルームカードに🔰初心者歓迎＋人数が入っていて、公開タグは無い',

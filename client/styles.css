@@ -402,7 +402,16 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .tag-public { background: var(--mint-bg); color: #128a54; }
 .tag-private { background: #e8edf2; color: #5a6b7a; }
-.tag-playing { background: #ffe9e6; color: #d84a2f; display: inline-flex; align-items: center; gap: 5px; }
+/* 対戦中はアバター下端に重ねる LIVE バッジで示す（タグ行の横幅対策。2026-11-25 おぎ） */
+.room-avatar-wrap { position: relative; flex: none; }
+.live-badge {
+  position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #ff5a3c; color: #fff; font-size: 10px; font-weight: 800; line-height: 1.25;
+  padding: 2px 7px; border-radius: 999px; border: 2px solid #fff;
+  white-space: nowrap; box-shadow: 0 2px 6px rgba(216, 74, 47, .35);
+}
+.live-badge .pulse-dot { background: #fff; width: 6px; height: 6px; }
 .pulse-dot {
   width: 7px; height: 7px; border-radius: 50%;
   background: #ff5a3c;

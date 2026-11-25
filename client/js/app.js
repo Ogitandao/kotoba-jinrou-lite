@@ -376,21 +376,22 @@
     // タイトル行の右端に小さく置く（2026-11-25 おぎ：公開タグの形が崩れる問題）
     const lock = room.isPrivate ? `<span class="room-lock">${IC.lock}</span>` : '';
     const beginner = room.beginner ? `<span class="tag tag-beginner">${IC.wakaba} 初心者歓迎</span>` : '';
-    const playing = room.status === 'playing' ? '<span class="tag tag-playing"><span class="pulse-dot"></span>対戦中</span>' : '';
+    // 対戦中はタグ行ではなくアバター下端の LIVE バッジで出す（おぎ：3つ並ぶと横幅が足りない）
+    const liveBadge = room.status === 'playing' ? '<span class="live-badge"><span class="pulse-dot"></span>対戦中</span>' : '';
     const genre = `<span class="tag tag-genre">${room.genre ? `${IC.tag} ${room.genre}` : `${IC.dice} おまかせ`}</span>`;
     const hostSrc = window.KL_ICON_SRC ? window.KL_ICON_SRC(room.hostIconKey) : null;
     const hostAvatar = hostSrc
       ? `<span class="avatar avatar-md"><img class="avatar-img" src="${hostSrc}" alt="" /></span>`
       : `<span class="avatar avatar-md" style="background:${room.hostBg}">${room.hostIcon}</span>`;
-    // メタ情報は2行固定：1行目＝人数＋ジャンル、2行目＝対戦中（左）＋初心者歓迎＋逆転回答なし。
+    // メタ情報は2行固定：1行目＝人数＋ジャンル、2行目＝初心者歓迎＋逆転回答なし。
     // どちらの行も途中で改行させない（2026-11-25 おぎ）
     // 逆転回答は「あり」が標準なので、例外の「なし」の部屋だけカードにもラベルを出す（おぎ）
     const revOff = room.reversalEnabled === false ? '<span class="tag tag-rev-off">逆転回答なし</span>' : '';
-    const metaRow2 = (playing || beginner || revOff)
-      ? `<span class="meta-row">${playing}${beginner}${revOff}</span>`
+    const metaRow2 = (beginner || revOff)
+      ? `<span class="meta-row">${beginner}${revOff}</span>`
       : '';
     b.innerHTML =
-      hostAvatar +
+      `<span class="room-avatar-wrap">${hostAvatar}${liveBadge}</span>` +
       `<span class="room-main"><span class="room-title-row"><span class="room-title"></span>${lock}</span>` +
       `<span class="room-meta"><span class="meta-row"><span class="room-players">${IC.people} ${room.players}/${room.capacity}人</span>${genre}</span>${metaRow2}</span></span>`;
     b.querySelector('.room-title').textContent = room.title;
