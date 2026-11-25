@@ -104,13 +104,17 @@ check('[6] チャット領域は min-height: 0 で縮められる（パネルが
 cssRule('.game-messages').includes('min-height: 0'), cssRule('.game-messages'));
 check('[6] 結果パネルに高さ上限があり、内部スクロールで吸収する',
 cssRule('.game-panel').includes('max-height')
-&& cssRule('#game-reveal-list').includes('overflow-y: auto'),
+&& cssRule('#game-reversal-choices').includes('overflow-y: auto'),
 cssRule('.game-panel'));
 check('[6b] 投票は中央オーバーレイのボックスで、候補リストはスクロールなし',
 cssRule('.vote-overlay').includes('position: absolute')
 && cssRule('.vote-overlay').includes('translate(-50%, -50%)')
 && !cssRule('#game-vote-list').includes('overflow'),
 cssRule('.vote-overlay'));
+check('[6c] 結果も中央ポップアップで、プレイヤーはアイコンのグリッド表示',
+cssRule('.result-overlay').includes('position: absolute')
+&& cssRule('#game-reveal-list').includes('grid-template-columns: repeat(4, 1fr)'),
+cssRule('.result-overlay'));
 check('[11] 番号バッジのスタイル（小さい四角）がある',
 cssRule('.no-badge').includes('border-radius')
 && cssRule('.no-badge').includes('font-weight: 800'), cssRule('.no-badge'));
@@ -154,7 +158,7 @@ return visible($('game-result-panel')) && $('game-result-banner').textContent.le
 async function playOutGame(maxRounds = 60) {
 let posted = false;
 for (let i = 0; i < maxRounds; i++) {
-if (visible($('game-end-panel'))) return true;
+if (visible($('game-end-actions'))) return true;
 const vb = document.querySelector('#game-vote-list .vote-btn:not(:disabled)');
 if (visible($('game-vote-panel')) && vb) {
 vb.click();
@@ -177,7 +181,7 @@ continue;
 KL().__simAdvanceTime(600);
 await sleep(700);
 }
-return visible($('game-end-panel'));
+return visible($('game-end-actions'));
 }
 
 const roomCard = (roomId) => [...document.querySelectorAll('#room-list .room-card')]
@@ -355,15 +359,15 @@ $('game-vote-state').textContent);
 const reachedResult = await waitForResult();
 check('結果発表：勝敗バナーと全員の正体・お題が出る',
 reachedResult
-&& document.querySelectorAll('#game-reveal-list .reveal-row').length === 7,
-`banner=${$('game-result-banner').textContent} rows=${document.querySelectorAll('#game-reveal-list .reveal-row').length} label=${$('game-phase-label').textContent}`);
+&& document.querySelectorAll('#game-reveal-list .reveal-cell').length === 7,
+`banner=${$('game-result-banner').textContent} rows=${document.querySelectorAll('#game-reveal-list .reveal-cell').length} label=${$('game-phase-label').textContent}`);
 check('[7] 結果発表でも参加者アイコン帯を出さない',$('game-frame').classList.contains('players-off'));
-check('結果画面：自分以外の全員にギフトボタンが出る',
-document.querySelectorAll('#game-reveal-list .result-gift-btn').length === 6,
-`n=${document.querySelectorAll('#game-reveal-list .result-gift-btn').length}`);
+check('結果画面：自分以外の全員のアイコンにギフトバッジが出る',
+document.querySelectorAll('#game-reveal-list .result-gift-badge').length === 6,
+`n=${document.querySelectorAll('#game-reveal-list .result-gift-badge').length}`);
 check('[11] 結果リストにも番号バッジ',
-document.querySelectorAll('#game-reveal-list .reveal-row .no-badge').length === 7,
-`n=${document.querySelectorAll('#game-reveal-list .reveal-row .no-badge').length}`);
+document.querySelectorAll('#game-reveal-list .reveal-cell .no-badge').length === 7,
+`n=${document.querySelectorAll('#game-reveal-list .reveal-cell .no-badge').length}`);
 {
 const detailLines = [...$('game-result-detail').children].map((d) => d.textContent);
 check('[12] 結果の説明文は2行に分かれる（1行目=決着理由、2行目=お題開示）',
@@ -635,7 +639,7 @@ await waitFor(() => visible($('game-result-panel'))
 && $('game-result-banner').textContent.length > 0, 20000));
 await advanceSlow(20); // result 終了 → 強制退室＋対戦終了が確定
 check('[9] 終了パネルが出て、強制退室の注記がある',
-await waitFor(() => visible($('game-end-panel'))
+await waitFor(() => visible($('game-end-actions'))
 && $('game-end-note').textContent.includes('強制退室'), 20000),
 $('game-end-note').textContent);
 check('[9] 強制退室された本人には「待機室に戻る」が出ない',

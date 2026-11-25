@@ -1231,7 +1231,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   padding: 6px 12px 14px; margin-bottom: 10px;
 }
 .game-panel > * { flex: 0 0 auto; }
-#game-reveal-list, #game-reversal-choices {
+#game-reversal-choices {
   flex: 1 1 auto; min-height: 0; overflow-y: auto;
 }
 /* 投票ボックス：対戦画面の中央に重ねて出す。候補はアイコン＋番号＋名前の
@@ -1277,17 +1277,49 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .result-banner.win { background: var(--mint-bg); color: #0d7a44; }
 .result-banner.lose { background: #e8f4ff; color: #14549e; }
-.reveal-row {
-  display: flex; align-items: center; gap: 10px;
-  background: #fff; border-radius: 14px; padding: 8px 12px; margin-bottom: 7px;
+/* 結果ポップアップ：対戦画面の中央に重ねる（2026-11-25 おぎ手描きレイアウト）。
+   勝敗バナー→理由（小）→アイコンの並び→ギフトボタン→一言→終了導線 */
+.result-overlay {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(90%, 360px); z-index: 30; max-height: 94%; overflow: hidden;
+  background: #fff; border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(23, 50, 74, 0.35);
+  padding: 14px 14px 12px;
 }
-.result-gift-hint {
-  text-align: center; font-size: 12.5px; font-weight: 700;
-  color: var(--ink-soft); margin: 2px 0 8px;
+.result-overlay .result-banner { margin: 0 0 6px; font-size: 25px; }
+.result-detail {
+  text-align: center; font-size: 12.5px; line-height: 1.55;
+  color: var(--ink-soft); font-weight: 700;
 }
-.result-gift-btn { flex: 0 0 auto; }
-.reveal-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
-.reveal-name { font-weight: 800; }
+#game-reveal-list {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 6px;
+  margin-top: 12px;
+}
+.reveal-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 2px 5px; border-radius: 14px; cursor: pointer;
+}
+.reveal-cell.selected { background: #e8f4ff; box-shadow: inset 0 0 0 2px var(--sky); }
+.result-avatar-wrap { position: relative; display: inline-block; }
+.result-gift-badge {
+  position: absolute; right: -7px; top: -7px; width: 23px; height: 23px;
+  border-radius: 50%; background: #fff; color: #e08900;
+  border: 1.5px solid #f0b429; box-shadow: 0 2px 6px rgba(23, 50, 74, 0.25);
+  display: flex; align-items: center; justify-content: center; padding: 0;
+}
+.reveal-nameline {
+  display: flex; align-items: center; gap: 4px; max-width: 100%;
+  font-size: 12px; font-weight: 800;
+}
+.reveal-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reveal-role { font-size: 10.5px; font-weight: 800; color: var(--ink-soft); }
+.reveal-role.wolf { color: #d64541; }
+.result-gift-cta { width: 100%; margin-top: 14px; }
+.result-gift-note {
+  text-align: center; font-size: 11.5px; font-weight: 700;
+  color: var(--ink-soft); margin: 6px 0 0;
+}
+#game-end-actions { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; }
 .reveal-topic { font-size: 12.5px; color: var(--ink-soft); }
 .role-badge {
   flex: 0 0 auto; font-size: 12px; font-weight: 800;

@@ -27,6 +27,8 @@
     gamePoll: null,      // 対戦画面ポーリングのタイマ
     signaledVersion: -1, // 合図（advance）を送った phaseVersion
     endShownGameId: null, // ゲーム終了パネルを表示済みの gameId
+    resultGiftTarget: null, // 結果ポップアップで選択中のギフト宛先
+    resultGiftGameId: null, // ↑の選択が属する gameId
     roomTitle: null,     // 対戦画面の見出しに使うルーム名
     rulesAgreed: false,  // チュートリアル同意済みか（サーバー側が正）
     tutorialIndex: 0,    // チュートリアルの表示中スライド（0始まり）
@@ -2535,7 +2537,7 @@
     const showResult = v.phase === 'result' || v.phase === 'done';
     $('game-result-panel').classList.toggle('hidden', !showResult);
     if (showResult && v.winner) renderGameResult(v);
-    $('game-end-panel').classList.toggle('hidden', state.endShownGameId !== v.gameId);
+    $('game-end-actions').classList.toggle('hidden', state.endShownGameId !== v.gameId);
   }
 
   function renderGameResult(v) {
@@ -2546,11 +2548,9 @@
       ? '🐺 ウルフ陣営の勝ち！'
       : '🎉 市民陣営の勝ち！';
     // 説明文は2行に分ける（2026-11-24 おぎ）：
-    // 1行目＝決着理由（追放・逆転回答の結果を含む）、2行目＝お題開示
+    // 1行目＝決着理由（逆転回答の結果を含む）、2行目＝お題開示
     const lines = [];
     let line1 = REASON_TEXT[v.winReason] ?? '';
-    const exiled = v.players.find((p) => p.id === v.exiledId);
-    if (v.exiledId && exiled) line1 += `／追放：${nameWithNo(exiled)}さん`;
     if (v.reversalOutcome?.timedOut) line1 += '／逆転回答は時間切れ';
     else if (v.reversalOutcome?.attempted) {
       line1 += `／逆転回答は${v.reversalOutcome.correct ? '成功！' : '失敗'}`;
@@ -2566,39 +2566,55 @@
       d.textContent = line;
       detailEl.appendChild(d);
     }
+    // プレイヤーはアイコンの並びで出す（2026-11-25 おぎ手描きレイアウト）：
+    // アイコン右角にプレゼントバッジ（タップでそのままギフト）、
+    // セル自体のタップで「ギフトを送る」ボタンの宛先を選ぶ
+    if (state.resultGiftGameId !== v.gameId) {
+      state.resultGiftGameId = v.gameId;
+      state.resultGiftTarget = null;
+    }
     const rl = $('game-reveal-list');
     rl.innerHTML = '';
     for (const r of v.reveal ?? []) {
       const p = v.players.find((x) => x.id === r.id);
       if (!p) continue;
-      const row = document.createElement('div');
-      row.className = 'reveal-row';
-      const main = document.createElement('span');
-      main.className = 'reveal-main';
-      const nm = document.createElement('span');
-      nm.className = 'reveal-name';
-      nm.textContent = p.name;
-      const tp = document.createElement('span');
-      tp.className = 'reveal-topic';
-      tp.textContent = r.topic ? `お題：${r.topic}` : '';
-      main.append(nm, tp);
-      const badge = document.createElement('span');
-      badge.className = `role-badge ${r.isWolf ? 'wolf' : 'citizen'}`;
-      badge.textContent = r.isWolf ? 'ウルフ' : '市民';
-      const rnb = noBadge(p.no);
-      if (rnb) row.append(avatarSpan(p, 'avatar-sm'), rnb, main, badge);
-      else row.append(avatarSpan(p, 'avatar-sm'), main, badge);
-      // 結果画面からそのままギフトを贈れる導線（おぎ決定 2026-11-25）
+      const cell = document.createElement('div');
+      cell.className = `reveal-cell${state.resultGiftTarget === r.id ? ' selected' : ''}`;
+      const wrap = document.createElement('span');
+      wrap.className = 'result-avatar-wrap';
+      wrap.appendChild(avatarSpan(p, 'avatar-md'));
       if (r.id !== state.me.id) {
         const gb = document.createElement('button');
         gb.type = 'button';
-        gb.className = 'mini-btn result-gift-btn';
-        gb.textContent = 'ギフト';
-        gb.addEventListener('click', () => openGift(p));
-        row.appendChild(gb);
+        gb.className = 'result-gift-badge';
+        gb.setAttribute('aria-label', `${p.name}さんにギフトを送る`);
+        gb.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12v10H4V12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>';
+        gb.addEventListener('click', (ev) => { ev.stopPropagation(); openGift(p); });
+        wrap.appendChild(gb);
+        cell.addEventListener('click', () => {
+          state.resultGiftTarget = r.id;
+          renderGameResult(v);
+        });
       }
-      rl.appendChild(row);
+      const nmLine = document.createElement('div');
+      nmLine.className = 'reveal-nameline';
+      const rnb = noBadge(p.no);
+      if (rnb) nmLine.appendChild(rnb);
+      const nm = document.createElement('span');
+      nm.className = 'reveal-name';
+      nm.textContent = p.name;
+      nmLine.appendChild(nm);
+      const role = document.createElement('div');
+      role.className = `reveal-role ${r.isWolf ? 'wolf' : 'citizen'}`;
+      role.textContent = r.isWolf ? 'ウルフ' : '市民';
+      cell.append(wrap, nmLine, role);
+      rl.appendChild(cell);
     }
+    // 「ギフトを送る」ボタンのラベルは選択中の宛先に追随する
+    const cta = $('btn-result-gift');
+    const target = (v.reveal ?? []).find((r) => r.id === state.resultGiftTarget);
+    const targetPlayer = target ? v.players.find((x) => x.id === target.id) : null;
+    cta.textContent = targetPlayer ? `${targetPlayer.name}さんにギフトを送る` : 'ギフトを送る';
   }
 
   // ゲーム終了パネル（ゲーム単位制）：全員いったん待機室に戻る導線。
@@ -2614,7 +2630,7 @@
         ? 'ルール違反のため強制退室となりました。'
         : 'ルール違反があったため、この対戦は終了しました。完了した勝敗は記録されています。';
     $('btn-end-towaiting').classList.toggle('hidden', iWasRemoved);
-    $('game-end-panel').classList.remove('hidden');
+    $('game-end-actions').classList.remove('hidden');
   }
 
   async function sendGameMessage() {
@@ -3085,6 +3101,12 @@
       closeRoomScreen();
       state.endShownGameId = null;
       refreshRooms();
+    });
+    $('btn-result-gift').addEventListener('click', () => {
+      const v = state.gameView;
+      const p = v?.players.find((x) => x.id === state.resultGiftTarget);
+      if (p) openGift(p);
+      else toast('贈りたい人のアイコンを選んでね');
     });
     for (const radio of document.querySelectorAll('input[name="create-visibility"]')) {
       radio.addEventListener('change', refreshCreateError);
