@@ -129,7 +129,7 @@ check('同意するとフレンドタブのグレーアウトが解除される'
 $('create-title').value = '検証用ルーム';
 $('btn-create-confirm').click();
 check('ティッカーにお知らせが流れている', $('ticker-track').textContent.includes('ことば人狼へようこそ'));
-check('対戦中ルームはティッカーに常時流れる', $('ticker-track').textContent.includes('真剣勝負！いま対戦中') && $('ticker-track').textContent.includes('が対戦中です'));
+check('対戦中ルームは常時表示ではなく開始時に流れる（初期表示では流れない）', !$('ticker-track').textContent.includes('が対戦中です'));
 check('公開ルームを作成すると一覧の先頭に増える',
   document.querySelectorAll('#room-list .room-card').length === 8 &&
   document.querySelector('#room-list .room-card').textContent.includes('検証用ルーム'));

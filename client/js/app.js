@@ -316,7 +316,7 @@
 
   // ---------- ライブティッカー ----------
   // ロビーに「今起きていること」を流す帯。お知らせ（固定）＋ルーム一覧の
-  // 変化から拾う実イベント（作成／対戦開始／満室）を流す（2026-11-25 おぎ）
+  // 変化から拾う実イベント（作成／対戦開始）を流す（2026-11-25 おぎ）
   const TICKER_BASE = [
     '📣 ことば人狼へようこそ！マナーを守って楽しく遊ぼう',
     '🎁 試合のあとは、活躍した人にギフトを贈ってみよう',
@@ -325,14 +325,8 @@
   function renderTicker() {
     const track = $('ticker-track');
     if (!track) return;
-    // 対戦中のルームは「今この瞬間の情報」として、対戦が続く間ずっと
-    // ローテーションに入れておく（終わったら自動で消える）
-    const liveItems = (state.rooms ?? [])
-      .filter((r) => r.status === 'playing')
-      .map((r) => `🔥 ルーム『${r.title}』が対戦中です`);
     const items = [
       ...(state.feedEvents ?? []).map((e) => e.text),
-      ...liveItems,
       ...(state.tickerEvents ?? []),
       ...TICKER_BASE,
     ];
@@ -380,12 +374,10 @@
       const p = prev.get(r.id);
       if (!p) {
         if (r.hostName) pushTickerEvent(`🏠 ${r.hostName}さんがルーム『${r.title}』を作りました`);
-      } else {
-        if (p.status !== 'playing' && r.status === 'playing') {
-          pushTickerEvent(`🔥 ルーム『${r.title}』で対戦が始まりました`);
-        } else if (p.players < r.capacity && r.players >= r.capacity) {
-          pushTickerEvent(`👀 ルーム『${r.title}』が満室になりました`);
-        }
+      } else if (p.status !== 'playing' && r.status === 'playing') {
+        // 対戦が始まったタイミングで1回だけ流す。同じルームでも
+        // 対戦が始まるたびに流れる（2026-11-25 おぎ）
+        pushTickerEvent(`🔥 ルーム『${r.title}』が対戦中です！`);
       }
     }
   }
