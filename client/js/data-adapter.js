@@ -101,7 +101,7 @@
       nameDecidedAt: '2026-01-01T00:00:00Z',
     });
     addUser({ id: 'u-mika', publicId: 'mika_1024', name: 'みか', icon: '🐰', iconKey: 'rabbit', iconBg: '#ffeef5', bio: 'ワードウルフ大好き！毎晩やってます', popularity: 320, online: true, roomTitle: 'はじめてさん集合！', wordwolfWins: 42 });
-    addUser({ id: 'u-ken', publicId: 'ken_7788', name: 'けん', icon: '🦉', iconKey: 'owl', iconBg: '#eef7ff', bio: '毎晩ワードウルフで遊んでます！推理で追い詰めるのが快感。初心者さん歓迎、まったり部屋によく出没します', popularity: 540, online: true, roomTitle: null, wordwolfWins: 78 });
+    addUser({ id: 'u-ken', publicId: 'ken_7788', name: 'けん', icon: '🦉', iconKey: 'owl', iconBg: '#eef7ff', bio: '毎晩ワードウルフで遊んでます！推理で追い詰めるのが快感。初心者さん歓迎、まったり部屋によく出没します', popularity: 560000, online: true, roomTitle: null, wordwolfWins: 1024 });
     addUser({ id: 'u-risu', publicId: 'risu_2049', name: 'りす', icon: '🐿️', iconKey: null, iconBg: '#fff4e0', bio: 'まったり勢です〜', popularity: 87, online: true, roomTitle: 'まったり3分で1戦！', wordwolfWins: 15 });
     addUser({ id: 'u-nyan', publicId: 'nyan_5566', name: 'にゃん', icon: '🐱', iconKey: 'cat', iconBg: '#f0ecff', bio: 'にゃーん', popularity: 45, online: true, roomTitle: null, wordwolfWins: 8 });
     addUser({ id: 'u-sora', publicId: 'sora_3310', name: 'そら', icon: '🐥', iconKey: 'chick', iconBg: '#eafff3', bio: '昨日はじめました！よろしくです', popularity: 3, online: false, wordwolfWins: 1 });
