@@ -20,6 +20,7 @@ window.KL_DUMMY = {
     { name: 'にゃん', icon: '🐱', iconBg: '#f0ecff', roomTitle: null },
   ],
   rooms: [
+    { id: 'r7', title: '真剣勝負！いま対戦中', hostName: 'そら', hostIcon: '🐥', hostBg: '#eafff3', isPrivate: false, beginner: false, players: 5, capacity: 6, genre: '動物', status: 'playing' },
     { id: 'r1', title: 'はじめてさん集合！雑談しながら遊ぼう', hostName: 'みか', hostIcon: '🐰', hostBg: '#ffeef5', isPrivate: false, beginner: true, players: 6, capacity: 7 },
     { id: 'r2', title: '経験者もOK！真剣勝負部屋', hostName: 'けん', hostIcon: '🦉', hostBg: '#eef7ff', isPrivate: true, beginner: true, players: 7, capacity: 8 },
     { id: 'r3', title: 'まったり3分で1戦！気軽に参加', hostName: 'りす', hostIcon: '🐿️', hostBg: '#fff4e0', isPrivate: false, beginner: false, players: 3, capacity: 4, genre: '食べ物' },

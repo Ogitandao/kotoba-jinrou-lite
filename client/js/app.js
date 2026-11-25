@@ -281,7 +281,7 @@
       ? '<span class="tag tag-private">🔒 非公開</span>'
       : '<span class="tag tag-public">公開</span>';
     const beginner = room.beginner ? '<span class="tag tag-beginner">🔰 初心者歓迎</span>' : '';
-    const playing = room.status === 'playing' ? '<span class="tag tag-private">対戦中</span>' : '';
+    const playing = room.status === 'playing' ? '<span class="tag tag-playing"><span class="pulse-dot"></span>対戦中</span>' : '';
     const genre = `<span class="tag tag-genre">${room.genre ? `🏷️ ${room.genre}` : '🎲 おまかせ'}</span>`;
     const hostSrc = window.KL_ICON_SRC ? window.KL_ICON_SRC(room.hostIconKey) : null;
     const hostAvatar = hostSrc
@@ -300,7 +300,17 @@
     detectRoomEvents(state.rooms);
     const list = $('room-list');
     list.innerHTML = '';
-    for (const r of state.rooms) list.appendChild(roomCard(r));
+    // 新しく現れたルームだけふわっとスライドインさせる（初回表示は対象外）
+    const first = !state.knownRoomIds;
+    const known = state.knownRoomIds ?? new Set();
+    const next = new Set();
+    for (const r of state.rooms) {
+      const card = roomCard(r);
+      if (!first && !known.has(r.id)) card.classList.add('enter');
+      next.add(r.id);
+      list.appendChild(card);
+    }
+    state.knownRoomIds = next;
   }
 
   // ---------- ライブティッカー ----------

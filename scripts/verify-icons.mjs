@@ -80,7 +80,8 @@ check('[I3] 存在しないアイコンの選択は ICON_NOT_FOUND で拒否',
 // --- ロビー表示 ---
 check('[I4] 自分のアイコンが画像（おおかみ）で表示される',
   $('my-avatar').querySelector('img.avatar-img')?.getAttribute('src') === 'icons/icon-wolf.webp');
-const firstCard = document.querySelector('#room-list .room-card');
+const firstCard = [...document.querySelectorAll('#room-list .room-card')]
+  .find((c) => c.dataset.roomId === 'r1');
 check('[I4] ルームカードのホストアイコンも画像（みか＝うさぎ）',
   firstCard?.querySelector('img.avatar-img')?.getAttribute('src') === 'icons/icon-rabbit.webp',
   firstCard?.innerHTML.slice(0, 120) ?? 'no card');

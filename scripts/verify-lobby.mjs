@@ -55,13 +55,17 @@ check('ログインボーナスバナーが表示される', visible($('bonus-ba
 check('オンラインの友達が4人表示される',
   document.querySelectorAll('#online-friends .friend-item').length === 4);
 check('ランダム入室ボタンが表示される', visible($('btn-random')));
-check('ルーム一覧に6件表示される',
-  document.querySelectorAll('#room-list .room-card').length === 6);
+check('ルーム一覧に7件表示される',
+  document.querySelectorAll('#room-list .room-card').length === 7);
 const firstCard = document.querySelector('#room-list .room-card');
+check('対戦中ルームに点滅ドット付き「対戦中」タグが入っている',
+  firstCard.textContent.includes('対戦中') && !!firstCard.querySelector('.pulse-dot'));
+const r1Card = [...document.querySelectorAll('#room-list .room-card')]
+  .find((c) => c.textContent.includes('はじめてさん集合'));
 check('ルームカードに公開タグ＋🔰初心者歓迎＋人数が入っている',
-  firstCard.textContent.includes('公開') &&
-  firstCard.textContent.includes('初心者歓迎') &&
-  firstCard.textContent.includes('6/7人'));
+  r1Card.textContent.includes('公開') &&
+  r1Card.textContent.includes('初心者歓迎') &&
+  r1Card.textContent.includes('6/7人'));
 check('非公開ルームに🔒非公開タグが入っている',
   [...document.querySelectorAll('#room-list .room-card')].some((c) => c.textContent.includes('非公開')));
 check('一覧末尾にボタン分の余白（スペーサー）がある',
@@ -126,9 +130,11 @@ $('create-title').value = '検証用ルーム';
 $('btn-create-confirm').click();
 check('ティッカーにお知らせが流れている', $('ticker-track').textContent.includes('ことば人狼へようこそ'));
 check('公開ルームを作成すると一覧の先頭に増える',
-  document.querySelectorAll('#room-list .room-card').length === 7 &&
+  document.querySelectorAll('#room-list .room-card').length === 8 &&
   document.querySelector('#room-list .room-card').textContent.includes('検証用ルーム'));
 
+check('新しく作ったルームはスライドイン用クラスが付く',
+  document.querySelector('#room-list .room-card')?.classList.contains('enter') === true);
 check('ルームを作るとティッカーに実イベントが流れる',
   $('ticker-track').textContent.includes('検証用ルーム') && $('ticker-track').textContent.includes('作りました'));
 // --- ルーム作成（非公開：100コイン消費） ---

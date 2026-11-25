@@ -181,7 +181,7 @@ const roomCard = (roomId) => [...document.querySelectorAll('#room-list .room-car
 // ============ フローA：入室→待機室チャット→準備OK→自動開始→対戦→待機室へ ============
 check('ロビーにルームカードがある',
 await waitFor(() =>!!document.querySelector('#room-list .room-card'), 4000));
-const firstCard = document.querySelector('#room-list .room-card');
+const firstCard = roomCard('r1');
 firstCard.click();
 await tick(30);
 check('初回入室ではチュートリアルが出て、待機室はまだ開かない',

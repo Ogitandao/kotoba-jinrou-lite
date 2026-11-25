@@ -425,7 +425,7 @@
           id: r.id, title: r.title, isPrivate: r.isPrivate,
           password: r.isPrivate ? 'wolf777' : null,
           beginner: r.beginner, capacity: r.capacity, genre: r.genre ?? null,
-          status: 'lobby',
+          status: r.status ?? 'lobby',
           reversalEnabled: true, hostId,
           // 一覧の並び順（新しい順）を持たせる。種ルームはダミー順を維持
           seq: 100 - i,

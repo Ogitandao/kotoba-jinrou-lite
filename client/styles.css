@@ -308,6 +308,21 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .tag-public { background: var(--mint-bg); color: #128a54; }
 .tag-private { background: #e8edf2; color: #5a6b7a; }
+.tag-playing { background: #ffe9e6; color: #d84a2f; display: inline-flex; align-items: center; gap: 5px; }
+.pulse-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #ff5a3c;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.78); }
+}
+.room-card.enter { animation: room-in 0.45s ease both; }
+@keyframes room-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .tag-beginner { background: var(--mint-bg); color: #128a54; }
 .list-end-spacer { height: 18px; }
 
