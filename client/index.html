@@ -208,21 +208,22 @@
       </div>
       <div class="room-body">
         <div id="room-screen-tags" class="room-tags"></div>
-        <h3 class="panel-head">メンバー</h3>
-        <div id="room-members"></div>
+        <!-- 左右の席列＋中央チャット（本家レイアウト・2026-11-25 おぎ） -->
+        <div id="room-members" class="room-frame">
+          <div id="room-slots-left" class="slot-col"></div>
+          <div class="room-center">
+            <div id="room-chat-messages" class="dm-messages room-chat-messages">
+              <div id="room-chat-msgs-inner" class="dm-msgs-inner"></div>
+            </div>
+          </div>
+          <div id="room-slots-right" class="slot-col"></div>
+        </div>
         <p id="room-status-note" class="modal-note"></p>
         <div class="room-actions">
           <button id="btn-invite" class="sub-btn hidden" type="button"><svg class="svg-ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.4"/><path d="M3.2 19.8c.7-3.2 3-4.9 5.8-4.9s5.1 1.7 5.8 4.9"/><circle cx="17.2" cy="9.8" r="2.7"/><path d="M15.6 15.1c2.4.2 4.4 1.8 5 4.7"/></svg> 友達を招待</button>
           <button id="btn-ready" class="primary-btn hidden" type="button">準備OK！</button>
           <button id="btn-start-game" class="primary-btn hidden" type="button">ゲームスタート！</button>
           <button id="btn-enter-game" class="primary-btn hidden" type="button">対戦画面へ</button>
-        </div>
-        <!-- 待機室チャット（ゲーム前・ゲーム間の雑談用） -->
-        <div id="room-chat">
-          <h3 class="panel-head">💬 待機室チャット</h3>
-          <div id="room-chat-messages" class="dm-messages room-chat-messages">
-            <div id="room-chat-msgs-inner" class="dm-msgs-inner"></div>
-          </div>
         </div>
       </div>
       <div id="room-chat-input-row" class="dm-input-row">
@@ -238,13 +239,16 @@
         <span id="game-timer" class="game-timer"></span>
       </div>
       <div class="game-body">
+        <!-- 待機室と同じ左右の席列フレーム（本家レイアウト） -->
+        <div id="game-frame" class="room-frame">
+          <div id="game-slots-left" class="slot-col"></div>
+          <div class="game-center">
         <div id="game-phase-label" class="game-phase-label"></div>
         <div id="game-genre-line" class="game-genre-line hidden">ジャンル：<span id="game-genre-name"></span></div>
         <div id="game-topic-card" class="topic-card hidden">
           <span class="topic-label">あなたのお題</span>
           <span id="game-my-topic" class="topic-words"></span>
         </div>
-        <div id="game-players" class="game-players"></div>
         <div id="game-messages" class="dm-messages game-messages">
           <div id="game-msgs-inner" class="dm-msgs-inner"></div>
         </div>
@@ -276,6 +280,9 @@
             <button id="btn-end-towaiting" class="sub-btn" type="button">待機室に戻る</button>
             <button id="btn-end-tolobby" class="primary-btn" type="button">ロビーに戻る</button>
           </div>
+        </div>
+          </div>
+          <div id="game-slots-right" class="slot-col"></div>
         </div>
       </div>
       <div id="game-input-row" class="dm-input-row">

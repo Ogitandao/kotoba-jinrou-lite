@@ -209,14 +209,14 @@ await tick(30);
 check('入室確認で「入室する」を押すと待機室が開く', visible($('room-screen')));
 check('待機室ではルーム作成バーが消える', !visible($('create-bar')));
 check('待機室にメンバー一覧が出る（既存6人＋自分=7人・満室）',
-document.querySelectorAll('#room-members .member-row').length === 7,
-`rows=${document.querySelectorAll('#room-members .member-row').length}`);
+document.querySelectorAll('#room-members .slot').length === 7,
+`rows=${document.querySelectorAll('#room-members .slot').length}`);
 {
-const badges = [...document.querySelectorAll('#room-members .member-row .no-badge')]
+const badges = [...document.querySelectorAll('#room-members .slot .no-badge')]
 .map((b) => b.textContent);
 check('[11] 待機室のメンバーに番号バッジ（参加順1〜7）',
 badges.join(',') === '1,2,3,4,5,6,7', badges.join(','));
-const myRow = [...document.querySelectorAll('#room-members .member-row')]
+const myRow = [...document.querySelectorAll('#room-members .slot')]
 .find((r) => r.dataset.userId === 'me');
 check('[11] 自分は最後に参加したので7番',
 myRow?.querySelector('.no-badge')?.textContent === '7', myRow?.textContent?? '');
@@ -231,7 +231,7 @@ $('room-status-note').textContent);
 
 // ---- [15] 待機室チャット ----
 check('[15] 待機室にチャット欄と入力欄がある',
-visible($('room-chat')) && visible($('room-chat-input-row')));
+visible($('room-chat-messages')) && visible($('room-chat-input-row')));
 $('room-chat-input').value = 'よろしくお願いします！';
 $('room-chat-send').click();
 await tick(60);
@@ -290,10 +290,10 @@ check('相手陣営のお題は対戦画面のどこにも出ていない',
 !$('game-screen').textContent.includes(other),
 `other="${other}" が画面に漏れている`);
 }
-check('[7] 話し合いでは参加者アイコン帯が出る', visible($('game-players')));
+check('[7] 話し合いでは参加者の席列が出る', !$('game-frame').classList.contains('players-off'));
 check('[11] アイコン帯の名前にも番号バッジ',
-document.querySelectorAll('#game-players .no-badge').length === 7,
-`n=${document.querySelectorAll('#game-players .no-badge').length}`);
+document.querySelectorAll('#game-frame .slot .no-badge').length === 7,
+`n=${document.querySelectorAll('#game-frame .slot .no-badge').length}`);
 
 $('game-input').value = 'そのお題、週末によく使います';
 $('game-send').click();
@@ -319,7 +319,7 @@ $('game-phase-label').textContent);
 check('[5] 投票UIに「スルーする」ボタンがない（要素自体がない）',!$('game-vote-pass'));
 check('[5] 投票の警告文は出ている（ペナルティ加算の注意）',
 document.querySelector('#game-vote-panel .vote-warning')?.textContent.includes('ペナルティ')?? false);
-check('[7] 投票では参加者アイコン帯を出さない',!visible($('game-players')));
+check('[7] 投票では参加者アイコン帯を出さない',$('game-frame').classList.contains('players-off'));
 check('[11] 投票の選択肢にも番号バッジ',
 document.querySelectorAll('#game-vote-list .vote-btn .no-badge').length === 6,
 `n=${document.querySelectorAll('#game-vote-list .vote-btn .no-badge').length}`);
@@ -337,7 +337,7 @@ check('結果発表：勝敗バナーと全員の正体・お題が出る',
 reachedResult
 && document.querySelectorAll('#game-reveal-list .reveal-row').length === 7,
 `banner=${$('game-result-banner').textContent} rows=${document.querySelectorAll('#game-reveal-list .reveal-row').length} label=${$('game-phase-label').textContent}`);
-check('[7] 結果発表でも参加者アイコン帯を出さない',!visible($('game-players')));
+check('[7] 結果発表でも参加者アイコン帯を出さない',$('game-frame').classList.contains('players-off'));
 check('[11] 結果リストにも番号バッジ',
 document.querySelectorAll('#game-reveal-list .reveal-row .no-badge').length === 7,
 `n=${document.querySelectorAll('#game-reveal-list .reveal-row .no-badge').length}`);
@@ -357,8 +357,8 @@ $('btn-end-towaiting').click();
 await tick(60);
 check('[14] 「待機室に戻る」で待機室に戻れる（メンバー7人のまま）',
 visible($('room-screen')) &&!visible($('game-screen'))
-&& document.querySelectorAll('#room-members .member-row').length === 7,
-`rows=${document.querySelectorAll('#room-members .member-row').length}`);
+&& document.querySelectorAll('#room-members .slot').length === 7,
+`rows=${document.querySelectorAll('#room-members .slot').length}`);
 check('[13] ゲーム後は自分の準備OKがリセットされている',
 $('btn-ready').textContent === '準備OK！', $('btn-ready').textContent);
 $('room-back').click();
@@ -380,8 +380,8 @@ $('btn-create-confirm').click();
 await tick(60);
 check('作成すると待機室が開く（自分＋ボット3人で満室・4人）',
 visible($('room-screen'))
-&& document.querySelectorAll('#room-members .member-row').length === 4,
-`rows=${document.querySelectorAll('#room-members .member-row').length}`);
+&& document.querySelectorAll('#room-members .slot').length === 4,
+`rows=${document.querySelectorAll('#room-members .slot').length}`);
 check('[19] 待機室のタグに選んだジャンルが出る',
 $('room-screen-tags').textContent.includes('ジャンル：恋愛'),
 $('room-screen-tags').textContent);
@@ -390,7 +390,7 @@ visible($('btn-start-game')) &&!$('btn-start-game').disabled
 && $('btn-start-game').textContent.includes('ゲームスタート'));
 check('[13] マスターには準備OKボタンは出ない',!visible($('btn-ready')));
 {
-const myRow = [...document.querySelectorAll('#room-members .member-row')]
+const myRow = [...document.querySelectorAll('#room-members .slot')]
 .find((r) => r.dataset.userId === 'me');
 check('[11] 自分の部屋では自分が1番', myRow?.querySelector('.no-badge')?.textContent === '1',
 myRow?.textContent?? '');
@@ -399,7 +399,7 @@ $('btn-start-game').click();
 check('[13] マスターが押すと対戦画面が開く',
 await waitFor(() => visible($('game-screen'))));
 check('[21] 対戦画面の参加者アイコン帯にオンラインバッジ（緑ドット）が無い',
-document.querySelectorAll('#game-players .dot').length === 0);
+document.querySelectorAll('#game-frame .dot').length === 0);
 check('[4] 挨拶タイム中はお題が出ない',
 $('game-phase-label').textContent.includes('挨拶タイム')
 &&!visible($('game-topic-card')), $('game-phase-label').textContent);
@@ -441,8 +441,8 @@ $('create-capacity').value = '5';
 $('btn-create-confirm').click();
 await tick(60);
 check('[17] 人数5人で作るとボットが満室まで入る（5人）',
-document.querySelectorAll('#room-members .member-row').length === 5,
-`rows=${document.querySelectorAll('#room-members .member-row').length}`);
+document.querySelectorAll('#room-members .slot').length === 5,
+`rows=${document.querySelectorAll('#room-members .slot').length}`);
 check('[16] マスターには各メンバーにキックボタンが出る（自分以外4人分）',
 document.querySelectorAll('#room-members .kick-btn').length === 4,
 `n=${document.querySelectorAll('#room-members .kick-btn').length}`);
@@ -451,8 +451,8 @@ check('[13] 満室＋全員準備OKなので開始ボタンが押せる',
 document.querySelector('#room-members .kick-btn').click();
 await tick(60);
 check('[16] キックするとメンバーが減る（4人）',
-document.querySelectorAll('#room-members .member-row').length === 4,
-`rows=${document.querySelectorAll('#room-members .member-row').length}`);
+document.querySelectorAll('#room-members .slot:not(.empty)').length === 4,
+`rows=${document.querySelectorAll('#room-members .slot:not(.empty)').length}`);
 check('[16] キック後は満室でなくなり、開始ボタンが押せなくなる',
 $('btn-start-game').disabled
 && $('room-status-note').textContent.includes('満室'),

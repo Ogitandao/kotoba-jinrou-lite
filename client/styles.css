@@ -599,6 +599,11 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   max-height: calc(100dvh - 52px);
   display: flex; flex-direction: column;
 }
+/* モーダル内の長いリストは内部でスクロールさせる（リストが縦に伸びて
+   「閉じる」ボタンが画面外に落ち、閉じられなくなる事故の対策） */
+#invite-friend-list, #blocklist-items {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+}
 .modal h3 { font-size: 18px; font-weight: 800; margin-bottom: 12px; text-align: center; }
 /* ギフト到着のスライド通知：右からぬるっと出て約2秒でスライドアウト＋フェード。
    カードは軽く透かす（白92%＋ぼかし）ことで「ふわっと」感を出す（2026-11-25 おぎ）。
@@ -928,29 +933,70 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   background: linear-gradient(180deg, #e4fbf0 0%, #e0f3ff 55%, #d8efff 100%);
 }
 .room-count { flex: 0 0 auto; font-weight: 800; color: var(--ink-soft); font-size: 14px; }
-.room-body { flex: 1 1 auto; overflow-y: auto; padding: 12px 14px 20px; }
+.room-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding: 12px 14px 14px; }
 .room-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
 .room-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
 .room-actions .primary-btn { flex: 0 0 auto; padding: 13px 0; font-size: 16px; }
 .room-actions .sub-btn { flex: 0 0 auto; padding: 11px 0; }
 .room-actions .primary-btn:disabled { opacity: 0.5; }
-.member-row {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--card); border-radius: 16px;
-  padding: 9px 12px; margin-bottom: 8px; box-shadow: var(--shadow);
+/* 左右の席列フレーム（待機室・対戦画面。本家の配置を Lite のデザインで） */
+.room-frame {
+  flex: 1 1 auto; min-height: 0;
+  display: grid; grid-template-columns: 60px minmax(0, 1fr) 60px; gap: 8px;
 }
-.member-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
-.member-name { font-weight: 800; }
-.host-badge {
-  flex: 0 0 auto; font-size: 11.5px; font-weight: 800;
-  background: #fff3d6; color: #9a6a00; border-radius: 999px; padding: 3px 9px;
+.room-frame.players-off { grid-template-columns: minmax(0, 1fr); }
+.room-frame.players-off .slot-col { display: none; }
+.slot-col {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  overflow-y: auto; padding: 4px 0; scrollbar-width: none;
 }
-.ready-badge {
-  flex: 0 0 auto; font-size: 12px; font-weight: 800;
-  border-radius: 999px; padding: 4px 10px;
-  background: #e8edf2; color: #5a6b7a;
+.slot-col::-webkit-scrollbar { display: none; }
+.slot {
+  position: relative; width: 60px; flex: 0 0 auto;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
 }
-.ready-badge.ready { background: var(--mint-bg); color: #128a54; }
+.slot-face { position: relative; width: 52px; height: 52px; }
+.slot-face .avatar { width: 52px; height: 52px; border-radius: 14px; }
+.slot.empty .slot-face {
+  border-radius: 14px; background: #e0ecf5;
+  display: flex; align-items: center; justify-content: center;
+}
+.slot-wolf { width: 30px; height: auto; opacity: 0.3; }
+.slot .slot-no {
+  position: absolute; top: -5px; left: -5px; z-index: 2;
+  min-width: 17px; height: 17px; padding: 0 2px;
+  font-size: 10.5px; border-radius: 5px; border: 1.5px solid #fff;
+}
+.slot-name {
+  font-size: 10.5px; font-weight: 700; max-width: 60px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;
+}
+.slot.empty .slot-name { color: var(--ink-soft); font-weight: 600; }
+.slot.ready .slot-face .avatar { box-shadow: 0 0 0 3px #35cf8b; }
+.slot-host-badge {
+  position: absolute; top: -5px; right: -5px; z-index: 2;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--mint); border: 1.5px solid #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.slot-ready-badge {
+  position: absolute; bottom: -4px; right: -4px; z-index: 2;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #35cf8b; color: #fff; border: 1.5px solid #fff;
+  font-size: 11px; font-weight: 800; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.slot .slot-kick {
+  position: absolute; bottom: -4px; left: -5px; z-index: 2;
+  width: 18px; height: 18px; padding: 0; border-radius: 50%;
+  background: #fdecea; color: var(--danger); border: 1.5px solid #fff;
+  font-size: 12px; font-weight: 800; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.room-center, .game-center {
+  display: flex; flex-direction: column;
+  min-height: 0; min-width: 0; overflow: hidden;
+}
 
 /* プレイヤー番号バッジ（参加順1〜N、名前の前に出す小さい四角バッジ） */
 .no-badge {
@@ -959,8 +1005,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   border-radius: 5px; background: #14549e; color: #fff;
   font-size: 11.5px; font-weight: 800; line-height: 1;
 }
-.member-name-line { display: flex; align-items: center; gap: 5px; min-width: 0; }
-.gp-name-line { display: flex; align-items: center; gap: 3px; max-width: 76px; }
+
 
 .game-timer {
   flex: 0 0 auto; font-weight: 800; font-size: 17px; color: #14549e;
@@ -985,10 +1030,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   color: #14549e; margin-bottom: 8px;
 }
 .tag-genre { background: #e8f3ff; color: #14549e; }
-.game-players { flex: 0 0 auto; display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
-.game-player { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 52px; }
-.game-player .gp-name { font-size: 11.5px; font-weight: 700; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.game-player .gp-voted { font-size: 11px; font-weight: 800; color: #128a54; height: 14px; }
+
 /* min-height: 0 が無いと flex の自動最小サイズ（中身の高さ）までしか
    縮まず、投票・結果パネルが画面下にはみ出して見切れる（実機指摘）。
    チャット領域は内部スクロールに任せて縮められるようにする */
@@ -1060,10 +1102,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .role-badge.citizen { background: var(--mint-bg); color: #128a54; }
 /* 待機室チャット（ゲーム前・ゲーム間の雑談。本編と同じLINE式） */
 .room-chat-messages {
-  max-height: 280px; min-height: 120px;
+  flex: 1 1 auto; min-height: 0;
   background: rgba(255, 255, 255, 0.55);
   border: 1px solid var(--line); border-radius: 14px;
-  margin-top: 6px;
 }
 .room-chat-empty { text-align: center; color: var(--ink-soft); font-size: 13px; padding: 14px 8px; }
 /* 待機室のキックボタン（マスターのみ表示） */

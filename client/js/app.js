@@ -145,6 +145,64 @@
     return p.no != null ? `[${p.no}]${p.name}` : p.name;
   }
 
+  // 左右の席列の1枠（待機室・対戦画面で共用。本家の画面配置を Lite の
+  // デザインで再現：人が来たら枠が埋まっていく・2026-11-25 おぎ）
+  function slotEl({ no, user = null, empty = false, ready = false, isHost = false, kick = null, onTap = null }) {
+    const el = document.createElement('div');
+    el.className = `slot${empty ? ' empty' : ''}${ready ? ' ready' : ''}`;
+    if (user) el.dataset.userId = user.id;
+    const face = document.createElement('div');
+    face.className = 'slot-face';
+    if (empty) {
+      const w = document.createElement('img');
+      w.className = 'slot-wolf';
+      w.src = 'img/wolf-mark.webp';
+      w.alt = '';
+      face.appendChild(w);
+    } else {
+      face.appendChild(avatarSpan(user, 'avatar-md'));
+    }
+    const nb = noBadge(no);
+    if (nb) {
+      nb.classList.add('slot-no');
+      face.appendChild(nb);
+    }
+    if (isHost) {
+      const hb = document.createElement('span');
+      hb.className = 'slot-host-badge';
+      hb.innerHTML = '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5"/><path d="M6.5 10v9h11v-9"/></svg>';
+      face.appendChild(hb);
+    }
+    if (ready) {
+      const rb = document.createElement('span');
+      rb.className = 'slot-ready-badge';
+      rb.textContent = '✓';
+      face.appendChild(rb);
+    }
+    if (kick) {
+      const kb = document.createElement('button');
+      kb.type = 'button';
+      kb.className = 'kick-btn slot-kick';
+      kb.textContent = '×';
+      kb.dataset.kickId = kick.id;
+      kb.setAttribute('aria-label', `${kick.name}をキック`);
+      kb.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        kickMember(kick.id, kick.name);
+      });
+      face.appendChild(kb);
+    }
+    const name = document.createElement('span');
+    name.className = 'slot-name';
+    name.textContent = empty ? '空席' : user.name;
+    el.append(face, name);
+    if (!empty && onTap) {
+      el.classList.add('tappable');
+      el.addEventListener('click', onTap);
+    }
+    return el;
+  }
+
   // ---------- モーダル（履歴スタック式：閉じる＝1つ前に戻る） ----------
   let modalStack = [];
   function showTopModal() {
@@ -1617,48 +1675,30 @@
     addTag('tag-public', d.reversalEnabled ? '逆転回答あり' : '逆転回答なし');
     if (d.status === 'playing') addTag('tag-private', '対戦中');
 
-    const box = $('room-members');
-    box.innerHTML = '';
+    // 左右の席列：左列に前半、右列に後半。空き枠は「空席」で出す
+    const leftBox = $('room-slots-left');
+    const rightBox = $('room-slots-right');
+    leftBox.innerHTML = '';
+    rightBox.innerHTML = '';
     const iAmHost = d.hostId === state.me.id;
-    for (const m of d.members) {
-      const row = document.createElement('div');
-      row.className = 'member-row';
-      row.dataset.userId = m.id;
-      const main = document.createElement('span');
-      main.className = 'member-main';
-      const line = document.createElement('span');
-      line.className = 'member-name-line';
-      const badge = noBadge(m.no);
-      if (badge) line.appendChild(badge);
-      const name = document.createElement('span');
-      name.className = 'member-name';
-      name.textContent = m.name;
-      line.appendChild(name);
-      main.append(line);
-      row.append(avatarSpan(m), main);
-      if (m.isHost) {
-        const b = document.createElement('span');
-        b.className = 'host-badge';
-        b.textContent = 'マスター';
-        row.appendChild(b);
-      } else if (d.status === 'lobby') {
-        // マスター以外のメンバーは準備状態を表示する
-        const rb = document.createElement('span');
-        rb.className = `ready-badge${m.ready ? ' ready' : ''}`;
-        rb.textContent = m.ready ? '準備OK' : '未準備';
-        row.appendChild(rb);
+    const leftCount = Math.ceil(d.capacity / 2);
+    for (let i = 0; i < d.capacity; i++) {
+      const target = i < leftCount ? leftBox : rightBox;
+      const m = d.members[i];
+      if (!m) {
+        target.appendChild(slotEl({ no: i + 1, empty: true }));
+        continue;
       }
       // マスターは待機室でメンバーをキックできる（自分と対戦中は不可）
-      if (iAmHost && d.status === 'lobby' && !m.isHost && m.id !== state.me.id) {
-        const kb = document.createElement('button');
-        kb.type = 'button';
-        kb.className = 'kick-btn';
-        kb.textContent = 'キック';
-        kb.dataset.kickId = m.id;
-        kb.addEventListener('click', () => kickMember(m.id, m.name));
-        row.appendChild(kb);
-      }
-      box.appendChild(row);
+      const kickable = iAmHost && d.status === 'lobby' && !m.isHost && m.id !== state.me.id;
+      target.appendChild(slotEl({
+        no: i + 1,
+        user: m,
+        ready: d.status === 'lobby' && !m.isHost && !!m.ready,
+        isHost: !!m.isHost,
+        kick: kickable ? { id: m.id, name: m.name } : null,
+        onTap: m.id !== state.me.id ? () => openUserProfile(m) : null,
+      }));
     }
 
     // 開始フロー（2026-11-24 おぎ最終決定）：開始条件＝満室＋
@@ -1701,7 +1741,7 @@
 
     // 待機室チャット（対戦中は隠す。ゲーム間の雑談は待機室に戻ってから）
     const inLobby = d.status === 'lobby';
-    $('room-chat').classList.toggle('hidden', !inLobby);
+    $('room-chat-messages').classList.toggle('hidden', !inLobby);
     $('room-chat-input-row').classList.toggle('hidden', !inLobby);
     if (inLobby) renderRoomChat(d);
 
@@ -1922,29 +1962,21 @@
     $('game-topic-card').classList.toggle('hidden', !showTopic);
     if (showTopic) $('game-my-topic').textContent = v.myTopic;
 
-    // 参加者アイコン帯：出すのは挨拶・話し合いのみ。投票（選択肢と
+    // 参加者の席列：出すのは挨拶・話し合いのみ。投票（選択肢と
     // 重複）・逆転回答・結果発表（結果リストが全員分を出す）では
     // 冗長なので隠す（2026-11-24 おぎ判断）
     const showPlayers = v.phase === 'intro' || v.phase === 'discussion';
-    $('game-players').classList.toggle('hidden', !showPlayers);
+    $('game-frame').classList.toggle('players-off', !showPlayers);
 
-    // 参加者
-    const prow = $('game-players');
-    prow.innerHTML = '';
-    for (const p of v.players) {
-      const item = document.createElement('div');
-      item.className = 'game-player';
-      const line = document.createElement('span');
-      line.className = 'gp-name-line';
-      const nb = noBadge(p.no);
-      if (nb) line.appendChild(nb);
-      const name = document.createElement('span');
-      name.className = 'gp-name';
-      name.textContent = p.name;
-      line.appendChild(name);
-      item.append(avatarSpan(p, 'avatar-sm'), line);
-      prow.appendChild(item);
-    }
+    // 参加者（待機室と同じ左右の席列）
+    const gl = $('game-slots-left');
+    const gr = $('game-slots-right');
+    gl.innerHTML = '';
+    gr.innerHTML = '';
+    const gLeft = Math.ceil(v.players.length / 2);
+    v.players.forEach((p, i) => {
+      (i < gLeft ? gl : gr).appendChild(slotEl({ no: p.no ?? i + 1, user: p }));
+    });
 
     // 発言（下端寄せ）
     const inner = $('game-msgs-inner');
