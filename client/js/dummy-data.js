@@ -85,6 +85,8 @@ window.KL_DUMMY = {
   ],
   rooms: [
     { id: 'r7', title: '真剣勝負！いま対戦中', hostName: 'そら', hostIcon: '🐥', hostBg: '#eafff3', isPrivate: false, beginner: true, players: 5, capacity: 6, genre: '季節・イベント', status: 'playing' },
+    // 最長要素ぜんぶ入りサンプル（おぎ確認用）：部屋名10文字＋7/8人＋最長ジャンル＋初心者歓迎
+    { id: 'r8', title: 'わいわいまったり部屋', hostName: 'もち', hostIcon: '🐹', hostBg: '#fff7e0', isPrivate: false, beginner: true, players: 7, capacity: 8, genre: '季節・イベント' },
     { id: 'r1', title: 'はじめてさん集合！', hostName: 'みか', hostIcon: '🐰', hostBg: '#ffeef5', isPrivate: false, beginner: true, players: 6, capacity: 7 },
     { id: 'r2', title: '経験者もOK部屋', hostName: 'けん', hostIcon: '🦉', hostBg: '#eef7ff', isPrivate: true, beginner: true, players: 7, capacity: 8 },
     { id: 'r3', title: 'まったり3分で1戦！', hostName: 'りす', hostIcon: '🐿️', hostBg: '#fff4e0', isPrivate: false, beginner: false, players: 3, capacity: 4, genre: '食べ物' },

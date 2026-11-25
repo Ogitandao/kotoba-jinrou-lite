@@ -63,8 +63,8 @@ check('ログインボーナスバナーが表示される', visible($('bonus-ba
 check('オンラインの友達が4人表示される',
   document.querySelectorAll('#online-friends .friend-item').length === 4);
 check('ランダム入室ボタンが表示される', visible($('btn-random')));
-check('ルーム一覧に7件表示される',
-  document.querySelectorAll('#room-list .room-card').length === 7);
+check('ルーム一覧に8件表示される',
+  document.querySelectorAll('#room-list .room-card').length === 8);
 const firstCard = document.querySelector('#room-list .room-card');
 check('対戦中ルームに点滅ドット付き「対戦中」タグが入っている',
   firstCard.textContent.includes('対戦中') && !!firstCard.querySelector('.pulse-dot'));
@@ -141,7 +141,7 @@ $('btn-create-confirm').click();
 check('ティッカーにお知らせが流れている', $('ticker-track').textContent.includes('ことば人狼へようこそ'));
 check('対戦中ルームは常時表示ではなく開始時に流れる（初期表示では流れない）', !$('ticker-track').textContent.includes('が対戦中です'));
 check('公開ルームを作成すると一覧の先頭に増える',
-  document.querySelectorAll('#room-list .room-card').length === 8 &&
+  document.querySelectorAll('#room-list .room-card').length === 9 &&
   document.querySelector('#room-list .room-card').textContent.includes('検証用ルーム'));
 
 check('新しく作ったルームはスライドイン用クラスが付く',
