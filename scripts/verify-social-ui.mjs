@@ -35,6 +35,13 @@ const rowByName = (container, name) =>
   [...container.querySelectorAll('.user-row, .talk-row')]
     .find((r) => r.textContent.includes(name));
 
+// --- ギフト到着スライド通知（起動直後、未読ギフトDMを検出して出る） ---
+await tick(400);
+check('ギフトが届くとスライド通知が出る（送り主とギフト名）',
+  $('gift-notify').classList.contains('show')
+  && $('gn-title').textContent.includes('けん')
+  && $('gn-gift').textContent.includes('王冠'));
+
 // --- チュートリアル同意（フレンドタブは同意するまで開けない） ---
 check('未同意ではフレンドタブがグレーアウトしている',
   $('tabbtn-friends').classList.contains('locked'));
@@ -83,10 +90,10 @@ await tick();
 check('待機室からロビーへ戻れる', !visible($('room-screen')));
 
 // --- 未読バッジ（下部メニュー／トークタブ） ---
-check('起動直後から下部メニューのフレンドに未読バッジ（3）が出る',
-  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '3');
-check('トークタブにも未読バッジ（3）が出る',
-  visible($('badge-subtab-talk')) && $('badge-subtab-talk').textContent === '3');
+check('起動直後から下部メニューのフレンドに未読バッジ（4）が出る',
+  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '4');
+check('トークタブにも未読バッジ（4）が出る',
+  visible($('badge-subtab-talk')) && $('badge-subtab-talk').textContent === '4');
 
 // --- フレンドタブ：トーク一覧 ---
 $('tabbtn-friends').click();
@@ -113,8 +120,8 @@ await tick();
 const mikaRow = rowByName($('talk-list'), 'みか');
 check('みかの行に未読バッジ（1）が出る',
   mikaRow?.querySelector('.unread-badge')?.textContent === '1');
-check('システムDMを読むとナビの未読バッジが2に減る',
-  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '2');
+check('システムDMを読むとナビの未読バッジが3に減る',
+  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '3');
 check('最新メッセージのプレビューが出る',
   mikaRow?.textContent.includes('部屋立てるから来て'));
 
@@ -129,8 +136,8 @@ check('DMの発言は下端寄せコンテナ（dm-msgs-inner）の中に時系�
   && msgs()[1].textContent.includes('部屋立てるから来て'));
 check('DMを開くと未読バッジが消える',
   !rowByName($('talk-list'), 'みか')?.querySelector('.unread-badge'));
-check('みかを読むとナビの未読バッジが1に減る（けんの招待分が残る）',
-  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '1');
+check('みかを読むとナビの未読バッジが2に減る（けんの招待＋ギフト分が残る）',
+  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '2');
 
 $('dm-input').value = 'うん、行く行く！';
 $('dm-send').click();

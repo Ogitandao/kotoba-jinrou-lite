@@ -541,6 +541,16 @@
   </div>
 </div>
 
+<!-- ギフト到着のスライド通知（右から出て数秒で消える。ゲーム中は出さない） -->
+<button type="button" id="gift-notify" class="gift-notify" aria-label="ギフトが届きました">
+  <span id="gn-avatar" class="gn-avatar"></span>
+  <span class="gn-texts">
+    <span id="gn-title" class="gn-title"></span>
+    <span id="gn-gift" class="gn-gift"></span>
+  </span>
+  <img id="gn-art" class="gn-art" alt="" />
+</button>
+
 <div id="toast" class="toast hidden"></div>
 
 <script src="./js/app.js"></script>

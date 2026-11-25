@@ -532,9 +532,72 @@
     }
   }
 
+  // --- ギフト到着のスライド通知（おぎ） ---
+  // 未読ギフトDMを検出して右からスライド表示する。ゲーム中（試合画面）は出さず、
+  // 終わってから流す。相手のDMを開いているときはカード自体が見えるので出さない。
+  const seenGiftNotifs = new Set();
+  const giftNotifyQueue = [];
+  let giftNotifyBusy = false;
+  let giftNotifyRetry = null;
+
+  function detectGiftNotifications(convs) {
+    for (const c of convs ?? []) {
+      const last = c.last;
+      if (!last || last.kind !== 'gift' || !last.gift) continue;
+      if (last.from !== c.partnerId || c.partnerId === 'system') continue;
+      if ((c.unread ?? 0) <= 0) continue;
+      if (seenGiftNotifs.has(last.id)) continue;
+      seenGiftNotifs.add(last.id);
+      if (state.dmPeer?.id === c.partnerId && !$('dm-screen').classList.contains('hidden')) continue;
+      giftNotifyQueue.push({ partner: c.partner, gift: last.gift });
+    }
+    pumpGiftNotify();
+  }
+
+  function pumpGiftNotify() {
+    if (giftNotifyBusy || giftNotifyQueue.length === 0) return;
+    if (!$('game-screen').classList.contains('hidden')) {
+      // 試合中は出さない。少し後に再試行する
+      if (!giftNotifyRetry) {
+        giftNotifyRetry = setTimeout(() => { giftNotifyRetry = null; pumpGiftNotify(); }, 3000);
+      }
+      return;
+    }
+    const { partner, gift } = giftNotifyQueue.shift();
+    giftNotifyBusy = true;
+    const el = $('gift-notify');
+    $('gn-avatar').replaceChildren(avatarSpan(partner, 'avatar-sm'));
+    $('gn-title').textContent = `${partner.name}さんから`;
+    $('gn-gift').textContent = `${gift.name}が届きました`;
+    const art = $('gn-art');
+    art.src = `gifts/gift-${gift.giftKey}.webp`;
+    art.onerror = () => { art.removeAttribute('src'); };
+    el.onclick = () => {
+      dismissGiftNotify();
+      switchTab('friends');
+      openDm(partner);
+    };
+    el.classList.remove('bye');
+    el.classList.add('show');
+    setTimeout(dismissGiftNotify, 2450);
+  }
+
+  function dismissGiftNotify() {
+    const el = $('gift-notify');
+    if (!el.classList.contains('show')) return;
+    el.classList.add('bye');
+    el.classList.remove('show');
+    setTimeout(() => {
+      el.classList.remove('bye');
+      giftNotifyBusy = false;
+      pumpGiftNotify();
+    }, 430);
+  }
+
   async function renderTalkList() {
     const convs = await DATA.listConversations();
     updateNavBadges(convs);
+    detectGiftNotifications(convs);
     rememberUsers(convs.map((c) => c.partner));
     const list = $('talk-list');
     list.innerHTML = '';

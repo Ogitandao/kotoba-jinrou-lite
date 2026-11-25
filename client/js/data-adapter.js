@@ -139,6 +139,8 @@
         { id: 'dm-4', from: 'u-ken', to: 'me', kind: 'text', body: 'ありがとう！また真剣勝負しよう', read: true },
         // デモ用シード：非公開ルームへの招待カード（入室導線の確認用）
         { id: 'dm-5', from: 'u-ken', to: 'me', kind: 'invite', invite: { roomId: 'r2', roomTitle: '経験者もOK部屋', password: 'wolf777' }, read: false },
+        // デモ用シード：届いたギフト（起動時にスライド通知が出る確認用）
+        { id: 'dm-6', from: 'u-ken', to: 'me', kind: 'gift', gift: { giftKey: 'crown', name: '王冠', icon: '👑', price: 3000 }, read: false },
       ],
       seq: 100,
       ticker: [
