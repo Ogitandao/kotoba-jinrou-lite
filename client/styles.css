@@ -465,7 +465,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   position: fixed; inset: 0;
   background: rgba(23, 50, 74, 0.45);
   display: flex; align-items: center; justify-content: center;
-  padding: 20px;
+  padding: 26px;
   z-index: 50;
 }
 .modal {
@@ -473,7 +473,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   width: 100%; max-width: 360px;
   padding: 20px;
   box-shadow: 0 12px 32px rgba(23, 50, 74, 0.25);
-  max-height: calc(100dvh - 40px);
+  max-height: calc(100dvh - 52px);
   display: flex; flex-direction: column;
 }
 .modal h3 { font-size: 18px; font-weight: 800; margin-bottom: 12px; text-align: center; }
