@@ -340,8 +340,10 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .gift-icon-img { width: 46px; height: 46px; border-radius: 12px; display: block; }
 .gift-icon-lot { width: 46px; height: 46px; display: block; }
 .gift-icon-lot svg, .gift-cell-lot svg { width: 100%; height: 100%; display: block; }
-/* Lottieのダイヤは画布の中で小さめなので、静止画アートと揃うよう拡大 */
-.gift-icon-lot svg, .gift-cell-lot svg { transform: scale(1.45); }
+/* Lottieのダイヤは画布の中で小さめ＆下寄り（実測で中心が約14.6%下）。
+   svg 側はプレイヤーが inline style で transform を上書きするため、
+   拡大＋上寄せはコンテナ側に掛ける（ずらし量は拡大後の実寸換算で -21%） */
+.gift-icon-lot, .gift-cell-lot { transform: translateY(-21%) scale(1.45); }
 .gift-cell-lot { width: 100%; height: 100%; display: block; }
 .gift-icon-emoji {
   width: 46px; height: 46px; display: flex; align-items: center; justify-content: center;
