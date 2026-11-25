@@ -170,6 +170,15 @@ check('フレンド一覧のアイコンタップでもフレンドメニュー�
   visible($('modal-friend-menu')) && $('fm-name').textContent === 'みか');
 document.querySelector('#modal-friend-menu [data-close]').click();
 await tick();
+const kenFriendRow = rowByName($('friend-list'), 'けん');
+kenFriendRow.querySelector('.avatar').click();
+await tick();
+$('fm-profile').click();
+await tick();
+check('大桁ユーザーのプロフは人気度560,000・1,024勝で表示される',
+  $('up-popularity').textContent === '560,000' && $('up-wins').textContent === '1,024');
+document.querySelector('#modal-user-profile [data-close]').click();
+await tick();
 
 // --- ID検索→申請 ---
 $('friend-search-input').value = 'mochi_9012';

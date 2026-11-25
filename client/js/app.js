@@ -222,6 +222,11 @@
       $('up-bio').textContent = p.bio || '（自己紹介はまだありません）';
       $('up-popularity').textContent = fmt(p.popularity);
       $('up-wins').textContent = fmt(p.wordwolfWins);
+      // 数字が長いほどフォントを段階的に小さくする（ギフト貰いおばけ対策）
+      document.querySelectorAll('#modal-user-profile .up-stat-value').forEach((el) => {
+        const len = el.textContent.replace(/,/g, '').length;
+        el.style.fontSize = len <= 6 ? '' : len <= 8 ? '16.5px' : len <= 10 ? '14.5px' : '13px';
+      });
       fillGiftStrip($('up-gift-strip'), p.gifts);
     } catch { /* 一覧で持っている情報だけで表示する */ }
   }
