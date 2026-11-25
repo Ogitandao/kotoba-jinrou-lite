@@ -1390,10 +1390,12 @@
     $('blocklist-empty').style.display = blocked.length ? 'none' : '';
     for (const u of blocked) {
       box.appendChild(userRow(u, [
-        smallBtn('解除', 'mini-btn', async () => {
-          await DATA.unblockUser(u.id);
-          toast('ブロックを解除しました');
-          await renderBlocklist();
+        smallBtn('解除', 'mini-btn', () => {
+          openConfirm(`${u.name}さんのブロックを\n解除しますか？`, '解除する', async () => {
+            await DATA.unblockUser(u.id);
+            toast('ブロックを解除しました');
+            await renderBlocklist();
+          });
         }),
       ]));
     }
