@@ -764,7 +764,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   padding: 8px 13px; font-weight: 800; font-size: 13.5px;
 }
 .dm-messages { flex: 1 1 auto; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; }
-.dm-msgs-inner { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+/* 発言は上から流す（少ない時は上に寄る。2026-11-25 おぎ） */
+.dm-msgs-inner { display: flex; flex-direction: column; gap: 8px; }
 .dm-msg {
   /* 吹き出し幅の基準（2026-11-24 おぎ）：日本語15文字が1行に入る
      幅（LINEの感覚）。font-size 基準の em で上限を決め、画面が

@@ -131,7 +131,7 @@ await tick();
 check('DM画面が開く（相手名つき）',
   visible($('dm-screen')) && $('dm-peer-name').textContent === 'みか');
 const msgs = () => [...document.querySelectorAll('#dm-msgs-inner > .msg-line')];
-check('DMの発言は下端寄せコンテナ（dm-msgs-inner）の中に時系列で並ぶ',
+check('DMの発言はコンテナ（dm-msgs-inner）の中に時系列で並ぶ',
   msgs().length === 2 && msgs()[0].textContent.includes('昨日はありがとう')
   && msgs()[1].textContent.includes('部屋立てるから来て'));
 check('日付区切り（昨日／今日）と吹き出し横の時刻が出る（24時間表記）',
