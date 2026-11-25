@@ -24,6 +24,27 @@ window.KL_DUMMY = {
     { key: 'donut', name: 'ドーナツ', icon: '🍩', price: 150 },
     { key: 'balloon', name: '風船', icon: '🎈', price: 80 },
   ],
+  // フレンドがもらったギフト（プロフィール表示用デモ）
+  friendGifts: {
+    'u-mika': [
+      { giftKey: 'crown', count: 1 },
+      { giftKey: 'cake', count: 3 },
+      { giftKey: 'flower', count: 10 },
+    ],
+    'u-ken': [
+      { giftKey: 'devil', count: 2 },
+      { giftKey: 'ring', count: 2 },
+      { giftKey: 'coffee', count: 12 },
+    ],
+    'u-risu': [
+      { giftKey: 'donut', count: 5 },
+      { giftKey: 'heart', count: 20 },
+    ],
+    'u-nyan': [
+      { giftKey: 'star', count: 3 },
+      { giftKey: 'candy', count: 7 },
+    ],
+  },
   // もらったギフト（ロビーのギフト帯表示用デモ。全16種で帯があふれる量）
   myGifts: [
     { giftKey: 'diamond', count: 1 },

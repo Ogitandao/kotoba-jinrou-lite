@@ -344,6 +344,44 @@
   </div>
 
   <!-- ギフト -->
+  <!-- フレンドメニュー（アイコンタップで出す2択。いきなり入室を防ぐ。
+       2026-11-25 おぎ） -->
+  <div id="modal-friend-menu" class="modal hidden">
+    <div class="friend-menu-head">
+      <span id="fm-avatar" class="avatar avatar-md"></span>
+      <span class="friend-menu-main">
+        <span id="fm-name" class="friend-menu-name"></span>
+        <span id="fm-status" class="friend-menu-status"></span>
+      </span>
+    </div>
+    <div class="menu-list">
+      <button id="fm-profile" class="primary-btn" type="button">プロフを見る</button>
+      <button id="fm-join" class="sub-btn" type="button">ルームに参加</button>
+      <button class="sub-btn" data-close type="button">キャンセル</button>
+    </div>
+  </div>
+
+  <!-- 他人のプロフィール（Lite版：モーダルで軽く見せる） -->
+  <div id="modal-user-profile" class="modal hidden">
+    <div id="up-avatar" class="avatar avatar-xl"></div>
+    <h3 id="up-name" class="up-name"></h3>
+    <p class="modal-note up-center">ID: <span id="up-id"></span></p>
+    <p id="up-bio" class="up-bio"></p>
+    <div class="up-stats">
+      <span>✨ 人気度 <b id="up-popularity">0</b></span>
+      <span>🏆 ワードウルフ <b id="up-wins">0</b>勝</span>
+    </div>
+    <div class="gift-frame up-gift-frame">
+      <div class="gift-strip-label">もらったギフト</div>
+      <div id="up-gift-strip" class="gift-strip"></div>
+    </div>
+    <div class="modal-actions">
+      <button id="up-talk" class="primary-btn" type="button">トーク</button>
+      <button id="up-gift" class="sub-btn" type="button">ギフト</button>
+      <button class="sub-btn" data-close type="button">閉じる</button>
+    </div>
+  </div>
+
   <div id="modal-gift" class="modal hidden">
     <h3>ギフトを送る</h3>
     <p class="modal-note"><span id="gift-target-name"></span> さんへ</p>

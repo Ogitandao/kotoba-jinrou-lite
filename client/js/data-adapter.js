@@ -80,6 +80,17 @@
   // =====================================================================
   function createSimBackend() {
     const D = window.KL_DUMMY;
+    // もらったギフトの集計（カタログ引き＋価格順ソート）。自分用・他人用で共用
+    const giftSummaryOf = (list) => {
+      const lookup = [...GIFT_CATALOG, ...(D.extraGifts ?? [])];
+      return list
+        .map((g) => {
+          const c = lookup.find((x) => x.key === g.giftKey);
+          return c ? { giftKey: c.key, name: c.name, icon: c.icon, price: c.price, count: g.count } : null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.price - a.price || b.count - a.count);
+    };
     const users = new Map();
     const addUser = (u) => users.set(u.id, {
       popularity: 0, wordwolfWins: 0, online: false, ...u,
@@ -89,12 +100,12 @@
       iconBg: D.me.iconBg, bio: D.me.bio, popularity: D.me.popularity, online: true,
       nameDecidedAt: '2026-01-01T00:00:00Z',
     });
-    addUser({ id: 'u-mika', publicId: 'mika_1024', name: 'みか', icon: '🐰', iconKey: 'rabbit', iconBg: '#ffeef5', bio: 'ワードウルフ大好き！毎晩やってます', popularity: 320, online: true, roomTitle: 'はじめてさん集合！' });
-    addUser({ id: 'u-ken', publicId: 'ken_7788', name: 'けん', icon: '🦉', iconKey: 'owl', iconBg: '#eef7ff', bio: '真剣勝負派。推理は任せて', popularity: 540, online: true, roomTitle: null });
-    addUser({ id: 'u-risu', publicId: 'risu_2049', name: 'りす', icon: '🐿️', iconKey: null, iconBg: '#fff4e0', bio: 'まったり勢です〜', popularity: 87, online: true, roomTitle: 'まったり3分で1戦！' });
-    addUser({ id: 'u-nyan', publicId: 'nyan_5566', name: 'にゃん', icon: '🐱', iconKey: 'cat', iconBg: '#f0ecff', bio: 'にゃーん', popularity: 45, online: true, roomTitle: null });
-    addUser({ id: 'u-sora', publicId: 'sora_3310', name: 'そら', icon: '🐥', iconKey: 'chick', iconBg: '#eafff3', bio: '昨日はじめました！よろしくです', popularity: 3, online: false });
-    addUser({ id: 'u-mochi', publicId: 'mochi_9012', name: 'もち', icon: '🐹', iconKey: null, iconBg: '#fff0f3', bio: 'もちもちしてます', popularity: 12, online: false });
+    addUser({ id: 'u-mika', publicId: 'mika_1024', name: 'みか', icon: '🐰', iconKey: 'rabbit', iconBg: '#ffeef5', bio: 'ワードウルフ大好き！毎晩やってます', popularity: 320, online: true, roomTitle: 'はじめてさん集合！', wordwolfWins: 42 });
+    addUser({ id: 'u-ken', publicId: 'ken_7788', name: 'けん', icon: '🦉', iconKey: 'owl', iconBg: '#eef7ff', bio: '真剣勝負派。推理は任せて', popularity: 540, online: true, roomTitle: null, wordwolfWins: 78 });
+    addUser({ id: 'u-risu', publicId: 'risu_2049', name: 'りす', icon: '🐿️', iconKey: null, iconBg: '#fff4e0', bio: 'まったり勢です〜', popularity: 87, online: true, roomTitle: 'まったり3分で1戦！', wordwolfWins: 15 });
+    addUser({ id: 'u-nyan', publicId: 'nyan_5566', name: 'にゃん', icon: '🐱', iconKey: 'cat', iconBg: '#f0ecff', bio: 'にゃーん', popularity: 45, online: true, roomTitle: null, wordwolfWins: 8 });
+    addUser({ id: 'u-sora', publicId: 'sora_3310', name: 'そら', icon: '🐥', iconKey: 'chick', iconBg: '#eafff3', bio: '昨日はじめました！よろしくです', popularity: 3, online: false, wordwolfWins: 1 });
+    addUser({ id: 'u-mochi', publicId: 'mochi_9012', name: 'もち', icon: '🐹', iconKey: null, iconBg: '#fff0f3', bio: 'もちもちしてます', popularity: 12, online: false, wordwolfWins: 3 });
     // 自分の選択アイコンは Sim でも再読込で維持する（実 DB では
     // profiles.icon_key が正本。Sim は localStorage で肩代わり）
     try {
@@ -1059,15 +1070,17 @@
         return ok(GIFT_CATALOG.slice());
       },
       myGiftSummary() {
-        const lookup = [...GIFT_CATALOG, ...(D.extraGifts ?? [])];
-        const items = (D.myGifts ?? [])
-          .map((g) => {
-            const c = lookup.find((x) => x.key === g.giftKey);
-            return c ? { giftKey: c.key, name: c.name, icon: c.icon, price: c.price, count: g.count } : null;
-          })
-          .filter(Boolean)
-          .sort((a, b) => b.price - a.price || b.count - a.count);
-        return ok(items);
+        return ok(giftSummaryOf(D.myGifts ?? []));
+      },
+      userProfile(userId) {
+        const u = users.get(userId);
+        if (!u) return Promise.reject(fail('USER_NOT_FOUND', 'ユーザーが存在しません'));
+        return ok({
+          bio: u.bio ?? '',
+          popularity: u.popularity ?? 0,
+          wordwolfWins: u.wordwolfWins ?? 0,
+          gifts: giftSummaryOf((D.friendGifts ?? {})[userId] ?? []),
+        });
       },
       tickerFeed() {
         return ok((state.ticker ?? []).slice(0, 8));
@@ -1631,6 +1644,18 @@
           price: r.price, count: Number(r.count),
         }));
       },
+      async userProfile(userId) {
+        const p = await rpc('kl_user_profile', { p_user: userId });
+        return {
+          bio: p.bio ?? '',
+          popularity: p.popularity ?? 0,
+          wordwolfWins: p.wordwolfWins ?? 0,
+          gifts: (p.gifts ?? []).map((r) => ({
+            giftKey: r.giftKey, name: r.name, icon: r.icon,
+            price: r.price, count: Number(r.count),
+          })),
+        };
+      },
       async giftCatalog() {
         const { data, error } = await getClient()
           .from('gift_catalog').select('*').eq('active', true).order('sort');
@@ -1933,6 +1958,7 @@
     markRead: (id) => active.markRead(id),
     giftCatalog: () => active.giftCatalog(),
     myGiftSummary: () => active.myGiftSummary(),
+    userProfile: (userId) => active.userProfile(userId),
     sendGift: (id, key) => active.sendGift(id, key),
     tickerFeed: () => active.tickerFeed(),
     listIcons: () => active.listIcons(),

@@ -155,24 +155,66 @@
     const el = $('gift-strip');
     if (!el) return;
     try {
-      const items = await DATA.myGiftSummary();
-      if (!items.length) {
-        el.innerHTML = '<span class="gift-strip-empty">🎁 まだギフトがありません</span>';
-        return;
-      }
-      el.innerHTML = items
-        .map((g) => `<span class="gift-strip-item"><img class="gift-icon-img" src="gifts/gift-${g.giftKey}.webp" alt="${g.name}" data-emoji="${g.icon}" /><span class="gift-count">×${g.count}</span></span>`)
-        .join('');
-      // 専用アートが無いギフトは絵文字表示にフォールバックする
-      el.querySelectorAll('.gift-icon-img').forEach((img) => {
-        img.addEventListener('error', () => {
-          const s = document.createElement('span');
-          s.className = 'gift-icon-emoji';
-          s.textContent = img.dataset.emoji ?? '🎁';
-          img.replaceWith(s);
-        });
-      });
+      fillGiftStrip(el, await DATA.myGiftSummary());
     } catch { /* 取得失敗時は帯を空のままにする */ }
+  }
+
+  // ギフト帯の中身を描く（自分のロビー帯と他人のプロフで共用）
+  function fillGiftStrip(el, items) {
+    if (!items.length) {
+      el.innerHTML = '<span class="gift-strip-empty">🎁 まだギフトがありません</span>';
+      return;
+    }
+    el.innerHTML = items
+      .map((g) => `<span class="gift-strip-item"><img class="gift-icon-img" src="gifts/gift-${g.giftKey}.webp" alt="${g.name}" data-emoji="${g.icon}" /><span class="gift-count">×${g.count}</span></span>`)
+      .join('');
+    // 専用アートが無いギフトは絵文字表示にフォールバックする
+    el.querySelectorAll('.gift-icon-img').forEach((img) => {
+      img.addEventListener('error', () => {
+        const s = document.createElement('span');
+        s.className = 'gift-icon-emoji';
+        s.textContent = img.dataset.emoji ?? '🎁';
+        img.replaceWith(s);
+      });
+    });
+  }
+
+  // ---------- フレンドメニュー／他人のプロフィール ----------
+  // アイコンを押していきなりルームに入ってしまう事故防止に、まず
+  // 「プロフを見る／ルームに参加」の2択を出す（2026-11-25 おぎ）
+  function openFriendMenu(u) {
+    state.menuUser = u;
+    fillAvatar($('fm-avatar'), u);
+    $('fm-name').textContent = u.name;
+    const room = u.roomTitle
+      ? state.rooms.find((r) => r.title === u.roomTitle)
+      : null;
+    state.menuRoom = room ?? null;
+    $('fm-status').textContent = room
+      ? `ルーム『${u.roomTitle}』にいます`
+      : (u.online ? 'オンライン中（ルームには入っていません）' : 'オフラインです');
+    $('fm-join').disabled = !room;
+    openModal('modal-friend-menu');
+  }
+
+  async function openUserProfile(u) {
+    state.profileUser = u;
+    fillAvatar($('up-avatar'), u);
+    $('up-name').textContent = u.name;
+    $('up-id').textContent = u.publicId;
+    $('up-bio').textContent = u.bio || '（自己紹介はまだありません）';
+    $('up-popularity').textContent = fmt(u.popularity ?? 0);
+    $('up-wins').textContent = '…';
+    fillGiftStrip($('up-gift-strip'), []);
+    openModal('modal-user-profile');
+    try {
+      const p = await DATA.userProfile(u.id);
+      if (state.profileUser !== u) return;
+      $('up-bio').textContent = p.bio || '（自己紹介はまだありません）';
+      $('up-popularity').textContent = fmt(p.popularity);
+      $('up-wins').textContent = fmt(p.wordwolfWins);
+      fillGiftStrip($('up-gift-strip'), p.gifts);
+    } catch { /* 一覧で持っている情報だけで表示する */ }
   }
 
   // ---------- アイコン選択 ----------
@@ -287,13 +329,7 @@
       name.className = 'friend-name';
       name.textContent = f.name;
       b.append(av, name);
-      b.addEventListener('click', () => {
-        const room = f.roomTitle
-          ? state.rooms.find((r) => r.title === f.roomTitle)
-          : null;
-        if (room) enterRoom(room);
-        else toast(`${f.name}さんは今ルームに入っていません`);
-      });
+      b.addEventListener('click', () => openFriendMenu(f));
       wrap.appendChild(b);
     }
   }
@@ -550,7 +586,7 @@
     list.innerHTML = '';
     $('friend-empty').classList.toggle('hidden', friends.length > 0);
     for (const u of friends) {
-      list.appendChild(userRow(u, [
+      const row = userRow(u, [
         smallBtn('トーク', 'mini-btn primary', () => openDm(u)),
         smallBtn('ギフト', 'mini-btn', () => openGift(u)),
         smallBtn('ブロック', 'mini-btn danger', async () => {
@@ -560,7 +596,14 @@
             await refreshSocial();
           } catch (e) { toastError(e); }
         }),
-      ]));
+      ]);
+      // アイコンタップでもフレンドメニュー（プロフ／ルーム参加）を出す
+      const av = row.querySelector('.avatar');
+      if (av) {
+        av.classList.add('tappable');
+        av.addEventListener('click', () => openFriendMenu(u));
+      }
+      list.appendChild(row);
     }
   }
 
@@ -1593,6 +1636,29 @@
     }
 
     $('btn-settings').addEventListener('click', () => openModal('modal-settings'));
+    $('fm-profile').addEventListener('click', () => {
+      const u = state.menuUser;
+      closeModal();
+      if (u) openUserProfile(u);
+    });
+    $('fm-join').addEventListener('click', () => {
+      const room = state.menuRoom;
+      closeModal();
+      if (!room) return;
+      if (room.isPrivate) { toast('非公開ルームです'); return; }
+      if (room.status === 'playing') { toast('対戦中です'); return; }
+      enterRoom(room);
+    });
+    $('up-talk').addEventListener('click', () => {
+      const u = state.profileUser;
+      closeModal();
+      if (u) openDm(u);
+    });
+    $('up-gift').addEventListener('click', () => {
+      const u = state.profileUser;
+      closeModal();
+      if (u) openGift(u);
+    });
     $('btn-rules').addEventListener('click', () => openTutorial('view'));
     $('btn-tutorial-close').addEventListener('click', closeModal);
     $('btn-tutorial-cancel').addEventListener('click', () => {

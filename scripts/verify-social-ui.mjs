@@ -52,6 +52,36 @@ $('btn-create-cancel').click();
 check('同意でフレンドタブのロックが解除される',
   !$('tabbtn-friends').classList.contains('locked'));
 
+// --- フレンドメニュー（ロビー帯アイコンタップ→2択） ---
+const mikaStrip = [...document.querySelectorAll('#online-friends .friend-item')]
+  .find((el) => el.textContent.includes('みか'));
+mikaStrip.click();
+await tick();
+check('ロビー帯のフレンドをタップしても即入室せずメニューが出る',
+  visible($('modal-friend-menu')) && !visible($('room-screen')));
+check('メニューに相手の名前と居場所が出て、ルームに参加が押せる',
+  $('fm-name').textContent === 'みか' &&
+  $('fm-status').textContent.includes('はじめてさん集合') &&
+  !$('fm-join').disabled);
+$('fm-profile').click();
+await tick();
+check('プロフを見るでプロフィールが開く（自己紹介・勝利数つき）',
+  visible($('modal-user-profile')) && $('up-name').textContent === 'みか' &&
+  $('up-bio').textContent.includes('ワードウルフ大好き') &&
+  $('up-wins').textContent === '42');
+check('プロフにその人のギフト帯（王冠アート）が出る',
+  document.querySelector('#up-gift-strip .gift-icon-img')?.getAttribute('src') === 'gifts/gift-crown.webp');
+document.querySelector('#modal-user-profile [data-close]').click();
+await tick();
+mikaStrip.click();
+await tick();
+$('fm-join').click();
+await tick(60);
+check('ルームに参加で待機室に入れる', visible($('room-screen')));
+$('room-back').click();
+await tick();
+check('待機室からロビーへ戻れる', !visible($('room-screen')));
+
 // --- フレンドタブ：トーク一覧 ---
 $('tabbtn-friends').click();
 await tick();
@@ -133,6 +163,13 @@ const soraRow = rowByName($('request-list'), 'そら');
 await tick();
 check('承認するとフレンド一覧に移り、申請欄が消える',
   !visible($('request-section')) && !!rowByName($('friend-list'), 'そら'));
+const mikaFriendRow = rowByName($('friend-list'), 'みか');
+mikaFriendRow.querySelector('.avatar').click();
+await tick();
+check('フレンド一覧のアイコンタップでもフレンドメニューが出る',
+  visible($('modal-friend-menu')) && $('fm-name').textContent === 'みか');
+document.querySelector('#modal-friend-menu [data-close]').click();
+await tick();
 
 // --- ID検索→申請 ---
 $('friend-search-input').value = 'mochi_9012';
