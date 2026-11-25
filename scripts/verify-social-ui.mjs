@@ -86,7 +86,7 @@ $('fm-join').click();
 await tick(60);
 check('ルームに参加で待機室に入れる', visible($('room-screen')));
 $('room-back').click();
-await tick();
+await tick(450);
 check('待機室からロビーへ戻れる', !visible($('room-screen')));
 
 // --- 未読バッジ（下部メニュー／トークタブ） ---

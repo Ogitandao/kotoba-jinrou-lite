@@ -199,7 +199,7 @@ check('コインピルでチャージモーダルが開く', visible($('modal-ch
 document.querySelector('#modal-charge [data-close]').click();
 
 // --- 退室するとロビーに戻り、作成バーも戻る（作成で入室した状態から） ---
-if (visible($('room-screen'))) { $('room-back').click(); await tick(); }
+if (visible($('room-screen'))) { $('room-back').click(); await new Promise((r) => setTimeout(r, 450)); }
 check('ルームを退室するとロビーに戻り、作成バーも戻る',
   !visible($('room-screen')) && visible($('create-bar')));
 

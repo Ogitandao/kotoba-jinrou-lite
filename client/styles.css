@@ -927,11 +927,14 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 /* ===== 待機室／対戦画面（対戦画面フェーズ） ===== */
 .room-screen {
   position: fixed; z-index: 20;
-  top: 0; bottom: 0; left: 50%; transform: translateX(-50%);
+  top: 0; bottom: 0; left: 50%;
+  transform: translateX(-50%) translateX(100vw);
+  transition: transform .33s cubic-bezier(.32, .72, .24, 1);
   width: min(430px, 100%);
   display: flex; flex-direction: column;
   background: linear-gradient(180deg, #e4fbf0 0%, #e0f3ff 55%, #d8efff 100%);
 }
+.room-screen.open { transform: translateX(-50%) translateX(0); }
 .room-count { flex: 0 0 auto; font-weight: 800; color: var(--ink-soft); font-size: 14px; }
 .room-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding: 12px 10px 14px; }
 .room-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }

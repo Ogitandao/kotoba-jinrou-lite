@@ -1608,6 +1608,18 @@
     } catch (e) { toastError(e); }
   }
 
+  // 待機室・対戦画面のスライド開閉（DMと同じ .33s のぬるっと・2026-11-25 おぎ）
+  let roomCloseTimer = null;
+  let gameCloseTimer = null;
+  function slideInScreen(el) {
+    el.classList.remove('hidden');
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('open')));
+    } else {
+      el.classList.add('open');
+    }
+  }
+
   function openRoomScreen(detail) {
     state.roomId = detail.id;
     state.roomDetail = detail;
@@ -1615,7 +1627,8 @@
     rememberUsers(detail.members ?? []);
     closeDm();
     closeGameScreen();
-    $('room-screen').classList.remove('hidden');
+    clearTimeout(roomCloseTimer);
+    slideInScreen($('room-screen'));
     updateCreateBar();
     renderRoomScreen();
     DATA.heartbeat(detail.id).catch(() => {});
@@ -1626,7 +1639,13 @@
     stopRoomPoll();
     state.roomId = null;
     state.roomDetail = null;
-    $('room-screen').classList.add('hidden');
+    const s = $('room-screen');
+    s.classList.remove('open');
+    clearTimeout(roomCloseTimer);
+    roomCloseTimer = setTimeout(() => {
+      s.classList.add('hidden');
+      updateCreateBar();
+    }, 340);
     updateCreateBar();
   }
   function stopRoomPoll() {
@@ -1914,7 +1933,8 @@
     state.gameView = null;
     state.signaledVersion = -1;
     stopRoomPoll();
-    $('game-screen').classList.remove('hidden');
+    clearTimeout(gameCloseTimer);
+    slideInScreen($('game-screen'));
     updateCreateBar();
     stopGamePoll();
     state.gamePoll = setInterval(pollGame, 600);
@@ -1924,7 +1944,13 @@
     stopGamePoll();
     state.gameId = null;
     state.gameView = null;
-    $('game-screen').classList.add('hidden');
+    const s = $('game-screen');
+    s.classList.remove('open');
+    clearTimeout(gameCloseTimer);
+    gameCloseTimer = setTimeout(() => {
+      s.classList.add('hidden');
+      updateCreateBar();
+    }, 340);
     updateCreateBar();
   }
   function stopGamePoll() {

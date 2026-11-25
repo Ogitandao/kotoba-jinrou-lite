@@ -354,7 +354,7 @@ await playOutGame());
 check('[14] 通常終了の終了パネルに強制終了の注記はない',
 !$('game-end-note').textContent.includes('強制'), $('game-end-note').textContent);
 $('btn-end-towaiting').click();
-await tick(60);
+await tick(450);
 check('[14] 「待機室に戻る」で待機室に戻れる（メンバー7人のまま）',
 visible($('room-screen')) &&!visible($('game-screen'))
 && document.querySelectorAll('#room-members .slot').length === 7,
@@ -362,7 +362,7 @@ visible($('room-screen')) &&!visible($('game-screen'))
 check('[13] ゲーム後は自分の準備OKがリセットされている',
 $('btn-ready').textContent === '準備OK！', $('btn-ready').textContent);
 $('room-back').click();
-await tick(30);
+await tick(450);
 check('待機室から退室してロビーに戻れる',!visible($('room-screen')));
 check('ロビーに戻るとルーム作成バーが戻る', visible($('create-bar')));
 
@@ -427,7 +427,7 @@ await waitFor(() =>!visible($('game-afk-warning'))));
 
 check('ゲームを完走して終了パネルが出る', await playOutGame());
 $('btn-end-tolobby').click();
-await tick(30);
+await tick(450);
 check('ロビーへ戻れる',!visible($('game-screen')) &&!visible($('room-screen')));
 check('[19] ロビーのルームカードにジャンルタグが出る',
 [...document.querySelectorAll('#room-list .room-card')]
@@ -522,7 +522,7 @@ $('toast').textContent);
 document.querySelector('#modal-invite [data-close]').click();
 await tick(30);
 $('room-back').click();
-await tick(30);
+await tick(450);
 $('tabbtn-friends').click();
 await tick(30);
 [...document.querySelectorAll('#talk-list .talk-row')]
@@ -621,7 +621,7 @@ check('[9] ルームのチャットにシステムログ（強制退室）が出
 $('game-msgs-inner').textContent.includes('強制退室となりました'),
 $('game-msgs-inner').textContent.slice(-120));
 $('btn-end-tolobby').click();
-await tick(30);
+await tick(450);
 $('tabbtn-friends').click();
 await tick(30);
 const sysRow2 = [...document.querySelectorAll('#talk-list .talk-row')]
