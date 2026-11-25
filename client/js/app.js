@@ -1140,11 +1140,25 @@
   // Realtime で届いた新着DM（実 DB モードのみ。Sim では発火しない）。
   // 開いている相手からならその場で末尾に追加して既読化し、常に
   // トーク一覧を更新する（並び替え・バッジ・ギフト通知が即時になる）
+  // 「最新へ」ボタン：下端から離れている時だけ出す
+  function updateScrollBottomBtn() {
+    const box = $('dm-messages');
+    const away = box.scrollHeight - box.scrollTop - box.clientHeight > 240;
+    $('dm-scroll-bottom').classList.toggle('hidden', !away);
+  }
+  function scrollDmToBottom(smooth = false) {
+    const box = $('dm-messages');
+    box.scrollTo({ top: box.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+  }
   async function onIncomingDm(msg) {
     if (state.dmPeer && msg.from === state.dmPeer.id
       && !$('dm-screen').classList.contains('hidden')) {
+      const box = $('dm-messages');
+      const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight <= 240;
       appendDmNode($('dm-msgs-inner'), timedRow(messageNode(msg), msg), msg);
-      $('dm-messages').scrollTop = $('dm-messages').scrollHeight;
+      // 履歴を読んでいる途中なら勝手に飛ばさず、「最新へ」ボタンで知らせる
+      if (wasNearBottom) scrollDmToBottom();
+      updateScrollBottomBtn();
       try { await DATA.markRead(msg.from); } catch { /* 一覧更新でも追随する */ }
     }
     renderTalkList();
@@ -2341,6 +2355,8 @@
       if (e.key === 'Enter') doSearch();
     });
     $('dm-back').addEventListener('click', closeDm);
+    $('dm-messages').addEventListener('scroll', updateScrollBottomBtn, { passive: true });
+    $('dm-scroll-bottom').addEventListener('click', () => scrollDmToBottom(true));
     $('dm-send').addEventListener('click', sendDm);
     $('dm-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') sendDm();

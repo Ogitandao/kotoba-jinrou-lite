@@ -766,6 +766,13 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .dm-messages { flex: 1 1 auto; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; }
 /* 発言は上から流す（少ない時は上に寄る。2026-11-25 おぎ） */
 .dm-msgs-inner { display: flex; flex-direction: column; gap: 8px; }
+/* 過去ログから最新へ戻るワンタップボタン（上にスクロールした時だけ出す） */
+.scroll-bottom-btn {
+  position: absolute; right: 14px; bottom: 76px; z-index: 5;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(255, 255, 255, .96); box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: center; color: var(--sky);
+}
 .dm-msg {
   /* 吹き出し幅の基準（2026-11-24 おぎ）：日本語15文字が1行に入る
      幅（LINEの感覚）。font-size 基準の em で上限を決め、画面が
