@@ -230,6 +230,10 @@
     $('up-wins').textContent = '…';
     fillGiftStrip($('up-gift-strip'), []);
     openModal('modal-user-profile');
+    refreshUserProfileData(u);
+  }
+  // プロフの詳細（人気度・ギフト等）を最新化する。開き直さず中身だけ差し替える
+  async function refreshUserProfileData(u) {
     try {
       const p = await DATA.userProfile(u.id);
       if (state.profileUser !== u) return;
@@ -855,6 +859,8 @@
       renderCoins();
       // 連続で贈れるよう、ギフト選択画面は閉じずに残す（残高表示だけ更新）
       $('gift-balance').textContent = fmt(state.coins);
+      // 後ろに相手のプロフが開いていたら、そちらの数字もその場で最新化する
+      if (state.profileUser?.id === target.id) refreshUserProfileData(state.profileUser);
       toast(`${target.name}さんに${gift.name}を送りました`);
       if (state.dmPeer?.id === target.id) {
         renderMessages(await DATA.listMessages(target.id));

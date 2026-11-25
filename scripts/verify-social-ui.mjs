@@ -161,6 +161,24 @@ check('ギフト画面の閉じるでモーダルが閉じる', !visible($('moda
 $('dm-back').click();
 check('戻るでDM画面が閉じる', !visible($('dm-screen')));
 
+// --- 送ったギフトが相手プロフへ即時反映される ---
+{
+  const row = rowByName($('friend-list'), 'みか');
+  row.querySelector('.avatar').click();
+  await tick();
+  $('fm-profile').click();
+  await tick();
+  const heartItem = [...document.querySelectorAll('#up-gift-strip .gift-strip-item')]
+    .find((el) => el.querySelector('.gift-icon-img')?.getAttribute('src') === 'gifts/gift-heart.webp');
+  check('送ったハートがみかのプロフに×1で即時反映される',
+    heartItem?.querySelector('.gift-count')?.textContent === '×1'
+    && $('up-popularity').textContent === '350');
+  document.querySelector('#modal-user-profile [data-close]').click();
+  await tick();
+  document.querySelector('#modal-friend-menu [data-close]').click();
+  await tick();
+}
+
 // --- フレンドサブタブ：申請承認 ---
 $('subtab-friend').click();
 await tick();

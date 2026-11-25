@@ -91,6 +91,12 @@
         .filter(Boolean)
         .sort((a, b) => b.price - a.price || b.count - a.count);
     };
+    // もらったギフトのランタイム台帳（初期値はダミーデータ、送信で増える）
+    let friendGiftsLedger = null;
+    const friendGiftsOf = (userId) => {
+      friendGiftsLedger ??= JSON.parse(JSON.stringify(D.friendGifts ?? {}));
+      return (friendGiftsLedger[userId] ??= []);
+    };
     const users = new Map();
     const addUser = (u) => users.set(u.id, {
       popularity: 0, wordwolfWins: 0, online: false, ...u,
@@ -1079,7 +1085,7 @@
           bio: u.bio ?? '',
           popularity: u.popularity ?? 0,
           wordwolfWins: u.wordwolfWins ?? 0,
-          gifts: giftSummaryOf((D.friendGifts ?? {})[userId] ?? []),
+          gifts: giftSummaryOf(friendGiftsOf(userId)),
         });
       },
       tickerFeed() {
@@ -1093,6 +1099,11 @@
         state.coins -= gift.price;
         const target = users.get(userId);
         target.popularity += gift.price;
+        // 相手の「もらったギフト」にも即時反映する
+        const fg = friendGiftsOf(userId);
+        const fgRow = fg.find((r) => r.giftKey === gift.key);
+        if (fgRow) fgRow.count += 1;
+        else fg.push({ giftKey: gift.key, count: 1 });
         const msg = {
           id: 'dm-' + (++state.seq), from: 'me', to: userId, kind: 'gift',
           gift: { giftKey: gift.key, name: gift.name, icon: gift.icon, price: gift.price },
