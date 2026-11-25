@@ -1322,6 +1322,24 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   padding: 14px 14px 12px;
 }
 .result-overlay .result-banner { margin: 0 0 6px; font-size: 25px; }
+/* 結果集計中：確定するまで結果を出さず、待つ画面を挟む（2026-11-26 おぎ） */
+.tally-overlay {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(70%, 240px); z-index: 30;
+  background: #fff; border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(23, 50, 74, 0.35);
+  padding: 22px 14px 18px; text-align: center;
+}
+.tally-wolf {
+  width: 64px; height: 64px; object-fit: contain;
+  animation: tally-bob 0.9s ease-in-out infinite alternate;
+}
+@keyframes tally-bob { from { transform: translateY(3px); } to { transform: translateY(-5px); } }
+.tally-text { margin-top: 10px; font-size: 16px; font-weight: 800; }
+.tally-dots span { animation: tally-dot 1.2s infinite; }
+.tally-dots span:nth-child(2) { animation-delay: 0.2s; }
+.tally-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes tally-dot { 0%, 60%, 100% { opacity: 0.25; } 30% { opacity: 1; } }
 .result-detail {
   text-align: center; font-size: 12.5px; line-height: 1.55;
   color: var(--ink-soft); font-weight: 700;

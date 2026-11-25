@@ -852,10 +852,11 @@
   async function pumpGiftNotify() {
     if (giftNotifyBusy || giftNotifyQueue.length === 0) return;
     // 対戦中は出さない（保留して少し後に再試行）。ただし結果画面
-    // （result/done）では出す：もらった事が分かるとお礼ギフトに
-    // つながるため（2026-11-25 おぎ）
+    // （done）では出す：もらった事が分かるとお礼ギフトに
+    // つながるため（2026-11-25 おぎ）。集計中（result/reversal）は
+    // まだ対戦中扱いで保留する（2026-11-26）
     const inMatch = !$('game-screen').classList.contains('hidden')
-      && !(state.gameView && (state.gameView.phase === 'result' || state.gameView.phase === 'done'));
+      && !(state.gameView && state.gameView.phase === 'done');
     if (inMatch) {
       if (!giftNotifyRetry) {
         giftNotifyRetry = setTimeout(() => { giftNotifyRetry = null; pumpGiftNotify(); }, 3000);
@@ -2368,7 +2369,7 @@
     discussion: '💬 話し合い',
     voting: '🗳️ 投票タイム',
     reversal: '🔄 逆転回答',
-    result: '🏆 結果発表',
+    result: '⏳ 結果集計中',
     done: '🏁 終了',
   };
   const REASON_TEXT = {
@@ -2588,8 +2589,9 @@
         : `${v.votesCast}/${v.playerCount}人 が投票済み`;
     }
 
-    // 逆転回答パネル
-    $('game-reversal-panel').classList.toggle('hidden', v.phase !== 'reversal');
+    // 逆転回答パネル：回答するウルフ本人だけに出す。それ以外の人は
+    // 集計中画面で待つ（結果は確定してから1回だけ出す。2026-11-26 おぎ）
+    $('game-reversal-panel').classList.toggle('hidden', !(v.phase === 'reversal' && v.reversalChoices));
     if (v.phase === 'reversal') {
       const choices = $('game-reversal-choices');
       choices.innerHTML = '';
@@ -2612,10 +2614,14 @@
       }
     }
 
-    // 結果パネル
-    const showResult = v.phase === 'result' || v.phase === 'done';
+    // 結果パネル：確定（done）してから1回だけ出す。それまでは集計中
+    // 画面で待ち、速報→確定の2段階表示にしない（2026-11-26 おぎ）
+    const showResult = v.phase === 'done';
     $('game-result-panel').classList.toggle('hidden', !showResult);
     if (showResult && v.winner) renderGameResult(v);
+    const showTally = v.phase === 'result'
+      || (v.phase === 'reversal' && !v.reversalChoices);
+    $('game-tally-panel').classList.toggle('hidden', !showTally);
     $('game-end-actions').classList.toggle('hidden', state.endShownGameId !== v.gameId);
   }
 

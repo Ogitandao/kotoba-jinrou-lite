@@ -147,6 +147,10 @@ await sleep(850);
 const c = document.querySelector('#game-reversal-choices .reversal-choice');
 if (c) c.click();
 await sleep(850);
+} else if (label.includes('集計中') || label.includes('逆転回答')) {
+// 集計中（result）／逆転待ち：仮想時計を進めて確定（done）を待つ
+KL().__simAdvanceTime(30);
+await sleep(700);
 } else {
 await sleep(700);
 }
@@ -358,6 +362,18 @@ await tick(60);
 check('投票すると「投票しました」表示になる',
 $('game-vote-state').textContent.includes('投票しました'),
 $('game-vote-state').textContent);
+
+// 集計中画面：結果は確定（done）まで出さず、集計中を挟む（2026-11-26 おぎ）。
+// 自分が追放されたウルフのときだけは逆転回答パネルが代わりに出る
+let tallySeen = false;
+for (let i = 0; i < 16 && !tallySeen; i++) {
+if (visible($('game-tally-panel')) || visible($('game-reversal-panel'))) { tallySeen = true; break; }
+KL().__simAdvanceTime(5);
+await sleep(650);
+}
+check('集計中：確定前に結果パネルを出さず、集計中画面（または逆転回答）を挟む',
+tallySeen && $('game-result-panel').classList.contains('hidden'),
+`label=${$('game-phase-label').textContent}`);
 
 const reachedResult = await waitForResult();
 check('結果発表：勝敗バナーと全員の正体・お題が出る',
