@@ -1238,3 +1238,4 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
 - Lottie プレイヤー（lottie.min.js）と diamond.json は client/lot/ に同梱し、必要時に動的ロード。素材の原典 zip は ~/workspace/kotoba-jinrou-lite-data/lottie/ に保管
 - デモページ fx-demo.html／fx-demo-lot.html は確認用に残置（ループ再生版）
 - 追補（同日）：一覧ダイヤの位置・大きさを修正。Lottie素材は画布内で中心が約14.6%下寄り＆小さめ。svg への CSS transform はプレイヤーの inline style に上書きされるため、拡大＋寄せはコンテナ（.gift-icon-lot/.gift-cell-lot）側に掛けるのが正解。最終値（おぎ実機確認で確定）：transform: translate(-3%, -20%) scale(1.38)。実測で中心ズレも解消し、ピッカー／ギフト帯とも他ギフトと中心が揃った。おぎ総評「高額ギフトだけ他と毛色が違うの良い」＝高額帯の別画風は正式なデザイン方針として確定
+- 追補2（同日）：高額演出に紙吹雪レイヤーを追加。おぎが LottieFiles から入手した Sparkle（lot/sparkle.json、1125×708・約2秒・1回再生）をドラゴン／ダイヤの全画面演出にだけ重ねる。一覧の回るダイヤや中級には付けない（おぎ指定）。原典 zip は kotoba-jinrou-lite-data/lottie/sparkle.lottie.zip

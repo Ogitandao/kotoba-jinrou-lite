@@ -720,6 +720,7 @@
   // 段階エフェクト本体：中額はポップアップにキラキラ、高額は全画面
   let gfxTimer = null;
   let gfxAnim = null;
+  let gfxSparkAnim = null;
   function playGiftFx(partner, gift) {
     const price = gift.price ?? giftPriceMap?.get(gift.giftKey) ?? 0;
     const el = $('gift-notify');
@@ -781,7 +782,18 @@
     }
     const cap = mk('gfx-cap');
     cap.textContent = `${partner.name}さんから ${gift.name}！`;
-    fx.append(mk('gfx-dim'), bg, center, cap);
+    // 高額演出だけに紙吹雪（Sparkle Lottie）を重ねる（おぎ指定・一覧には付けない）
+    const spark = mk('gfx-spark');
+    fx.append(mk('gfx-dim'), bg, center, spark, cap);
+    ensureLottie()
+      .then(() => {
+        if (!spark.isConnected) return;
+        gfxSparkAnim = window.lottie.loadAnimation({
+          container: spark, renderer: 'svg', loop: false, autoplay: true,
+          path: 'lot/sparkle.json',
+        });
+      })
+      .catch(() => {});
     // ダイヤは Lottie＋グローで十分なので星は飛ばさない（おぎ指定）
     for (let i = 0; gift.giftKey !== 'diamond' && i < 22; i++) {
       const f = document.createElement('i');
@@ -799,6 +811,10 @@
       if (gfxAnim) {
         gfxAnim.destroy();
         gfxAnim = null;
+      }
+      if (gfxSparkAnim) {
+        gfxSparkAnim.destroy();
+        gfxSparkAnim = null;
       }
     }, 3350);
   }
