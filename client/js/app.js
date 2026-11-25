@@ -287,10 +287,15 @@
     const hostAvatar = hostSrc
       ? `<span class="avatar avatar-md"><img class="avatar-img" src="${hostSrc}" alt="" /></span>`
       : `<span class="avatar avatar-md" style="background:${room.hostBg}">${room.hostIcon}</span>`;
+    // メタ情報は2行固定：1行目＝人数＋ジャンル、2行目＝対戦中（左）＋初心者歓迎。
+    // どちらの行も途中で改行させない（2026-11-25 おぎ）
+    const metaRow2 = (playing || beginner)
+      ? `<span class="meta-row">${playing}${beginner}</span>`
+      : '';
     b.innerHTML =
       hostAvatar +
       `<span class="room-main"><span class="room-title"></span>` +
-      `<span class="room-meta">${playing}<span class="room-players">👥 ${room.players}/${room.capacity}人</span>${genre}${beginner}</span></span>` +
+      `<span class="room-meta"><span class="meta-row"><span class="room-players">👥 ${room.players}/${room.capacity}人</span>${genre}</span>${metaRow2}</span></span>` +
       vis;
     b.querySelector('.room-title').textContent = room.title;
     b.addEventListener('click', () => enterRoom(room));
