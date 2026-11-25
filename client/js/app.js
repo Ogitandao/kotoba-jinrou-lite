@@ -2134,7 +2134,7 @@
         ? `あと${d.capacity - d.players}人集まると満室です（${d.players}/${d.capacity}人）`
         : !allReady
           ? `満室！あと${notReadyCount}人の準備OKを待っています`
-          : '全員そろいました！マスターの開始を待っています';
+          : 'マスターの開始を待っています';
     } else {
       note = 'このルームにはまだ参加していません';
     }
