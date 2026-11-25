@@ -670,12 +670,6 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   position: absolute; inset: 0;
   background: repeating-conic-gradient(from 0deg, rgba(255, 214, 90, .38) 0deg 9deg, rgba(140, 220, 255, .34) 9deg 18deg);
 }
-/* 高額演出専用の紙吹雪レイヤー（Sparkle Lottie、おぎ提供）。中央のギフトに重ねる */
-.gift-fx .gfx-spark {
-  position: absolute; left: 50%; top: 44%; width: min(560px, 135vw);
-  aspect-ratio: 1125 / 708; transform: translate(-50%, -50%); pointer-events: none;
-}
-.gift-fx .gfx-spark svg { width: 100%; height: 100%; display: block; }
 /* ダイヤ（Lottie）用はストライプでなくグロー：中心からパァッと光が広がる */
 .gift-fx .gfx-glow-wrap {
   position: absolute; left: 50%; top: 44%; width: 135vmax; height: 135vmax;
