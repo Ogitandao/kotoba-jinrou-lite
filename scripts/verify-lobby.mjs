@@ -60,8 +60,8 @@ check('ギフト帯が価格順に専用アート＋個数（2行表示）で並
 check('ギフト帯は表示専用（ボタンではない・すべて見るも無い）',
   $('gift-strip').tagName === 'DIV' && !$('gift-strip').textContent.includes('すべて見る'));
 check('ログインボーナスバナーが表示される', visible($('bonus-banner')));
-check('オンラインの友達が4人表示される',
-  document.querySelectorAll('#online-friends .friend-item').length === 4);
+check('オンラインの友達が12人表示される',
+  document.querySelectorAll('#online-friends .friend-item').length === 12);
 check('ランダム入室ボタンが表示される', visible($('btn-random')));
 check('ルーム一覧に8件表示される',
   document.querySelectorAll('#room-list .room-card').length === 8);

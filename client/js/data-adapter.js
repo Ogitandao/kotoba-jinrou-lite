@@ -113,6 +113,32 @@
     addUser({ id: 'u-sora', publicId: 'sora_3310', name: 'そら', icon: '🐥', iconKey: 'chick', iconBg: '#eafff3', bio: '昨日はじめました！よろしくです', popularity: 3, online: false, wordwolfWins: 1 });
     addUser({ id: 'u-mochi', publicId: 'mochi_9012', name: 'もち', icon: '🐹', iconKey: null, iconBg: '#fff0f3', bio: 'もちもちしてます', popularity: 12, online: false, wordwolfWins: 3 });
     addUser({ id: 'u-ai', publicId: 'ai_6611', name: 'あい', icon: '🐨', iconKey: 'koala', iconBg: '#e6f7ff', bio: 'コアラのようにのんびり遊んでます', popularity: 28, online: false, wordwolfWins: 5 });
+    addUser({ id: 'u-d01', publicId: 'yuna_0312', name: 'ゆうな', icon: '👩', iconKey: 'woman1', iconBg: '#ffeef5', bio: '放課後よくいます', popularity: 64, online: true, wordwolfWins: 12 });
+    addUser({ id: 'u-d02', publicId: 'kaito_7741', name: 'かいと', icon: '👨', iconKey: 'man1', iconBg: '#eef7ff', bio: '推理はまかせて', popularity: 210, online: false, wordwolfWins: 38 });
+    addUser({ id: 'u-d03', publicId: 'hana_5520', name: 'はな', icon: '🐶', iconKey: 'dog', iconBg: '#fff4e0', bio: 'わんわん', popularity: 33, online: true, wordwolfWins: 7 });
+    addUser({ id: 'u-d04', publicId: 'tetsu_9090', name: 'てつや', icon: '👨', iconKey: 'man2', iconBg: '#eafff3', bio: '社会人です。夜だけ', popularity: 145, online: false, wordwolfWins: 25 });
+    addUser({ id: 'u-d05', publicId: 'momo_2211', name: 'ももか', icon: '🐱', iconKey: 'cat', iconBg: '#f0ecff', bio: 'ももかです', popularity: 92, online: true, wordwolfWins: 18 });
+    addUser({ id: 'u-d06', publicId: 'jiro_6633', name: 'じろう', icon: '🐻', iconKey: 'bear', iconBg: '#fff0f3', bio: 'のんびり派', popularity: 18, online: false, wordwolfWins: 4 });
+    addUser({ id: 'u-d07', publicId: 'aki_1188', name: 'あきら', icon: '🦊', iconKey: 'fox', iconBg: '#ffeef5', bio: 'きつねアイコン気に入ってます', popularity: 480, online: false, wordwolfWins: 56 });
+    addUser({ id: 'u-d08', publicId: 'rin_4477', name: 'りん', icon: '👩', iconKey: 'woman2', iconBg: '#e6f7ff', bio: '高校生です', popularity: 57, online: true, wordwolfWins: 9 });
+    addUser({ id: 'u-d09', publicId: 'goro_3355', name: 'ごろう', icon: '🐼', iconKey: 'panda', iconBg: '#eef4ff', bio: 'パンダ好き', popularity: 260, online: false, wordwolfWins: 31 });
+    addUser({ id: 'u-d10', publicId: 'saki_8812', name: 'さき', icon: '🐰', iconKey: 'rabbit', iconBg: '#ffeef5', bio: 'うさぎ年です', popularity: 74, online: false, wordwolfWins: 14 });
+    addUser({ id: 'u-d11', publicId: 'pen_0099', name: 'ぺんた', icon: '🐧', iconKey: 'penguin', iconBg: '#eef7ff', bio: 'ペンギン推し', popularity: 41, online: true, wordwolfWins: 6 });
+    addUser({ id: 'u-d12', publicId: 'mai_6644', name: 'まい', icon: '👩', iconKey: 'woman3', iconBg: '#fff4e0', bio: '主婦です。昼休みに', popularity: 118, online: false, wordwolfWins: 22 });
+    addUser({ id: 'u-d13', publicId: 'shun_2233', name: 'しゅん', icon: '👨', iconKey: 'man3', iconBg: '#eafff3', bio: '眼鏡がトレードマーク', popularity: 305, online: false, wordwolfWins: 44 });
+    addUser({ id: 'u-d14', publicId: 'tama_7777', name: 'たま', icon: '🐸', iconKey: 'frog', iconBg: '#f0ecff', bio: 'けろけろ', popularity: 26, online: false, wordwolfWins: 3 });
+    addUser({ id: 'u-d15', publicId: 'nana_1122', name: 'なな', icon: '🐥', iconKey: 'chick', iconBg: '#fff0f3', bio: 'ひよこです', popularity: 15, online: true, wordwolfWins: 2 });
+    addUser({ id: 'u-d16', publicId: 'leo_9988', name: 'れお', icon: '🦁', iconKey: 'tiger', iconBg: '#ffeef5', bio: 'とら年です', popularity: 390, online: false, wordwolfWins: 49 });
+    addUser({ id: 'u-d17', publicId: 'yuki_3344', name: 'ゆき', icon: '🐺', iconKey: 'wolf', iconBg: '#e6f7ff', bio: '狼アイコンに憧れて', popularity: 520, online: false, wordwolfWins: 63 });
+    addUser({ id: 'u-d18', publicId: 'koko_5566', name: 'ここあ', icon: '🐨', iconKey: 'koala', iconBg: '#eef4ff', bio: 'まったり', popularity: 22, online: false, wordwolfWins: 5 });
+    addUser({ id: 'u-d19', publicId: 'sou_7788', name: 'そうた', icon: '👨', iconKey: 'man1', iconBg: '#fff4e0', bio: '大学生です', popularity: 167, online: true, wordwolfWins: 27 });
+    addUser({ id: 'u-d20', publicId: 'emi_9900', name: 'えみ', icon: '👩', iconKey: 'woman1', iconBg: '#eafff3', bio: 'えみです〜', popularity: 83, online: false, wordwolfWins: 11 });
+    addUser({ id: 'u-d21', publicId: 'azarashi_11', name: 'あざらし', icon: '🦭', iconKey: 'seal', iconBg: '#f0ecff', bio: 'あざらしレアらしい', popularity: 610, online: false, wordwolfWins: 71 });
+    addUser({ id: 'u-d22', publicId: 'tanu_2233', name: 'たぬきち', icon: '🦝', iconKey: 'tanuki', iconBg: '#fff0f3', bio: 'たぬきちです', popularity: 47, online: false, wordwolfWins: 8 });
+    addUser({ id: 'u-d23', publicId: 'fuku_4455', name: 'ふくろう', icon: '🦉', iconKey: 'owl', iconBg: '#ffeef5', bio: '夜型です', popularity: 134, online: false, wordwolfWins: 19 });
+    addUser({ id: 'u-d24', publicId: 'hina_6677', name: 'ひなた', icon: '👩', iconKey: 'woman2', iconBg: '#e6f7ff', bio: 'ひなたです', popularity: 29, online: true, wordwolfWins: 4 });
+    addUser({ id: 'u-d25', publicId: 'ryu_8899', name: 'りゅう', icon: '🐺', iconKey: 'wolf', iconBg: '#eef7ff', bio: '一匹狼', popularity: 445, online: false, wordwolfWins: 52 });
+    addUser({ id: 'u-d26', publicId: 'piyo_1010', name: 'ぴよこ', icon: '🐥', iconKey: 'chick', iconBg: '#fff4e0', bio: 'ぴよぴよ', popularity: 9, online: false, wordwolfWins: 1 });
     // 自分の選択アイコンは Sim でも再読込で維持する（実 DB では
     // profiles.icon_key が正本。Sim は localStorage で肩代わり）
     try {
@@ -125,7 +151,7 @@
     const state = {
       coins: D.me.coins,
       bonusClaimed: D.me.bonusClaimed,
-      friends: new Set(['u-mika', 'u-ken', 'u-risu', 'u-nyan']),
+      friends: new Set(['u-mika', 'u-ken', 'u-risu', 'u-nyan', 'u-d01', 'u-d02', 'u-d03', 'u-d04', 'u-d05', 'u-d06', 'u-d07', 'u-d08', 'u-d09', 'u-d10', 'u-d11', 'u-d12', 'u-d13', 'u-d14', 'u-d15', 'u-d16', 'u-d17', 'u-d18', 'u-d19', 'u-d20', 'u-d21', 'u-d22', 'u-d23', 'u-d24', 'u-d25', 'u-d26']),
       incoming: new Set(['u-sora']),
       outgoing: new Set(),
       blocked: new Set(),
@@ -141,6 +167,37 @@
         { id: 'dm-5', from: 'u-ken', to: 'me', kind: 'invite', invite: { roomId: 'r2', roomTitle: '経験者もOK部屋', password: 'wolf777' }, read: false },
         // デモ用シード：届いたギフト（起動時にスライド通知が出る確認用）
         { id: 'dm-6', from: 'u-ken', to: 'me', kind: 'gift', gift: { giftKey: 'crown', name: '王冠', icon: '👑', price: 3000 }, read: false },
+        { id: 'dm-10', from: 'u-d01', to: 'me', kind: 'text', body: '今日も21時から部屋立てるよ！来れる？', read: false },
+        { id: 'dm-11', from: 'u-d02', to: 'me', kind: 'text', body: 'この前の逆転回答、当てたのすごかったね', read: true },
+        { id: 'dm-12', from: 'u-d02', to: 'me', kind: 'text', body: '今度は負けないから真剣勝負しよ', read: false },
+        { id: 'dm-13', from: 'u-d03', to: 'me', kind: 'text', body: 'わん！また遊ぼうね', read: true },
+        { id: 'dm-14', from: 'u-d04', to: 'me', kind: 'text', body: '仕事終わった。今日は1戦だけ行ける', read: true },
+        { id: 'dm-15', from: 'u-d05', to: 'me', kind: 'text', body: 'ギフトありがとう！かわいかった〜', read: true },
+        { id: 'dm-16', from: 'u-d06', to: 'me', kind: 'text', body: 'のんびり部屋あったら誘って', read: true },
+        { id: 'dm-17', from: 'u-d07', to: 'me', kind: 'text', body: '推理のコツ教えてほしい', read: true },
+        { id: 'dm-18', from: 'u-d07', to: 'me', kind: 'text', body: '昨日のあの発言、完全に市民だと思ったのに', read: false },
+        { id: 'dm-19', from: 'u-d07', to: 'me', kind: 'text', body: 'まさかウルフだったとは…やられた', read: false },
+        { id: 'dm-20', from: 'u-d08', to: 'me', kind: 'text', body: '放課後ひま！誰か遊ぼ', read: true },
+        { id: 'dm-21', from: 'u-d09', to: 'me', kind: 'text', body: 'パンダのアイコン仲間探してます', read: true },
+        { id: 'dm-22', from: 'u-d10', to: 'me', kind: 'text', body: 'うさぎ同盟つくろう', read: true },
+        { id: 'dm-23', from: 'u-d11', to: 'me', kind: 'text', body: 'ぺんぺん！今日寒くない？', read: true },
+        { id: 'dm-24', from: 'u-d12', to: 'me', kind: 'text', body: '子供が寝たので少しだけ遊べます。初心者歓迎の部屋があったら教えてください', read: true },
+        { id: 'dm-25', from: 'u-d13', to: 'me', kind: 'text', body: '眼鏡キャラ同士、よろしく', read: true },
+        { id: 'dm-26', from: 'u-d14', to: 'me', kind: 'text', body: 'けろ。雨の日はワードウルフ日和', read: true },
+        { id: 'dm-27', from: 'u-d15', to: 'me', kind: 'text', body: 'ぴよ！はじめての勝利うれしかった', read: true },
+        { id: 'dm-28', from: 'u-d16', to: 'me', kind: 'text', body: 'がおー。今夜は勝つ', read: true },
+        { id: 'dm-29', from: 'u-d17', to: 'me', kind: 'text', body: '狼アイコンかっこいいよね', read: true },
+        { id: 'dm-30', from: 'u-d18', to: 'me', kind: 'text', body: 'まったり部屋専門です', read: true },
+        { id: 'dm-31', from: 'u-d19', to: 'me', kind: 'text', body: '課題終わった！遊ぶぞ', read: true },
+        { id: 'dm-32', from: 'u-d20', to: 'me', kind: 'text', body: 'えみです〜また誘ってね', read: true },
+        { id: 'dm-33', from: 'u-d21', to: 'me', kind: 'text', body: 'あざらしアイコンやっと解放できた', read: true },
+        { id: 'dm-34', from: 'u-d22', to: 'me', kind: 'text', body: 'たぬきち参上', read: true },
+        { id: 'dm-35', from: 'u-d23', to: 'me', kind: 'text', body: '夜中の部屋、静かで好き', read: true },
+        { id: 'dm-36', from: 'u-d24', to: 'me', kind: 'text', body: 'ひなたです。よろしくね', read: true },
+        { id: 'dm-37', from: 'u-d25', to: 'me', kind: 'text', body: '一匹狼だけど部屋は誘ってくれ', read: true },
+        { id: 'dm-38', from: 'u-d26', to: 'me', kind: 'text', body: 'ぴよぴよ。初心者です', read: true },
+        { id: 'dm-39', from: 'me', to: 'u-d14', kind: 'text', body: '今度まったり部屋で遊ぼう', read: true },
+        { id: 'dm-40', from: 'u-d05', to: 'me', kind: 'gift', gift: { giftKey: 'flower', name: 'お花', icon: '🌸', price: 50 }, read: true },
       ],
       seq: 100,
       ticker: [
