@@ -319,8 +319,6 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .gift-strip {
   display: flex; align-items: flex-start; gap: 12px;
-  /* ギフト有無で枠の高さが変わらないよう、帯の高さを固定する */
-  min-height: 61px; box-sizing: content-box;
   padding: 7px 0 0;
   white-space: nowrap; overflow-x: auto; overflow-y: hidden;
   scrollbar-width: none;
@@ -340,7 +338,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-size: 32px;
 }
 .gift-count { font-size: 11.5px; font-weight: 800; color: var(--ink-soft); line-height: 1.15; }
-.gift-strip-empty { color: var(--ink-soft); font-size: 13px; font-weight: 700; align-self: center; }
+.gift-strip-empty { color: var(--ink-soft); font-size: 13px; font-weight: 700; }
 .tappable { cursor: pointer; }
 /* 枠の右上角に被せてはみ出させる（おぎ指定）。色はリンク系の青 */
 .modal-x {
