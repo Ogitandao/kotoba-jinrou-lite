@@ -921,7 +921,7 @@
     const players = [mk(state.me, 1), ...others.map((u, i) => mk(u, i + 2))];
     const wolfId = players[2]?.id ?? players[1]?.id;
     state.gameView = {
-      gameId: 'demo-result', roomId: null, phase: 'done',
+      gameId: 'demo-result', roomId: null, phase: 'result',
       phaseDeadlineMs: Date.now() + 60000, phaseRemainSec: 0,
       category: '恋愛', messages: [], myMessageCount: 1,
       players, playerCount: players.length, votesCast: players.length,
@@ -929,32 +929,43 @@
       reversalOutcome: { attempted: true, correct: true },
       // お題は全ペア中で最長（合計18字）にして改行の出方を確認できるようにする
       topicPair: { citizen: 'ワイヤレスイヤホン', wolf: 'モバイルバッテリー' },
-      exiledId: players[1]?.id,
+      exiledId: wolfId,
       reveal: players.map((p) => ({
         id: p.id, isWolf: p.id === wolfId,
         topic: p.id === wolfId ? 'モバイルバッテリー' : 'ワイヤレスイヤホン',
       })),
       setStatus: 'finished', terminatedUserIds: [],
     };
-    state.endShownGameId = 'demo-result';
+    state.endShownGameId = null;
+    state.cutinShownGameId = null; // カットインを毎回再生する
     slideInScreen($('game-screen'));
     updateCreateBar();
     renderGame();
     $('game-title').textContent = '結果デモ';
-    // カウントダウンのピルも見た目確認用に、実際に減らして表示する
-    // （0になったら20に戻る見た目だけのループ）
-    const cd = $('game-end-countdown');
-    let demoLeft = 20;
-    const paintDemo = () => { cd.innerHTML = `<span class="cd-num">${demoLeft}</span>秒後にルームに戻ります`; };
-    paintDemo();
-    cd.classList.remove('hidden');
-    clearInterval(demoCdTimer);
-    demoCdTimer = setInterval(() => {
-      demoLeft = demoLeft <= 1 ? 20 : demoLeft - 1;
+    // 集計中（回答待ち）の演出も見られるよう、2.5秒は集計中を出して
+    // から確定（done）へ進める（2026-11-26 おぎ）
+    clearTimeout(demoPhaseTimer);
+    demoPhaseTimer = setTimeout(() => {
+      if (state.gameView?.gameId !== 'demo-result') return;
+      state.gameView.phase = 'done';
+      state.endShownGameId = 'demo-result';
+      renderGame();
+      $('game-title').textContent = '結果デモ';
+      // カウントダウンのピルも見た目確認用に、実際に減らして表示する
+      // （0になったら20に戻る見た目だけのループ）
+      const cd = $('game-end-countdown');
+      let demoLeft = 20;
+      const paintDemo = () => { cd.innerHTML = `<span class="cd-num">${demoLeft}</span>秒後にルームに戻ります`; };
       paintDemo();
-    }, 1000);
-    $('game-end-note').textContent = '（デモ表示中）おつかれさまでした！';
-    $('btn-end-towaiting').classList.remove('hidden');
+      cd.classList.remove('hidden');
+      clearInterval(demoCdTimer);
+      demoCdTimer = setInterval(() => {
+        demoLeft = demoLeft <= 1 ? 20 : demoLeft - 1;
+        paintDemo();
+      }, 1000);
+      $('game-end-note').textContent = '（デモ表示中）おつかれさまでした！';
+      $('btn-end-towaiting').classList.remove('hidden');
+    }, 2500);
   }
 
   function dismissGiftNotify() {
@@ -1999,6 +2010,7 @@
   let gameCloseTimer = null;
   let endReturnTimer = null; // 結果画面の自動ロビー帰還カウントダウン
   let demoCdTimer = null; // 結果デモ用カウントダウン表示（見た目だけ）
+  let demoPhaseTimer = null; // 結果デモの集計中→確定の遷移タイマー
   function slideInScreen(el) {
     el.classList.remove('hidden');
     if (typeof requestAnimationFrame === 'function') {
@@ -2398,6 +2410,7 @@
   function closeGameScreen() {
     stopEndReturnCountdown();
     if (demoCdTimer) { clearInterval(demoCdTimer); demoCdTimer = null; }
+    if (demoPhaseTimer) { clearTimeout(demoPhaseTimer); demoPhaseTimer = null; }
     stopGamePoll();
     state.gameId = null;
     state.gameView = null;
@@ -2721,10 +2734,6 @@
   function maybeShowCutin(v) {
     if (state.cutinShownGameId === v.gameId) return;
     state.cutinShownGameId = v.gameId;
-    const answererId = v.exiledId ?? (v.reveal ?? []).find((r) => r.isWolf)?.id;
-    const answerer = v.players.find((p) => p.id === answererId);
-    $('game-cutin-sub').textContent =
-      `${answerer?.name ?? 'ウルフ'}さんが「${v.topicPair?.citizen ?? ''}」を当てた！`;
     const el = $('game-cutin');
     el.classList.remove('hidden', 'play');
     void el.offsetWidth; // アニメーションを最初から再生させる

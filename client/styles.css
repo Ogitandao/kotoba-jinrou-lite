@@ -1317,25 +1317,25 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 /* 逆転成功カットイン：赤い帯が横から入って、少し見せて消える（2026-11-26 おぎ） */
 .cutin {
   position: absolute; inset: 0; z-index: 40;
-  display: flex; align-items: center;
   pointer-events: none; overflow: hidden;
 }
+/* 帯は斜め（-5度）に構えて横から流す。幅120%・左-10%で回転時の端欠けを防ぐ */
 .cutin-band {
-  width: 100%; text-align: center; color: #fff;
+  position: absolute; left: -10%; top: 50%; width: 120%;
+  text-align: center; color: #fff;
   background: linear-gradient(90deg, #d92b3a, #f0564a);
   box-shadow: 0 10px 30px rgba(185, 28, 28, 0.45);
   padding: 16px 10px 14px;
-  transform: translateX(-102%);
+  transform: translate(-110%, -50%) rotate(-5deg);
 }
 .cutin.play .cutin-band { animation: cutin-sweep 2.1s cubic-bezier(0.22, 0.9, 0.3, 1) forwards; }
 @keyframes cutin-sweep {
-  0% { transform: translateX(-102%); opacity: 1; }
-  14% { transform: translateX(0); opacity: 1; }
-  82% { transform: translateX(0); opacity: 1; }
-  100% { transform: translateX(0); opacity: 0; }
+  0% { transform: translate(-110%, -50%) rotate(-5deg); opacity: 1; }
+  14% { transform: translate(0, -50%) rotate(-5deg); opacity: 1; }
+  82% { transform: translate(0, -50%) rotate(-5deg); opacity: 1; }
+  100% { transform: translate(0, -50%) rotate(-5deg); opacity: 0; }
 }
 .cutin-main { font-size: 34px; font-weight: 900; letter-spacing: 0.04em; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18); }
-.cutin-sub { margin-top: 4px; font-size: 13.5px; font-weight: 800; }
 /* 結果ポップアップ：対戦画面の中央に重ねる（2026-11-25 おぎ手描きレイアウト）。
    勝敗バナー→理由（小）→アイコンの並び→ギフトボタン→一言→終了導線 */
 .result-overlay {

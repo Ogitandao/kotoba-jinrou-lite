@@ -275,7 +275,9 @@
       const now = Date.now();
       const H = 3600e3, M = 60e3, D = 24 * H;
       const atMap = {
-        'dm-0': now - 2 * D - 3 * H, 'dm-1': now - D - 2 * H, 'dm-2': now - 5 * H,
+        // dm-1/dm-2 は相対指定だと深夜帯に両方「昨日」へ寄って日付区切り
+        // 検証が落ちるため、カレンダー固定（昨日21:30／今日9:15）にする
+        'dm-0': now - 2 * D - 3 * H, 'dm-1': atSeed(1, 21, 30), 'dm-2': atSeed(0, 9, 15),
         'dm-3': now - D - 4 * H, 'dm-4': now - D - 3.5 * H,
         'dm-5': now - 2 * H, 'dm-6': now - 30 * M,
       };
