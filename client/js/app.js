@@ -290,7 +290,7 @@
     b.innerHTML =
       hostAvatar +
       `<span class="room-main"><span class="room-title"></span>` +
-      `<span class="room-meta"><span class="room-players">👥 ${room.players}/${room.capacity}人</span>${genre}${beginner}${playing}</span></span>` +
+      `<span class="room-meta">${playing}<span class="room-players">👥 ${room.players}/${room.capacity}人</span>${genre}${beginner}</span></span>` +
       vis;
     b.querySelector('.room-title').textContent = room.title;
     b.addEventListener('click', () => enterRoom(room));
