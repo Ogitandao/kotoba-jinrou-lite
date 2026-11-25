@@ -45,13 +45,13 @@
     <section id="tab-lobby" class="tab-panel">
       <!-- 自分のプロフィールカード -->
       <div class="profile-card">
-        <div class="profile-side">
-          <button id="my-avatar" class="avatar avatar-lg" type="button" aria-label="自分のアイコン"></button>
-          <span class="online-label"><span class="dot dot-on"></span>オンライン</span>
-        </div>
+        <button id="my-avatar" class="avatar avatar-lg" type="button" aria-label="自分のアイコン"></button>
         <div class="profile-main">
           <div class="profile-name-row">
-            <span id="my-name" class="profile-name">おぎ</span>
+            <button id="my-name-btn" class="profile-name-btn" type="button" aria-label="名前を編集">
+              <span id="my-name" class="profile-name">おぎ</span><span class="name-pencil" aria-hidden="true">✎</span>
+            </button>
+            <span class="online-label"><span class="dot dot-on"></span>オンライン</span>
           </div>
           <div class="profile-id">ID: <span id="my-id">ogi_2847</span></div>
           <button id="my-bio" class="profile-bio" type="button" aria-label="自己紹介を編集"></button>
@@ -295,6 +295,18 @@
     <p class="modal-note"><span id="avatar-modal-name">おぎ</span> さんのアイコン</p>
     <div id="icon-grid" class="icon-grid"></div>
     <button class="modal-close" data-close type="button">閉じる</button>
+  </div>
+
+  <!-- 名前の編集 -->
+  <div id="modal-name" class="modal hidden">
+    <h3 id="name-title">名前を編集</h3>
+    <p id="name-setup-note" class="modal-note hidden">ゲームで使う名前を決めてね。あとから変更もできます</p>
+    <input id="name-input" class="name-input" type="text" maxlength="9" placeholder="名前（9文字まで）" />
+    <p class="modal-note"><span id="name-count">0</span> / 9文字</p>
+    <div class="modal-actions">
+      <button id="name-cancel" class="btn btn-ghost" data-close type="button">キャンセル</button>
+      <button id="name-save" class="btn btn-primary" type="button">保存する</button>
+    </div>
   </div>
 
   <!-- 自己紹介の編集 -->

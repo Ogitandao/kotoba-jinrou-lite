@@ -91,16 +91,30 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .avatar-md { width: 56px; height: 56px; font-size: 34px; border-radius: 14px; }
 .avatar-sm { width: 52px; height: 52px; font-size: 32px; border-radius: 14px; position: relative; }
 .avatar-xl { width: 128px; height: 128px; font-size: 76px; margin: 10px auto; }
-.profile-side { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .profile-main { min-width: 0; }
-.profile-name-row { display: flex; align-items: center; gap: 10px; }
+.profile-name-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 /* 名前もオンライン表示も改行させない。狭い画面では文字サイズを下げて収める */
-.profile-name { font-size: clamp(19px, 6.2vw, 26px); font-weight: 800; white-space: nowrap; }
+.profile-name-btn {
+  position: relative; min-width: 0;
+  background: none; border: none; padding: 0 10px 0 0; cursor: pointer;
+  font-family: inherit; color: inherit; text-align: left;
+}
+.profile-name { font-size: clamp(17px, 5.8vw, 26px); font-weight: 800; white-space: nowrap; }
+.profile-name.long { font-size: clamp(14px, 4.6vw, 20px); }
+.name-pencil {
+  position: absolute; top: -2px; right: -2px;
+  font-size: 11px; color: var(--ink-soft);
+}
 .online-label {
   color: #159a5f; font-weight: 700;
-  font-size: clamp(10px, 3.4vw, 13px);
+  font-size: clamp(9px, 3vw, 13px);
   display: inline-flex; align-items: center; gap: 5px;
-  white-space: nowrap;
+  white-space: nowrap; flex: 0 0 auto;
+}
+.name-input {
+  width: 100%; font: inherit; font-size: 16px; font-weight: 700;
+  border: 2px solid var(--line); border-radius: 12px;
+  padding: 10px 12px; box-sizing: border-box; background: #f9fdff; color: var(--ink);
 }
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 .dot-on { background: #2ecc71; }

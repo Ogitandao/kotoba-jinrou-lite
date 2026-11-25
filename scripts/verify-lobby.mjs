@@ -197,6 +197,20 @@ await new Promise((r) => setTimeout(r, 30));
 check('空で保存すると「自己紹介（タップで編集）」の案内表示に戻る',
   $('my-bio').textContent === '自己紹介（タップで編集）' && $('my-bio').classList.contains('empty'));
 
+check('名前タップで編集モーダルが開く', (() => {
+  $('my-name-btn').click();
+  const open = !$('modal-name').classList.contains('hidden');
+  const pencil = !!document.querySelector('.name-pencil');
+  return open && pencil;
+})());
+check('名前を変更するとロビーに反映される', await (async () => {
+  $('name-input').value = 'あたらしいなまえ';
+  $('name-input').dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+  $('name-save').click();
+  await new Promise((r) => setTimeout(r, 60));
+  return $('my-name').textContent === 'あたらしいなまえ'
+    && $('modal-name').classList.contains('hidden');
+})());
 check('縦固定：横向き案内オーバーレイがある', !!$('rotate-notice'));
 check('縦固定：横向きメディアクエリで表示する CSS がある',
   readFileSync(new URL('styles.css', base), 'utf8').includes('(orientation: landscape)'));

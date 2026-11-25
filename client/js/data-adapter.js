@@ -87,6 +87,7 @@
     addUser({
       id: 'me', publicId: D.me.userId, name: D.me.name, icon: D.me.icon, iconKey: 'wolf',
       iconBg: D.me.iconBg, bio: D.me.bio, popularity: D.me.popularity, online: true,
+      nameDecidedAt: '2026-01-01T00:00:00Z',
     });
     addUser({ id: 'u-mika', publicId: 'mika_1024', name: 'みか', icon: '🐰', iconKey: 'rabbit', iconBg: '#ffeef5', bio: 'ワードウルフ大好き！毎晩やってます', popularity: 320, online: true, roomTitle: 'はじめてさん集合！' });
     addUser({ id: 'u-ken', publicId: 'ken_7788', name: 'けん', icon: '🦉', iconKey: 'owl', iconBg: '#eef7ff', bio: '真剣勝負派。推理は任せて', popularity: 540, online: true, roomTitle: null });
@@ -1091,6 +1092,20 @@
         users.get('me').bio = v;
         return ok({ bio: v });
       },
+      updateName(name) {
+        const v = String(name ?? '').trim();
+        if (!v) return Promise.reject(fail('NAME_EMPTY', '名前を入力してください'));
+        if ([...v].length > 9) {
+          return Promise.reject(fail('NAME_TOO_LONG', '名前は9文字までです'));
+        }
+        if (!/[ぁ-んァ-ヶ一-龥a-zA-Z0-9]/.test(v)) {
+          return Promise.reject(fail('NAME_SYMBOL_ONLY', '名前には文字や数字を1文字以上入れてください'));
+        }
+        const me = users.get('me');
+        me.name = v;
+        me.nameDecidedAt = new Date().toISOString();
+        return ok({ displayName: v });
+      },
       setIcon(key) {
         const cat = ICON_CATALOG.find((c) => c.key === key);
         if (!cat) return Promise.reject(fail('ICON_NOT_FOUND', 'そのアイコンは存在しません'));
@@ -1412,6 +1427,7 @@
       id: p.id, publicId: p.public_id, name: p.display_name, icon: p.icon_emoji,
       iconKey: p.icon_key ?? null,
       iconBg: p.icon_bg, bio: p.bio, popularity: p.popularity,
+      nameDecidedAt: p.name_decided_at ?? null,
       online: p.last_seen_at ? (Date.now() - new Date(p.last_seen_at).getTime() < 5 * 60 * 1000) : false,
       roomTitle: null, ...extra,
     });
@@ -1613,6 +1629,10 @@
       async updateBio(bio) {
         const r = await rpc('kl_update_profile', { p_bio: String(bio ?? '').trim() });
         return { bio: r.bio };
+      },
+      async updateName(name) {
+        const r = await rpc('kl_update_profile', { p_display_name: String(name ?? '').trim() });
+        return { displayName: r.displayName };
       },
       async setIcon(key) {
         const r = await rpc('kl_set_icon', { p_icon_key: key });
@@ -1879,6 +1899,7 @@
     listIcons: () => active.listIcons(),
     setIcon: (key) => active.setIcon(key),
     updateBio: (bio) => active.updateBio(bio),
+    updateName: (name) => active.updateName(name),
     sendInvite: (id, roomId, pw) => active.sendInvite(id, roomId, pw),
     spendCoins: (n) => active.spendCoins(n),
     addCoins: (n) => active.addCoins(n),

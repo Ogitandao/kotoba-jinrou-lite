@@ -132,6 +132,8 @@
     if (!me) return;
     fillAvatar($('my-avatar'), me);
     $('my-name').textContent = me.name;
+    // 長い名前は名前行に収まるよう一段小さくする（改行させない）
+    $('my-name').classList.toggle('long', [...(me.name ?? '')].length >= 7);
     $('my-id').textContent = me.publicId;
     const bioEl = $('my-bio');
     if (me.bio) {
@@ -1502,6 +1504,37 @@
     $('btn-account').addEventListener('click', () => toast('アカウント設定は認証接続フェーズで実装します'));
     $('btn-logout').addEventListener('click', () => toast('ログアウトは認証接続フェーズで実装します'));
     $('my-avatar').addEventListener('click', openIconModal);
+    // 名前編集（タップで編集）。新規登録直後は「名前を決める」ポップアップ
+    // として出し、決めるまで閉じられない（2026-11-25 おぎ）
+    let nameSetupMode = false;
+    function openNameModal(setup) {
+      nameSetupMode = !!setup;
+      $('name-title').textContent = setup ? '名前を決めよう' : '名前を編集';
+      $('name-setup-note').classList.toggle('hidden', !setup);
+      $('name-cancel').classList.toggle('hidden', !!setup);
+      $('name-save').textContent = setup ? '決定する' : '保存する';
+      $('name-input').value = setup ? '' : (state.me?.name ?? '');
+      $('name-count').textContent = [...$('name-input').value].length;
+      openModal('modal-name');
+    }
+    state.openNameSetup = () => openNameModal(true);
+    $('my-name-btn').addEventListener('click', () => openNameModal(false));
+    $('name-input').addEventListener('input', () => {
+      $('name-count').textContent = [...$('name-input').value].length;
+    });
+    $('name-save').addEventListener('click', async () => {
+      try {
+        const r = await DATA.updateName($('name-input').value);
+        state.me.name = r.displayName;
+        state.me.nameDecidedAt = new Date().toISOString();
+        rememberUsers([state.me]);
+        renderProfile();
+        const wasSetup = nameSetupMode;
+        nameSetupMode = false;
+        closeModal();
+        toast(wasSetup ? '名前を決めました' : '名前を変更しました');
+      } catch (e) { toastError(e); }
+    });
     $('my-bio').addEventListener('click', () => {
       $('bio-input').value = state.me?.bio ?? '';
       $('bio-count').textContent = [...$('bio-input').value].length;
@@ -1663,8 +1696,13 @@
       if (e.target !== $('modal-backdrop')) return;
       // チュートリアル表示中は枠の外をタップしても閉じられない（おぎ仕様）
       if (!$('modal-tutorial').classList.contains('hidden')) return;
+      // 名前決定ポップアップ（新規登録後）も外タップでは閉じられない
+      if (!$('modal-name').classList.contains('hidden')
+        && $('name-cancel').classList.contains('hidden')) return;
       closeModal();
     });
+    // 新規登録後、名前が未決定なら最初に決めてもらう（1回だけ）
+    if (state.me && !state.me.nameDecidedAt) openNameModal(true);
   }
 
   document.addEventListener('DOMContentLoaded', init);
