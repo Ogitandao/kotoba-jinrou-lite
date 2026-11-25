@@ -951,32 +951,91 @@
       state.endShownGameId = 'demo-result';
       renderGame();
       $('game-title').textContent = '結果デモ';
-      // カウントダウンのピルも本番どおりに表示する：20→0を1回だけ
-      // 数え、0になったらデモを閉じてロビーへ戻る（ループさせない。
-      // 以前は見た目確認用に巻き戻していたが、実フロー再現にしたので廃止）
-      const cd = $('game-end-countdown');
-      let demoLeft = 20;
-      const paintDemo = () => { cd.innerHTML = `<span class="cd-num">${demoLeft}</span>秒後にルームに戻ります`; };
-      paintDemo();
-      cd.classList.remove('hidden');
-      clearInterval(demoCdTimer);
-      demoCdTimer = setInterval(() => {
-        demoLeft -= 1;
-        if (demoLeft <= 0) {
-          clearInterval(demoCdTimer);
-          demoCdTimer = null;
-          if (state.gameView?.gameId === 'demo-result') {
-            closeGameScreen();
-            closeRoomScreen();
-            refreshRooms();
-          }
-          return;
-        }
-        paintDemo();
-      }, 1000);
-      $('game-end-note').textContent = '（デモ表示中）おつかれさまでした！';
-      $('btn-end-towaiting').classList.remove('hidden');
+      paintDemoEnd();
     }, 2500);
+  }
+
+  // デモ共通：確定後の見た目（カウントダウンは20→0を1回だけ数え、
+  // 0になったらデモを閉じてロビーへ戻る。ループさせない）
+  function paintDemoEnd() {
+    const cd = $('game-end-countdown');
+    let demoLeft = 20;
+    const paintDemo = () => { cd.innerHTML = `<span class="cd-num">${demoLeft}</span>秒後にルームに戻ります`; };
+    paintDemo();
+    cd.classList.remove('hidden');
+    clearInterval(demoCdTimer);
+    demoCdTimer = setInterval(() => {
+      demoLeft -= 1;
+      if (demoLeft <= 0) {
+        clearInterval(demoCdTimer);
+        demoCdTimer = null;
+        if (state.gameView?.gameId?.startsWith('demo-')) {
+          closeGameScreen();
+          closeRoomScreen();
+          refreshRooms();
+        }
+        return;
+      }
+      paintDemo();
+    }, 1000);
+    $('game-end-note').textContent = '（デモ表示中）おつかれさまでした！';
+    $('btn-end-towaiting').classList.remove('hidden');
+  }
+
+  // 逆転回答画面のデモ（Sim専用）：自分が追放されたウルフとして
+  // 6択を出す。選ぶと集計中→結果（正解ならカットイン）まで流れる
+  async function showReversalDemo() {
+    let others = [];
+    try { others = (await DATA.listFriends() ?? []).slice(0, 3); } catch { /* 空でも続行 */ }
+    const mk = (u, no) => ({ id: u.id, name: u.name, iconKey: u.iconKey, emoji: u.emoji, no });
+    const players = [mk(state.me, 1), ...others.map((u, i) => mk(u, i + 2))];
+    const citizen = 'ワイヤレスイヤホン';
+    const dummies = ['スマートフォン', 'ノートパソコン', 'タブレット', 'スマートウォッチ', 'ワイヤレスマウス'];
+    const choices = [...dummies, citizen].sort(() => Math.random() - 0.5);
+    state.gameView = {
+      gameId: 'demo-reversal', roomId: null, phase: 'reversal',
+      phaseDeadlineMs: Date.now() + 30000, phaseRemainSec: 30,
+      category: '家電', messages: [], myMessageCount: 1,
+      players, playerCount: players.length, votesCast: players.length,
+      topicPair: { citizen, wolf: 'モバイルバッテリー' },
+      myTopic: 'モバイルバッテリー',
+      exiledId: state.me.id,
+      reversalChoices: choices,
+      setStatus: 'playing', terminatedUserIds: [],
+    };
+    state.endShownGameId = null;
+    state.cutinShownGameId = null;
+    slideInScreen($('game-screen'));
+    updateCreateBar();
+    renderGame();
+    $('game-title').textContent = '逆転回答デモ';
+  }
+
+  // 逆転回答デモの回答処理：集計中を挟んで結果まで進める
+  function demoReversalAnswer(choice) {
+    const v = state.gameView;
+    if (!v || v.gameId !== 'demo-reversal' || v.phase !== 'reversal') return;
+    const correct = choice === v.topicPair.citizen;
+    v.phase = 'result';
+    v.reversalChoices = undefined;
+    renderGame();
+    clearTimeout(demoPhaseTimer);
+    demoPhaseTimer = setTimeout(() => {
+      if (state.gameView?.gameId !== 'demo-reversal') return;
+      v.phase = 'done';
+      v.winner = correct ? 'wolves' : 'citizens';
+      v.winReason = 'reversal';
+      v.reversalOutcome = { attempted: true, correct };
+      v.reveal = v.players.map((p) => ({
+        id: p.id, isWolf: p.id === state.me.id,
+        topic: p.id === state.me.id ? v.topicPair.wolf : v.topicPair.citizen,
+      }));
+      state.endShownGameId = 'demo-reversal';
+      state.cutinShownGameId = null;
+      renderGame();
+      $('game-title').textContent = '逆転回答デモ';
+      paintDemoEnd();
+    }, 1800);
   }
 
   function dismissGiftNotify() {
@@ -2825,6 +2884,7 @@
   async function submitReversal(choice) {
     const v = state.gameView;
     if (!v) return;
+    if (v.gameId === 'demo-reversal') { demoReversalAnswer(choice); return; }
     try {
       await DATA.submitReversal(v.gameId, choice);
       pollGame();
@@ -3024,6 +3084,7 @@
       $('row-gift-test').classList.toggle('hidden', DATA.mode !== 'sim');
       $('row-consent-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       $('row-result-test').classList.toggle('hidden', DATA.mode !== 'sim');
+      $('row-reversal-test').classList.toggle('hidden', DATA.mode !== 'sim');
       openModal('modal-settings');
     });
     $('btn-gift-test').addEventListener('click', () => {
@@ -3040,6 +3101,10 @@
     $('btn-result-test').addEventListener('click', () => {
       closeModal();
       setTimeout(showResultDemo, 380);
+    });
+    $('btn-reversal-test').addEventListener('click', () => {
+      closeModal();
+      setTimeout(showReversalDemo, 380);
     });
     $('fm-profile').addEventListener('click', () => {
       const u = state.menuUser;
