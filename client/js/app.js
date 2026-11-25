@@ -270,7 +270,9 @@
     el.innerHTML = items
       .map((g) => (g.giftKey === 'diamond'
         ? `<span class="gift-strip-item"><span class="gift-icon-lot" data-gift-art="diamond"></span><span class="gift-count">×${g.count}</span></span>`
-        : `<span class="gift-strip-item"><img class="gift-icon-img" src="gifts/gift-${g.giftKey}.webp" alt="${g.name}" data-emoji="${g.icon}" /><span class="gift-count">×${g.count}</span></span>`))
+        : g.giftKey === 'dragon'
+          ? `<span class="gift-strip-item"><img class="gift-icon-fx" src="gifts/gift-dragon-fx.webp" alt="${g.name}" /><span class="gift-count">×${g.count}</span></span>`
+          : `<span class="gift-strip-item"><img class="gift-icon-img" src="gifts/gift-${g.giftKey}.webp" alt="${g.name}" data-emoji="${g.icon}" /><span class="gift-count">×${g.count}</span></span>`))
       .join('');
     // 専用アートが無いギフトは絵文字表示にフォールバックする
     el.querySelectorAll('.gift-icon-img').forEach((img) => {
@@ -804,15 +806,19 @@
   }
 
   function gfxBigImg(gift) {
+    // 外側（wrap）が登場アニメ、内側の絵が「ふわふわ浮く」アニメを担当する
+    const wrap = document.createElement('span');
+    wrap.className = 'gfx-big-wrap';
     const img = document.createElement('img');
-    img.className = 'gfx-big';
+    img.className = 'gfx-big-img';
     img.alt = '';
     img.src = `gifts/gift-${gift.giftKey}-fx.webp`;
     img.onerror = () => {
       img.onerror = null;
       img.src = `gifts/gift-${gift.giftKey}.webp`;
     };
-    return img;
+    wrap.appendChild(img);
+    return wrap;
   }
 
   async function pumpGiftNotify() {
@@ -1606,7 +1612,9 @@
       b.dataset.giftKey = g.key;
       const artHtml = g.key === 'diamond'
         ? '<span class="gift-cell-art"><span class="gift-cell-lot" data-gift-art="diamond"></span></span>'
-        : `<span class="gift-cell-art"><span class="gift-cell-emoji">${g.icon}</span><img src="gifts/gift-${g.key}.webp" alt="" onerror="this.remove()"></span>`;
+        : g.key === 'dragon'
+          ? '<span class="gift-cell-art"><img class="gift-cell-fx" src="gifts/gift-dragon-fx.webp" alt=""></span>'
+          : `<span class="gift-cell-art"><span class="gift-cell-emoji">${g.icon}</span><img src="gifts/gift-${g.key}.webp" alt="" onerror="this.remove()"></span>`;
       b.innerHTML = artHtml +
         `<span class="gift-price"><svg class="gift-coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#ffc93c"/><circle cx="12" cy="12" r="9" fill="none" stroke="#dfa40f" stroke-width="2"/><circle cx="12" cy="12" r="3.6" fill="#dfa40f"/></svg>${fmt(g.price)}</span>`;
       b.setAttribute('aria-label', g.name);

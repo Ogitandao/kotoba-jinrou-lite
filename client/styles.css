@@ -339,6 +339,10 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .gift-icon-img { width: 46px; height: 46px; border-radius: 12px; display: block; }
 .gift-icon-lot { width: 46px; height: 46px; display: block; }
+/* ドラゴンは背景から切り離した頭だけ絵で、ふわふわ浮かせる（おぎ指定） */
+.gift-icon-fx { width: 46px; height: 46px; object-fit: contain; display: block; animation: gift-bob 2.4s ease-in-out infinite alternate; }
+.gift-cell-fx { width: 100%; height: 100%; object-fit: contain; display: block; animation: gift-bob 2.4s ease-in-out infinite alternate; }
+@keyframes gift-bob { from { transform: translateY(-2.5px); } to { transform: translateY(2.5px); } }
 .gift-icon-lot svg, .gift-cell-lot svg { width: 100%; height: 100%; display: block; }
 /* Lottieのダイヤは画布の中で小さめ＆下寄り（実測で中心が約14.6%下）。
    svg 側はプレイヤーが inline style で transform を上書きするため、
@@ -692,12 +696,17 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   58% { transform: scale(1.05); opacity: .95; }
   100% { transform: scale(1.25); opacity: 0; }
 }
-.gift-fx .gfx-big {
-  position: absolute; left: 50%; top: 44%; width: 200px; height: 200px; object-fit: contain;
+.gift-fx .gfx-big-wrap {
+  position: absolute; left: 50%; top: 44%; width: 200px; height: 200px;
   transform: translate(-50%, -50%) scale(.2); opacity: 0;
   filter: drop-shadow(0 14px 30px rgba(0, 0, 0, .35));
   animation: gfx-pop 3.2s cubic-bezier(.2, 1.4, .4, 1) forwards;
 }
+.gift-fx .gfx-big-img {
+  width: 100%; height: 100%; object-fit: contain; display: block;
+  animation: gfx-bob 2.2s ease-in-out .45s infinite alternate;
+}
+@keyframes gfx-bob { from { transform: translateY(-7px); } to { transform: translateY(7px); } }
 .gift-fx .gfx-lot {
   position: absolute; left: 50%; top: 44%; width: 250px; height: 250px;
   transform: translate(-50%, -50%);
