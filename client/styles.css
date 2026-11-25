@@ -738,7 +738,11 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .friend-last.on { color: #1d9e50; font-weight: 700; }
 .friend-actions { display: flex; gap: 8px; }
-.friend-actions .mini-btn { flex: 1 1 0; text-align: center; }
+.friend-actions .mini-btn {
+  flex: 1 1 0; height: 38px; padding: 0 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  white-space: nowrap; text-align: center;
+}
 .mini-btn {
   flex: 0 0 auto;
   border-radius: 999px; padding: 7px 13px;

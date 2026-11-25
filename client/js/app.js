@@ -725,7 +725,7 @@
     reqList.innerHTML = '';
     $('request-section').classList.toggle('hidden', incoming.length === 0);
     for (const u of incoming) {
-      reqList.appendChild(userRow(u, [
+      const reqRow = userRow(u, [
         smallBtn('承認', 'mini-btn primary', () => {
           openConfirm(`${u.name}さんのフレンド申請を\n承認しますか？`, '承認する', async () => {
             try {
@@ -744,7 +744,14 @@
             } catch (e) { toastError(e); }
           });
         }),
-      ]));
+      ]);
+      // 申請者のアイコンタップでプロフを開ける（誰か確認してから承認したい）
+      const reqAv = reqRow.querySelector('.avatar');
+      if (reqAv) {
+        reqAv.classList.add('tappable');
+        reqAv.addEventListener('click', () => openUserProfile(u));
+      }
+      reqList.appendChild(reqRow);
     }
 
     const outList = $('outgoing-list');
@@ -771,7 +778,8 @@
     if (u.online) return 'オンライン中';
     if (u.lastActiveMin == null) return 'オフライン';
     const m = u.lastActiveMin;
-    if (m < 60) return `最終ログイン：${m}分前`;
+    // 細かく出しすぎると監視感が出るので、1時間以内は「さっき」に丸める
+    if (m < 60) return '最終ログイン：さっき';
     if (m < 1440) return `最終ログイン：${Math.floor(m / 60)}時間前`;
     return `最終ログイン：${Math.floor(m / 1440)}日前`;
   }

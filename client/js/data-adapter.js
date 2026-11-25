@@ -276,6 +276,7 @@
       id: u.id, publicId: u.publicId, name: u.name, icon: u.icon,
       iconKey: u.iconKey ?? null,
       iconBg: u.iconBg, bio: u.bio, popularity: u.popularity, online: u.online,
+      lastActiveMin: u.lastActiveMin ?? null,
       roomTitle: u.roomTitle ?? null,
     });
     const pubGroup = (g) => ({
