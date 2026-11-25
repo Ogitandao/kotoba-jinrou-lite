@@ -1241,3 +1241,5 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
 - 追補2（同日）：高額演出に紙吹雪レイヤーを追加。おぎが LottieFiles から入手した Sparkle（lot/sparkle.json、1125×708・約2秒・1回再生）をドラゴン／ダイヤの全画面演出にだけ重ねる。一覧の回るダイヤや中級には付けない（おぎ指定）。原典 zip は kotoba-jinrou-lite-data/lottie/sparkle.lottie.zip
 - 追補3（同日）：Sparkle紙吹雪は撤去（おぎ判断「上手く言えてないから外してよい」）。素材 zip はデータ側に保管のまま。あわせてドラゴン専用デモ fx-demo-dragon.html を正式に追加（これまでドラゴンの見れるサンプルが本番に無かったのが混乱の元だった）
 - 追補4（同日）：ドラゴンは背景から切り離した頭だけ絵（gift-dragon-fx.webp、既存の透過抽出版）を使い、表示箇所では上下にふわふわ浮かせる（おぎ指定）。対象＝全画面演出の中央（登場アニメと分離して内側の絵が bob）、ギフトピッカー、ギフト帯。ダイヤ（回転）と並んで高額2種だけタイル背景なしの特別扱い
+- 2026-11-25 21:43 対戦画面の最終確認OK（おぎ）：スタートボタンの色変化＋脈動、準備OKボタンの緑、招待リストのオンライン点、キーボード時の詰め表示（kb-open）、スクロールの滑らかさ（rAFアニメーター）すべて承認。**これで全画面の一次完成**（ロビー／フレンド／DM・グループ／待機室・対戦画面）。残る横断チェック＝ギフト到着ポップアップの総確認（演出含む）は全画面完成に伴い実施タイミングに到達（おぎへのリマインド済み・実機で一緒に確認）
+- 追補5（同日夜）：処分システムのDB層を実装（migration 0034、本番適用・検証済み）。reports.target_kind に game_message 追加、penalty_events.kind に warning/violation/master_stall 追加、moderation_cases／reporter_stats／ng_words／stall_events の4表新設、kl__ng_check（正規化照合。空白・記号を挟む回避も吸収）、kl__detect_stalls（満室＋全員準備OKから5分で証跡記録、cron 1分毎）。次は判定パイプライン（Edge Function moderation-run）で、OpenAI Moderation API キー（おぎのOpenAIアカウントで発行・無料、Secret にのみ配置）が必要
