@@ -134,9 +134,9 @@ const msgs = () => [...document.querySelectorAll('#dm-msgs-inner > .msg-line')];
 check('DMの発言は下端寄せコンテナ（dm-msgs-inner）の中に時系列で並ぶ',
   msgs().length === 2 && msgs()[0].textContent.includes('昨日はありがとう')
   && msgs()[1].textContent.includes('部屋立てるから来て'));
-check('日付区切り（昨日／今日）と吹き出し横の時刻が出る',
+check('日付区切り（昨日／今日）と吹き出し横の時刻が出る（24時間表記）',
   document.querySelectorAll('#dm-msgs-inner > .date-sep').length === 2
-  && msgs().every((r) => r.querySelector('.msg-time')?.textContent.includes('午')));
+  && msgs().every((r) => /^\d{1,2}:\d{2}$/.test(r.querySelector('.msg-time')?.textContent ?? '')));
 check('DMを開くと未読バッジが消える',
   !rowByName($('talk-list'), 'みか')?.querySelector('.unread-badge'));
 check('みかを読むとナビの未読バッジが2に減る（けんの招待＋ギフト分が残る）',

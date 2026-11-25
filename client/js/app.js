@@ -905,9 +905,7 @@
   function fmtMsgTime(at) {
     if (!at) return '';
     const d = new Date(at);
-    const h = d.getHours();
-    const h12 = h % 12 || 12;
-    return `${h < 12 ? '午前' : '午後'}${h12}:${String(d.getMinutes()).padStart(2, '0')}`;
+    return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
   function dayKeyOf(at) {
     if (!at) return '';
