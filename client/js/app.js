@@ -1703,23 +1703,19 @@
     addTag('tag-public', d.reversalEnabled ? '逆転回答あり' : '逆転回答なし');
     if (d.status === 'playing') addTag('tag-private', '対戦中');
 
-    // 左右の席列：左列に前半、右列に後半。空き枠は「空席」で出す
-    const leftBox = $('room-slots-left');
-    const rightBox = $('room-slots-right');
-    leftBox.innerHTML = '';
-    rightBox.innerHTML = '';
+    // 席は上部グリッド（4列）に番号順。空き枠は「空席」で出す
+    const grid = $('room-members');
+    grid.innerHTML = '';
     const iAmHost = d.hostId === state.me.id;
-    const leftCount = Math.ceil(d.capacity / 2);
     for (let i = 0; i < d.capacity; i++) {
-      const target = i < leftCount ? leftBox : rightBox;
       const m = d.members[i];
       if (!m) {
-        target.appendChild(slotEl({ no: i + 1, empty: true }));
+        grid.appendChild(slotEl({ no: i + 1, empty: true }));
         continue;
       }
       // マスターは待機室でメンバーをキックできる（自分と対戦中は不可）
       const kickable = iAmHost && d.status === 'lobby' && !m.isHost && m.id !== state.me.id;
-      target.appendChild(slotEl({
+      grid.appendChild(slotEl({
         no: i + 1,
         user: m,
         ready: d.status === 'lobby' && !m.isHost && !!m.ready,
@@ -2056,14 +2052,11 @@
     const showPlayers = v.phase === 'intro' || v.phase === 'discussion';
     $('game-frame').classList.toggle('players-off', !showPlayers);
 
-    // 参加者（待機室と同じ左右の席列）
-    const gl = $('game-slots-left');
-    const gr = $('game-slots-right');
+    // 参加者（待機室と同じ上部グリッド）
+    const gl = $('game-slots');
     gl.innerHTML = '';
-    gr.innerHTML = '';
-    const gLeft = Math.ceil(v.players.length / 2);
     v.players.forEach((p, i) => {
-      (i < gLeft ? gl : gr).appendChild(slotEl({ no: p.no ?? i + 1, user: p }));
+      gl.appendChild(slotEl({ no: p.no ?? i + 1, user: p }));
     });
 
     // 発言（下端寄せ）

@@ -208,15 +208,10 @@
       </div>
       <div class="room-body">
         <div id="room-screen-tags" class="room-tags"></div>
-        <!-- 左右の席列＋中央チャット（本家レイアウト・2026-11-25 おぎ） -->
-        <div id="room-members" class="room-frame">
-          <div id="room-slots-left" class="slot-col"></div>
-          <div class="room-center">
-            <div id="room-chat-messages" class="dm-messages room-chat-messages">
-              <div id="room-chat-msgs-inner" class="dm-msgs-inner"></div>
-            </div>
-          </div>
-          <div id="room-slots-right" class="slot-col"></div>
+        <!-- 席は上部グリッド＋チャット全幅（おぎのスケッチ案・2026-11-25） -->
+        <div id="room-members" class="slot-grid"></div>
+        <div id="room-chat-messages" class="dm-messages room-chat-messages">
+          <div id="room-chat-msgs-inner" class="dm-msgs-inner"></div>
         </div>
         <p id="room-status-note" class="modal-note"></p>
         <div class="room-actions">
@@ -242,12 +237,14 @@
         <span id="game-timer" class="game-timer"></span>
       </div>
       <div class="game-body">
-        <!-- 待機室と同じ左右の席列フレーム（本家レイアウト） -->
-        <div id="game-frame" class="room-frame">
-          <div id="game-slots-left" class="slot-col"></div>
+        <!-- 待機室と同じ上部グリッド＋全幅レイアウト -->
+        <div id="game-frame" class="game-layout">
+          <div id="game-slots" class="slot-grid"></div>
           <div class="game-center">
-        <div id="game-phase-label" class="game-phase-label"></div>
-        <div id="game-genre-line" class="game-genre-line hidden">ジャンル：<span id="game-genre-name"></span></div>
+        <div class="phase-genre-row">
+          <span id="game-phase-label" class="game-phase-label"></span>
+          <span id="game-genre-line" class="game-genre-line hidden">ジャンル：<span id="game-genre-name"></span></span>
+        </div>
         <div id="game-topic-card" class="topic-card hidden">
           <span class="topic-label">あなたのお題</span>
           <span id="game-my-topic" class="topic-words"></span>
@@ -285,7 +282,6 @@
           </div>
         </div>
           </div>
-          <div id="game-slots-right" class="slot-col"></div>
         </div>
       </div>
       <button id="game-scroll-bottom" class="scroll-bottom-btn hidden" type="button" aria-label="最新のメッセージへ">
