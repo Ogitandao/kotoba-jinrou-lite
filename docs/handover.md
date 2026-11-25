@@ -1128,3 +1128,8 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
 - 並び順を新設：オンライン中が上→最終ログインが新しい順（従来は並び替えなし＝登録順だった）
 - ブロック／申請の承認／拒否にも確認ポップアップ＋トースト（重要な決断ルールの適用範囲を拡大）
 - Simユーザーに lastActiveMin を付与（オフライン表示の確認用）
+
+## 2026-11-25 午後（14）PWA対応（おぎ）
+- manifest.webmanifest（standalone／portrait／テーマ色 #e4fbf0）＋アイコン4種（狼マークv3を #0098E4 で再着色しミント→空グラデ背景に配置。icons/pwa-icon-192/512/maskable-512/apple-touch-icon）
+- Service Worker（sw.js）はキャッシュしない素通し型＝常に最新版が届く（更新が反映されない事故を避けるため）。インストール条件だけ満たす
+- index.htmlにmanifest/theme-color/apple系メタ＋SW登録を追加
