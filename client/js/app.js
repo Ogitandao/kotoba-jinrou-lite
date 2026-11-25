@@ -33,10 +33,6 @@
     tutorialMode: 'view', // 'consent'（強制フロー）／'view'（再表示）
     penaltyUntilMs: null, // ペナルティ制限の終了時刻（ms）。制限中のみ未来
     pendingEntry: null,  // 同意後に実行する入室処理
-    // 非公開ルームの平文パスワード（メモリのみ・永続化しない）。
-    // DB はハッシュしか持たないため、自分が作った部屋／招待カードで
-    // 入った部屋についてだけ、招待発行時の照合入力に使えるよう保持する
-    roomPasswords: new Map(),
   };
   const PRIVATE_ROOM_COST = 100;
 
@@ -939,27 +935,13 @@
         room.textContent = m.invite.roomTitle;
         card.appendChild(room);
       }
-      // パスワード表示＋コピーは非公開ルームの招待だけ（Lite 決定）
-      if (m.invite.password) {
-        const pw = document.createElement('span');
-        pw.className = 'invite-card-pw';
-        pw.textContent = `パスワード：${m.invite.password}`;
-        const copy = smallBtn('コピー', 'mini-btn', async (ev) => {
-          ev.stopPropagation();
-          try { await navigator.clipboard.writeText(m.invite.password ?? ''); } catch { /* jsdom等では失敗しても表示で代替 */ }
-          toast('パスワードをコピーしました');
-        });
-        card.append(pw, copy);
-      }
-      // カード本体タップで、そのまま待機室へ入室する（初回はルール同意が先）
+      // カード本体タップで、そのまま待機室へ入室する（初回はルール同意が先）。
+      // 非公開ルームは招待DMそのものが入室資格（パスワード廃止・2026-11-25 おぎ）
       card.addEventListener('click', () => {
         if (!m.invite.roomId) { toast('この招待からは入室できません'); return; }
         ensureRulesConsent(async () => {
           try {
-            const detail = await DATA.joinRoom(m.invite.roomId, m.invite.password ?? undefined);
-            // 招待で入った部屋のパスワードは、自分がさらに招待を出す
-            // ときのためにメモリにだけ保持する（永続化はしない）
-            if (m.invite.password) state.roomPasswords.set(m.invite.roomId, m.invite.password);
+            const detail = await DATA.joinRoom(m.invite.roomId, { invite: true });
             closeDm();
             openRoomScreen(detail);
           } catch (e) { toastError(e); }
@@ -1063,6 +1045,8 @@
     $('dm-input-row').classList.toggle('hidden', isSystem);
     $('dm-gift-btn').classList.toggle('hidden', isSystem);
     $('dm-members-btn').classList.add('hidden');
+    $('dm-addfriend-btn').classList.add('hidden');
+    if (!isSystem) refreshDmFriendBtn(user);
     showDmScreen();
     updateCreateBar();
     try {
@@ -1077,6 +1061,45 @@
     state.dmGroup = null;
     hideDmScreen();
     updateCreateBar();
+  }
+  // DMヘッダーのフレンド申請ボタン（2026-11-25 おぎ）：フレンドでない相手との
+  // DMでのみ出す。相手から申請が来ていれば「承認」動作になる。
+  let dmFriendMode = null; // 'add' | 'approve' | null
+  async function refreshDmFriendBtn(user) {
+    dmFriendMode = null;
+    try {
+      const [friends, incoming, outgoing] = await Promise.all([
+        DATA.listFriends(), DATA.listIncomingRequests(), DATA.listOutgoingRequests(),
+      ]);
+      if (state.dmPeer?.id !== user.id) return; // 既に別のDMへ移っている
+      if (friends.some((f) => f.id === user.id)) return;
+      if (outgoing.some((f) => f.id === user.id)) return;
+      dmFriendMode = incoming.some((f) => f.id === user.id) ? 'approve' : 'add';
+      $('dm-addfriend-btn').classList.remove('hidden');
+    } catch { /* 関係が取れなければ出さない */ }
+  }
+  async function onDmFriendBtn() {
+    const user = state.dmPeer;
+    if (!user || !dmFriendMode) return;
+    if (dmFriendMode === 'approve') {
+      openConfirm(`${user.name}さんのフレンド申請を\n承認しますか？`, '承認する', async () => {
+        try {
+          await DATA.respondFriendRequest(user.id, true);
+          toast(`${user.name}さんとフレンドになりました`);
+          dmFriendMode = null;
+          $('dm-addfriend-btn').classList.add('hidden');
+          await refreshSocial();
+        } catch (e) { toastError(e); }
+      });
+      return;
+    }
+    try {
+      await DATA.sendFriendRequest(user.id);
+      toast(`${user.name}さんにフレンド申請を送りました`);
+      dmFriendMode = null;
+      $('dm-addfriend-btn').classList.add('hidden');
+      await refreshSocial();
+    } catch (e) { toastError(e); }
   }
   // ---------- グループチャット ----------
   function groupMessageNode(m) {
@@ -1110,6 +1133,7 @@
     $('dm-peer-name').textContent = g.name;
     $('dm-input-row').classList.remove('hidden');
     $('dm-gift-btn').classList.add('hidden');
+    $('dm-addfriend-btn').classList.add('hidden');
     $('dm-members-btn').classList.remove('hidden');
     showDmScreen();
     updateCreateBar();
@@ -1751,18 +1775,12 @@
   // ---------- 友達を招待（DM招待カードの発行） ----------
   // 待機室からフレンドを選んで、そのフレンドとの DM に招待カードを
   // 送る。発行はサーバー RPC（kl_send_invite）経由で、メンバー確認・
-  // フレンド確認・パスワード照合はサーバー側で行われる。
-  // 非公開ルームはパスワードの入力が要る（DB はハッシュのみ保持の
-  // ため）。自分が作った／招待で入った部屋は state.roomPasswords に
-  // 平文が残っているので初期値として入れておく。
+  // フレンド確認はサーバー側で行われる。非公開ルームは招待DMそのものが
+  // 入室資格になる（パスワード廃止・2026-11-25 おぎ）。
   async function openInviteModal() {
     const d = state.roomDetail;
     if (!d) return;
     $('invite-room-title').textContent = d.title;
-    $('invite-password-row').classList.toggle('hidden', !d.isPrivate);
-    if (d.isPrivate) {
-      $('invite-password').value = state.roomPasswords.get(d.id) ?? '';
-    }
     const list = $('invite-friend-list');
     list.innerHTML = '';
     let friends;
@@ -1774,10 +1792,7 @@
     for (const f of friends) {
       const btn = smallBtn('招待する', 'mini-btn primary', async () => {
         try {
-          const pw = d.isPrivate ? $('invite-password').value.trim() : undefined;
-          if (d.isPrivate && !pw) { toast('パスワードを入力してください'); return; }
-          await DATA.sendInvite(f.id, d.id, pw);
-          if (d.isPrivate) state.roomPasswords.set(d.id, pw);
+          await DATA.sendInvite(f.id, d.id);
           btn.disabled = true;
           btn.textContent = '送信済み';
           toast(`${f.name}さんに招待を送りました`);
@@ -2147,25 +2162,15 @@
   }
   function refreshCreateError() {
     const isPrivate = createVisibility() === 'private';
-    $('create-password-row').classList.toggle('hidden', !isPrivate);
     const need = isPrivate && state.coins < PRIVATE_ROOM_COST;
     $('create-error').classList.toggle('hidden', !need);
     $('btn-create-charge').classList.toggle('hidden', !need);
   }
   async function confirmCreate() {
     const isPrivate = createVisibility() === 'private';
-    let password = $('create-password').value.trim();
     if (isPrivate && state.coins < PRIVATE_ROOM_COST) {
       refreshCreateError();
       return;
-    }
-    if (isPrivate && password.length > 0 && password.length < 4) {
-      toast('パスワードは4文字以上で設定してください');
-      return;
-    }
-    // 空欄のまま作った場合は自動でパスワードを発行する（招待カードで共有）
-    if (isPrivate && !password) {
-      password = 'wolf' + Math.floor(1000 + Math.random() * 9000);
     }
     const title = $('create-title').value.trim() || 'タイトル未設定の部屋';
     const beginner = $('create-beginner').checked;
@@ -2186,7 +2191,6 @@
       const { room, coins } = await DATA.createRoom({
         title,
         isPrivate,
-        password: isPrivate ? password : undefined,
         beginner,
         capacity,
         genre,
@@ -2198,8 +2202,6 @@
         ? `非公開ルームを作りました（-${PRIVATE_ROOM_COST}コイン）`
         : 'ルームを作りました');
       await refreshRooms();
-      // 作った本人の端末にだけ平文が残る（招待発行時の照合入力用）
-      if (isPrivate) state.roomPasswords.set(room.id, password);
       openRoomScreen(room);
     } catch (e) {
       state.rooms = state.rooms.filter((r) => r.id !== tempId);
@@ -2409,7 +2411,6 @@
       // ルーム作成も入室行為なので、初回はルール同意が先
       ensureRulesConsent(() => {
         $('create-title').value = '';
-        $('create-password').value = '';
         $('create-beginner').checked = true;
         $('create-reversal').checked = true;
         $('create-genre').value = '';
@@ -2511,6 +2512,7 @@
     $('dm-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') sendDm();
     });
+    $('dm-addfriend-btn').addEventListener('click', onDmFriendBtn);
     $('dm-gift-btn').addEventListener('click', () => {
       if (state.dmPeer) openGift(state.dmPeer);
     });

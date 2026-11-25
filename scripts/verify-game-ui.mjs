@@ -27,7 +27,7 @@
 //
 // 2026-11-25 バッチの検証：
 // [20] DM招待カードの発行（待機室の「友達を招待」→フレンド選択→
-// DM に招待カード。パスワード照合・フレンド確認はサーバー判定）
+// DM に招待カード。フレンド確認はサーバー判定）
 // [21] オンラインバッジ（緑ドット）は待機室・対戦画面に出ない
 // （2026-11-25 おぎ。出す場所はロビーの友達帯と DM 画面だけ）
 // [22] チュートリアル（2026-11-25 おぎ承認）：初回入室で5枚スライドの
@@ -469,8 +469,8 @@ check('トーク一覧にけんとの会話がある',!!kenRow);
 kenRow.click();
 await tick(30);
 const inviteCard = document.querySelector('#dm-msgs-inner .dm-invite-card');
-check('DMに招待カード（パスワード表示つき）がある',
-!!inviteCard && inviteCard.textContent.includes('パスワード'));
+check('DMに招待カードがある（パスワード表示は廃止済み）',
+!!inviteCard && !inviteCard.textContent.includes('パスワード'));
 if (inviteCard) {
 inviteCard.click();
 await tick(60);
@@ -486,7 +486,6 @@ await tick(30);
 $('btn-create-room').click();
 document.querySelector('input[name="create-visibility"][value="private"]').click();
 $('create-title').value = '招待検証部屋';
-$('create-password').value = 'invite123';
 $('btn-create-confirm').click();
 await tick(60);
 check('[20] 非公開ルームの待機室が開く', visible($('room-screen')));
@@ -499,36 +498,23 @@ check('[20] 招待モーダルが開き、フレンド一覧（30人）が出る
 visible($('modal-invite'))
 && document.querySelectorAll('#invite-friend-list .user-row').length === 30,
 `rows=${document.querySelectorAll('#invite-friend-list .user-row').length}`);
-check('[20] 非公開なのでパスワード欄が出て、作成時のパスワードが初期値に入る',
-visible($('invite-password-row')) && $('invite-password').value === 'invite123',
-`pw=${$('invite-password').value}`);
+check('[20] 招待モーダルにパスワード欄は無い（廃止済み）',
+!document.getElementById('invite-password-row'));
 const inviteBtnFor = (name) => {
 const row = [...document.querySelectorAll('#invite-friend-list .user-row')]
 .find((r) => r.textContent.includes(name));
 return [...row.querySelectorAll('button')].find((b) => b.textContent === '招待する');
 };
-// パスワードを間違えるとサーバー判定（Sim）で拒否され、送信済みにならない
-$('invite-password').value = 'wrong999';
-inviteBtnFor('みか').click();
-await tick(60);
-check('[20] パスワード不一致は拒否され、理由がトーストに出る',
-$('toast').textContent.includes('パスワードが違います')
-&& inviteBtnFor('みか') != null, $('toast').textContent);
-// データ層でも同じエラーコードで返る
+// データ層：フレンド以外への招待は NOT_FRIENDS／招待なしの非公開入室は INVITE_REQUIRED
 const invRoom = (await KL().listRooms()).find((r) => r.title === '招待検証部屋');
-const eWrong = await KL().sendInvite('u-ken', invRoom.id, 'badpass')
-.then(() => null, (e) => e);
-check('[20] データ層：パスワード不一致は WRONG_PASSWORD', eWrong?.code === 'WRONG_PASSWORD',
-eWrong?.code ?? 'no error');
-const eFriend = await KL().sendInvite('u-sora', invRoom.id, 'invite123')
+const eFriend = await KL().sendInvite('u-sora', invRoom.id)
 .then(() => null, (e) => e);
 check('[20] データ層：フレンド以外への招待は NOT_FRIENDS', eFriend?.code === 'NOT_FRIENDS',
 eFriend?.code ?? 'no error');
-// 正しいパスワードで送ると送信済みになり、DM に招待カードが入る
-$('invite-password').value = 'invite123';
+// 招待するを押すと送信済みになり、DM に招待カードが入る
 inviteBtnFor('みか').click();
 await tick(60);
-check('[20] 正しいパスワードで送信でき、ボタンが「送信済み」になる',
+check('[20] 招待を送信でき、ボタンが「送信済み」になる',
 $('toast').textContent.includes('招待を送りました')
 && [...document.querySelectorAll('#invite-friend-list .user-row')]
 .find((r) => r.textContent.includes('みか'))?.textContent.includes('送信済み'),
@@ -544,9 +530,9 @@ await tick(30);
 await tick(40);
 const sentCard = [...document.querySelectorAll('#dm-msgs-inner .dm-invite-card')]
 .find((c) => c.textContent.includes('招待検証部屋'));
-check('[20] 送った招待カードが DM に残る（ルーム名＋パスワード表示）',
+check('[20] 送った招待カードが DM に残る（ルーム名のみ・パスワードなし）',
 !!sentCard && sentCard.classList.contains('mine')
-&& sentCard.textContent.includes('パスワード：invite123'),
+&& !sentCard.textContent.includes('パスワード'),
 sentCard?.textContent ?? 'no card');
 $('dm-back').click();
 await tick(20);

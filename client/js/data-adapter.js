@@ -176,7 +176,7 @@
         { id: 'dm-3', from: 'me', to: 'u-ken', kind: 'text', body: 'この前の推理すごかった！', read: true },
         { id: 'dm-4', from: 'u-ken', to: 'me', kind: 'text', body: 'ありがとう！また真剣勝負しよう', read: true },
         // デモ用シード：非公開ルームへの招待カード（入室導線の確認用）
-        { id: 'dm-5', from: 'u-ken', to: 'me', kind: 'invite', invite: { roomId: 'r2', roomTitle: '経験者もOK部屋', password: 'wolf777' }, read: false },
+        { id: 'dm-5', from: 'u-ken', to: 'me', kind: 'invite', invite: { roomId: 'r2', roomTitle: '経験者もOK部屋' }, read: false },
         // デモ用シード：届いたギフト（起動時にスライド通知が出る確認用）
         { id: 'dm-6', from: 'u-ken', to: 'me', kind: 'gift', gift: { giftKey: 'crown', name: '王冠', icon: '👑', price: 3000 }, read: false },
         { id: 'dm-10', from: 'u-d01', to: 'me', kind: 'text', body: '今日も21時から部屋立てるよ！来れる？', read: false },
@@ -577,7 +577,6 @@
         const memberIds = [hostId, ...others.slice(0, Math.max(0, r.players - 1))];
         wwState.rooms.set(r.id, {
           id: r.id, title: r.title, isPrivate: r.isPrivate,
-          password: r.isPrivate ? 'wolf777' : null,
           beginner: r.beginner, capacity: r.capacity, genre: r.genre ?? null,
           status: r.status ?? 'lobby',
           reversalEnabled: r.reversalEnabled !== false, hostId,
@@ -1386,7 +1385,7 @@
         return ok({ iconKey: key });
       },
       // ---------- DM招待カードの発行（0017 の kl_send_invite と同じ判定） ----------
-      sendInvite(userId, roomId, password) {
+      sendInvite(userId, roomId) {
         if (userId === 'me') return Promise.reject(fail('SELF_ACTION', '自分には送れません'));
         if (!users.has(userId) || userId === 'system') {
           return Promise.reject(fail('USER_NOT_FOUND', 'ユーザーが存在しません'));
@@ -1403,15 +1402,9 @@
         if (!room.members.some((m) => m.userId === 'me')) {
           return Promise.reject(fail('NOT_A_MEMBER', '招待できるのはルームのメンバーだけです'));
         }
-        if (room.isPrivate && room.password !== (password ?? null)) {
-          return Promise.reject(fail('WRONG_PASSWORD', 'パスワードが違います'));
-        }
         const msg = {
           id: 'dm-' + (++state.seq), from: 'me', to: userId, kind: 'invite',
-          invite: {
-            roomId: room.id, roomTitle: room.title,
-            password: room.isPrivate ? room.password : null,
-          },
+          invite: { roomId: room.id, roomTitle: room.title },
           read: true, at: Date.now(),
         };
         state.dm.push(msg);
@@ -1443,9 +1436,6 @@
         if (isPrivate && state.coins < 100) {
           return Promise.reject(fail('INSUFFICIENT_COINS', 'コインが足りません'));
         }
-        if (isPrivate && (!opts.password || opts.password.length < 4)) {
-          return Promise.reject(fail('PASSWORD_REQUIRED', '非公開ルームには4文字以上のパスワードが必要です'));
-        }
         if (opts.title && [...opts.title.trim()].length > 10) {
           return Promise.reject(fail('TITLE_TOO_LONG', 'ルーム名は10文字までです'));
         }
@@ -1456,7 +1446,7 @@
         const room = {
           id: wwId('room'),
           title: opts.title || 'タイトル未設定の部屋',
-          isPrivate, password: isPrivate ? opts.password : null,
+          isPrivate,
           beginner: !!opts.beginner, capacity, genre, status: 'lobby',
           reversalEnabled: opts.reversalEnabled !== false,
           hostId: 'me',
@@ -1478,16 +1468,17 @@
           return ok(wwRoomDetail(wwGetRoom(roomId)));
         } catch (e) { return Promise.reject(e); }
       },
-      joinRoom(roomId, password) {
+      joinRoom(roomId, opts) {
         wwHousekeep();
         try { penGuard('me'); consentGuard(); } catch (e) { return Promise.reject(e); }
         const room = wwState.rooms.get(roomId);
         if (!room) return Promise.reject(fail('ROOM_NOT_FOUND', 'ルームが存在しません'));
         if (room.status !== 'lobby') return Promise.reject(fail('ROOM_BUSY', 'このルームには今は入れません'));
+        // 非公開ルームは招待DMからのみ入室可（パスワード廃止・2026-11-25 おぎ）
         if (room.isPrivate && room.hostId !== 'me'
           && !room.members.some((m) => m.userId === 'me')
-          && room.password !== (password ?? null)) {
-          return Promise.reject(fail('WRONG_PASSWORD', 'パスワードが違います'));
+          && !opts?.invite) {
+          return Promise.reject(fail('INVITE_REQUIRED', '非公開ルームは招待からのみ入室できます'));
         }
         if (!room.members.some((m) => m.userId === 'me')) {
           if (room.members.length >= room.capacity) {
@@ -1962,9 +1953,9 @@
         return { iconKey: r.iconKey };
       },
       // ---------- DM招待カードの発行（kl_send_invite） ----------
-      async sendInvite(userId, roomId, password) {
+      async sendInvite(userId, roomId) {
         const m = await rpc('kl_send_invite', {
-          p_to: userId, p_room: roomId, p_password: password ?? null,
+          p_to: userId, p_room: roomId,
         });
         return {
           id: m.id, from: m.sender_id, to: m.recipient_id, kind: 'invite',
@@ -1993,7 +1984,6 @@
         const row = await rpc('ww_create_room', {
           p_title: opts.title ?? '',
           p_is_private: !!opts.isPrivate,
-          p_password: opts.password ?? null,
           p_beginner_welcome: !!opts.beginner,
           p_reversal_enabled: opts.reversalEnabled !== false,
           p_capacity: Math.min(8, Math.max(4, opts.capacity ?? 4)),
@@ -2068,8 +2058,9 @@
         }
         return detail;
       },
-      async joinRoom(roomId, password) {
-        await rpc('ww_join_room', { p_room: roomId, p_password: password ?? null });
+      async joinRoom(roomId) {
+        // 非公開ルームの資格確認（招待DMの有無）はサーバー側で行う
+        await rpc('ww_join_room', { p_room: roomId });
         return this.getRoom(roomId);
       },
       async leaveRoom(roomId) {
@@ -2242,7 +2233,7 @@
     listRooms: () => active.listRooms(),
     createRoom: (opts) => active.createRoom(opts),
     getRoom: (id) => active.getRoom(id),
-    joinRoom: (id, pw) => active.joinRoom(id, pw),
+    joinRoom: (id, opts) => active.joinRoom(id, opts),
     leaveRoom: (id) => active.leaveRoom(id),
     setReady: (id, ready) => active.setReady(id, ready),
     kickMember: (id, target) => active.kickMember(id, target),

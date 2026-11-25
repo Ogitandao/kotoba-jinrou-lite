@@ -206,6 +206,21 @@ await tick();
 check('届いている申請（そら）が見える',
   visible($('request-section')) && !!rowByName($('request-list'), 'そら'));
 const soraRow = rowByName($('request-list'), 'そら');
+// 申請者のアイコン→プロフ→トーク：DMヘッダーにフレンド申請ボタンが出る
+soraRow.querySelector('.avatar').click();
+await tick();
+check('申請者のアイコンからプロフが開く', visible($('modal-user-profile')));
+[...document.querySelectorAll('#modal-user-profile button')]
+  .find((b) => b.textContent === 'トーク').click();
+await tick();
+check('フレンドでない相手のDMでは右上に申請ボタンが出る', visible($('dm-addfriend-btn')));
+$('dm-addfriend-btn').click();
+await tick();
+check('相手から申請が来ていれば承認の確認ポップアップになる', visible($('modal-confirm')));
+$('confirm-x').click();
+await tick();
+$('dm-back').click();
+await tick(420);
 [...soraRow.querySelectorAll('button')].find((b) => b.textContent === '承認').click();
 await tick();
 check('承認にも確認ポップアップを挟む',

@@ -6,9 +6,10 @@
 // - kl_search_user の返却に icon_key が含まれる
 // - ww_list_rooms の hostIconKey
 // - kl_send_invite：フレンド確認（NOT_FRIENDS）／メンバー確認
-//   （NOT_A_MEMBER）／非公開はパスワード照合（WRONG_PASSWORD）を通った
-//   場合だけ平文を invite_payload に載せる／公開は password=null
-// - 招待された側が payload のパスワードで ww_join_room できる
+//   （NOT_A_MEMBER）
+// - 0031（パスワード廃止）：非公開ルームはパスワードなしで作れ、
+//   invite_payload に password は載らない。招待DMがない人の
+//   ww_join_room は INVITE_REQUIRED、招待された側は入室できる
 // 実行：npm run verify:icons-invite-db（client/kl-config.js が必要）
 // 注意：実行のたびにテストユーザーが増える（test_marker 付き）。
 // パスワード類はリテラルで書かず文字コードから組み立てる（過去に
@@ -31,8 +32,6 @@ const KEY = cfg.supabaseKey;
 const REF = 'dtdwkluanoaqiaruzbwe';
 const HELPER = '/home/hatch/workspace/custom-connectors/custom.supabase/bin/supabase_api.py';
 const PASSWORD = String.fromCharCode(76, 105, 116, 101, 45, 69, 50, 69, 45, 50, 48, 50, 54, 45, 80, 97, 115, 115, 33);
-const ROOM_PW = String.fromCharCode(119, 111, 108, 102, 55, 55, 55);
-const WRONG_PW = String.fromCharCode(119, 114, 111, 110, 103, 57, 57, 57);
 const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
 
 function sql(q) {
@@ -138,47 +137,50 @@ const search = await rpc(B, 'kl_search_user', { p_public_id: profA0.data.public_
 check('kl_search_user の返却に icon_key（cat）が含まれる',
   search.data?.[0]?.icon_key === 'cat', JSON.stringify(search.data?.[0] ?? {}));
 
-// --- 非公開ルーム＋招待 ---
+// --- 非公開ルーム＋招待（0031：パスワード廃止） ---
 const roomRes = await rpc(A, 'ww_create_room', {
-  p_title: '招待DB検証部屋', p_is_private: true, p_password: ROOM_PW,
+  p_title: '招待DB検証部屋', p_is_private: true,
   p_beginner_welcome: true, p_reversal_enabled: true, p_capacity: 4, p_genre: null,
 });
 const roomId = roomRes.data?.id;
-check('非公開ルーム作成', !!roomId, roomRes.code ?? '');
-const invWrong = await rpc(A, 'kl_send_invite', { p_to: B.id, p_room: roomId, p_password: WRONG_PW });
-check('パスワード不一致の招待は WRONG_PASSWORD', invWrong.code === 'WRONG_PASSWORD',
-  invWrong.code ?? '');
-const invOk = await rpc(A, 'kl_send_invite', { p_to: B.id, p_room: roomId, p_password: ROOM_PW });
-check('正しいパスワードで招待が送れる', !invOk.error && invOk.data?.kind === 'invite',
+check('非公開ルームがパスワードなしで作れる', !!roomId, roomRes.code ?? '');
+const hashRow = sql(`select password_hash is null as nohash from public.rooms where id = '${roomId}'`);
+check('password_hash は保存されない（null）', hashRow[0]?.nohash === true,
+  JSON.stringify(hashRow));
+const joinNoInvite = await rpc(C, 'ww_join_room', { p_room: roomId });
+check('招待のない C の入室は INVITE_REQUIRED', joinNoInvite.code === 'INVITE_REQUIRED',
+  joinNoInvite.code ?? '');
+const invOk = await rpc(A, 'kl_send_invite', { p_to: B.id, p_room: roomId });
+check('招待がパスワードなしで送れる', !invOk.error && invOk.data?.kind === 'invite',
   invOk.code ?? '');
 const dmB = await B.sb.from('dm_messages').select('*')
   .eq('kind', 'invite').eq('sender_id', A.id).order('created_at', { ascending: false }).limit(1);
 const payload = dmB.data?.[0]?.invite_payload;
-check('B の DM に招待カードが届く（roomId／roomTitle／password）',
+check('B の DM に招待カードが届く（roomId／roomTitleのみ・password なし）',
   payload?.roomId === roomId && payload?.roomTitle === '招待DB検証部屋'
-  && payload?.password === ROOM_PW, JSON.stringify(payload ?? {}));
-const invNotMember = await rpc(C, 'kl_send_invite', { p_to: A.id, p_room: roomId, p_password: ROOM_PW });
+  && !('password' in (payload ?? {})), JSON.stringify(payload ?? {}));
+const invNotMember = await rpc(C, 'kl_send_invite', { p_to: A.id, p_room: roomId });
 check('メンバーでない人の招待は NOT_A_MEMBER', invNotMember.code === 'NOT_A_MEMBER',
   invNotMember.code ?? '');
-const joinB = await rpc(B, 'ww_join_room', { p_room: roomId, p_password: payload?.password });
-check('招待された B が payload のパスワードで入室できる', !joinB.error, joinB.code ?? '');
+const joinB = await rpc(B, 'ww_join_room', { p_room: roomId });
+check('招待された B がパスワードなしで入室できる', !joinB.error, joinB.code ?? '');
 const listB = await rpc(B, 'ww_list_rooms');
 const listedRoom = (listB.data ?? []).find((r) => r.id === roomId);
 check('ww_list_rooms に hostIconKey（cat）が返る',
   listedRoom?.hostIconKey === 'cat', JSON.stringify(listedRoom ?? {}).slice(0, 160));
 
-// --- 公開ルームの招待は password=null ---
+// --- 公開ルームの招待も password キーなし ---
 const pubRes = await rpc(A, 'ww_create_room', {
-  p_title: '招待DB検証・公開部屋', p_is_private: false, p_password: null,
+  p_title: '公開招待検証部屋', p_is_private: false,
   p_beginner_welcome: false, p_reversal_enabled: true, p_capacity: 4, p_genre: null,
 });
-const invPub = await rpc(A, 'kl_send_invite', { p_to: B.id, p_room: pubRes.data?.id, p_password: null });
+const invPub = await rpc(A, 'kl_send_invite', { p_to: B.id, p_room: pubRes.data?.id });
 check('公開ルームの招待はパスワードなしで送れる', !invPub.error, invPub.code ?? '');
 const dmB2 = await B.sb.from('dm_messages').select('*')
   .eq('kind', 'invite').eq('sender_id', A.id).order('created_at', { ascending: false }).limit(1);
-check('公開招待の payload.password は null',
+check('公開招待の payload にも password キーは無い',
   dmB2.data?.[0]?.invite_payload?.roomId === pubRes.data?.id
-  && dmB2.data?.[0]?.invite_payload?.password === null,
+  && !('password' in (dmB2.data?.[0]?.invite_payload ?? {})),
   JSON.stringify(dmB2.data?.[0]?.invite_payload ?? {}));
 
 const failed = results.filter((r) => !r.ok);

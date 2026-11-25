@@ -11,7 +11,7 @@
 // [I5] オンラインバッジ（緑ドット）はロビーの「オンラインの友達」枠と
 //      DM 画面だけに出る（フレンド一覧・トーク一覧には出ない。
 //      待機室・対戦画面分は verify-game-ui の [21] で確認）
-// [I6] DM招待カードにルーム名が出て、パスワード表示＋コピーは
+// [I6] DM招待カードにルーム名が出る（パスワード表示は廃止済み）
 //      非公開の招待だけに付く
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
@@ -158,9 +158,8 @@ const card = document.querySelector('#dm-msgs-inner .dm-invite-card');
 check('[I6] 招待カードにルーム名が出る',
   !!card && card.textContent.includes('経験者もOK部屋'),
   card?.textContent ?? 'no card');
-check('[I6] 非公開の招待にはパスワード表示＋コピーボタンが付く',
-  card?.textContent.includes('パスワード：wolf777')
-  && [...card.querySelectorAll('button')].some((b) => b.textContent === 'コピー'));
+check('[I6] 招待カードにパスワード表示は無い（廃止済み・2026-11-25 おぎ）',
+  !!card && !card.textContent.includes('パスワード'));
 $('dm-back').click();
 window.close();
 
