@@ -1134,14 +1134,22 @@
   async function doAddGroupMembers() {
     const g = state.dmGroup;
     if (!g || !groupAddPick.size) return;
+    const addedIds = [...groupAddPick];
     try {
-      const updated = await DATA.addGroupMembers(g.id, [...groupAddPick]);
+      const updated = await DATA.addGroupMembers(g.id, addedIds);
       state.dmGroup = updated;
       rememberUsers(updated.members);
       $('dm-peer-name').textContent = updated.name;
       renderGroupMessages(await DATA.listGroupMessages(g.id));
       renderTalkList();
       openGroupMembers();
+      // 追加できたことをトーストでも知らせる（1人なら名前入り）
+      if (addedIds.length === 1) {
+        const name = state.users.get(addedIds[0])?.name;
+        toast(name ? `${name}さんを追加しました` : 'メンバーを追加しました');
+      } else {
+        toast('メンバーを追加しました');
+      }
     } catch (e) { toastError(e); }
   }
   async function doRenameGroup() {
