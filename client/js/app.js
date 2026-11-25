@@ -782,7 +782,8 @@
     const cap = mk('gfx-cap');
     cap.textContent = `${partner.name}さんから ${gift.name}！`;
     fx.append(mk('gfx-dim'), bg, center, cap);
-    for (let i = 0; i < 22; i++) {
+    // ダイヤは Lottie＋グローで十分なので星は飛ばさない（おぎ指定）
+    for (let i = 0; gift.giftKey !== 'diamond' && i < 22; i++) {
       const f = document.createElement('i');
       f.className = 'gfx-fall';
       f.style.left = `${Math.random() * 100}%`;
