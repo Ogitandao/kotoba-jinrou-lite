@@ -140,6 +140,11 @@
         { id: 'dm-5', from: 'u-ken', to: 'me', kind: 'invite', invite: { roomId: 'r2', roomTitle: '経験者もOK部屋', password: 'wolf777' }, read: false },
       ],
       seq: 100,
+      ticker: [
+        // デモ用シード：運営告知（期限付き）の見え方確認用。本番では
+        // kl__ticker_notice で投稿した告知が期限まで先頭に流れ続ける（0029）
+        { id: 'notice-demo', text: '📢 運営より：新しいお題を50組追加しました！' },
+      ],
     };
     const pub = (u) => ({
       id: u.id, publicId: u.publicId, name: u.name, icon: u.icon,
