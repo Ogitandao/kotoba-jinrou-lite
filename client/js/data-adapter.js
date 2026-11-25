@@ -1172,6 +1172,10 @@
         state.blocked.delete(userId);
         return ok(null);
       },
+      report() {
+        // Sim では受付のみ（自動処理パイプラインは実 DB 側の仕組み）
+        return ok({ ok: true });
+      },
       listBlocked() {
         return ok([...state.blocked].map((id) => pub(users.get(id))));
       },
@@ -1688,6 +1692,9 @@
       }
       return data;
     };
+    // 運営により非表示のメッセージは、他人には本文を渡さず置換表示にする
+    const maskHidden = (m) => (m.hidden_at && m.sender_id && m.sender_id !== meId)
+      ? '（運営により非表示）' : m.body;
     const profileRow = (p, extra = {}) => ({
       id: p.id, publicId: p.public_id, name: p.display_name, icon: p.icon_emoji,
       iconKey: p.icon_key ?? null,
@@ -1795,6 +1802,13 @@
       removeFriend(userId) { return rpc('kl_remove_friend', { p_other: userId }); },
       blockUser(userId) { return rpc('kl_block_user', { p_other: userId }); },
       unblockUser(userId) { return rpc('kl_unblock_user', { p_other: userId }); },
+      report(target) {
+        return rpc('kl_report', {
+          p_target_kind: target.kind, p_target_ref: target.ref ?? null,
+          p_target_user: target.userId ?? null, p_reason: target.reason,
+          p_detail: target.detail ?? null,
+        });
+      },
       async listBlocked() {
         const { data, error } = await getClient()
           .from('blocks').select('blocked_id').eq('blocker_id', meId);
@@ -1815,7 +1829,7 @@
         return data.map((m) => ({
           id: m.id,
           from: (m.kind === 'system' || m.kind === 'welcome') ? 'system' : m.sender_id,
-          to: m.recipient_id, kind: m.kind, body: m.body, at: Date.parse(m.created_at),
+          to: m.recipient_id, kind: m.kind, body: maskHidden(m), at: Date.parse(m.created_at),
           invite: m.invite_payload, gift: m.gift_payload
             ? { giftKey: m.gift_payload.giftKey, name: m.gift_payload.name, icon: m.gift_payload.icon, price: m.gift_payload.price }
             : null,
@@ -1837,7 +1851,7 @@
             cur.last = {
               id: m.id, from: (m.kind === 'system' || m.kind === 'welcome') ? 'system' : m.sender_id,
               to: m.recipient_id, kind: m.kind, at: Date.parse(m.created_at),
-              body: m.body, gift: m.gift_payload, invite: m.invite_payload,
+              body: maskHidden(m), gift: m.gift_payload, invite: m.invite_payload,
             };
           }
           if (m.recipient_id === meId && m.read_at === null) cur.unread += 1;
@@ -1877,7 +1891,7 @@
               onInsert({
                 id: m.id,
                 from: (m.kind === 'system' || m.kind === 'welcome' || !m.sender_id) ? 'system' : m.sender_id,
-                to: m.recipient_id, kind: m.kind, body: m.body, at: Date.parse(m.created_at),
+                to: m.recipient_id, kind: m.kind, body: maskHidden(m), at: Date.parse(m.created_at),
                 gift: m.gift_payload, invite: m.invite_payload,
               });
             })
@@ -2040,12 +2054,12 @@
         try {
           const { data: roomMsgRows } = await sb
             .from('ww_room_messages')
-            .select('id, sender_id, kind, body, created_at')
+            .select('id, sender_id, kind, body, created_at, hidden_at')
             .eq('room_id', roomId)
             .order('created_at', { ascending: true })
             .limit(100);
           detail.roomMessages = (roomMsgRows ?? []).map((m) => ({
-            id: m.id, from: m.sender_id, kind: m.kind, body: m.body,
+            id: m.id, from: m.sender_id, kind: m.kind, body: maskHidden(m),
             atMs: Date.parse(m.created_at),
           }));
         } catch { /* テーブル未適用などの場合は空のまま */ }
@@ -2135,7 +2149,7 @@
             : null,
           messages: (msgRows ?? []).map((m) => ({
             id: m.id, from: m.kind === 'system' ? null : m.sender_id,
-            kind: m.kind ?? 'chat', body: m.body, atMs: Date.parse(m.created_at),
+            kind: m.kind ?? 'chat', body: maskHidden(m), atMs: Date.parse(m.created_at),
           })),
         };
       },
