@@ -2126,7 +2126,7 @@
         ? `あと${d.capacity - d.players}人集まると満室です（${d.players}/${d.capacity}人）`
         : !allReady
           ? `満室！あと${notReadyCount}人の準備OKを待っています`
-          : '全員そろいました！「ゲームスタート！」を押してください';
+          : 'ゲームをスタートしてください！';
     } else if (meMember) {
       readyBtn.classList.remove('hidden');
       readyBtn.textContent = meMember.ready ? '準備OK済み（タップで取消）' : '準備OK！';
@@ -2161,7 +2161,7 @@
     if (!msgs.length) {
       const p = document.createElement('p');
       p.className = 'room-chat-empty';
-      p.textContent = 'まだ発言がありません。ゲーム前・ゲーム間の雑談にどうぞ';
+      p.textContent = 'まだ発言がありません。';
       inner.appendChild(p);
       return;
     }
