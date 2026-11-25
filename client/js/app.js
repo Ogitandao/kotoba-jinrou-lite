@@ -951,8 +951,9 @@
       state.endShownGameId = 'demo-result';
       renderGame();
       $('game-title').textContent = '結果デモ';
-      // カウントダウンのピルも見た目確認用に、実際に減らして表示する
-      // （0になったら20に戻る見た目だけのループ）
+      // カウントダウンのピルも本番どおりに表示する：20→0を1回だけ
+      // 数え、0になったらデモを閉じてロビーへ戻る（ループさせない。
+      // 以前は見た目確認用に巻き戻していたが、実フロー再現にしたので廃止）
       const cd = $('game-end-countdown');
       let demoLeft = 20;
       const paintDemo = () => { cd.innerHTML = `<span class="cd-num">${demoLeft}</span>秒後にルームに戻ります`; };
@@ -960,7 +961,17 @@
       cd.classList.remove('hidden');
       clearInterval(demoCdTimer);
       demoCdTimer = setInterval(() => {
-        demoLeft = demoLeft <= 1 ? 20 : demoLeft - 1;
+        demoLeft -= 1;
+        if (demoLeft <= 0) {
+          clearInterval(demoCdTimer);
+          demoCdTimer = null;
+          if (state.gameView?.gameId === 'demo-result') {
+            closeGameScreen();
+            closeRoomScreen();
+            refreshRooms();
+          }
+          return;
+        }
         paintDemo();
       }, 1000);
       $('game-end-note').textContent = '（デモ表示中）おつかれさまでした！';
