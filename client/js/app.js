@@ -1838,14 +1838,31 @@
     btn.addEventListener('click', () => {
       ctl.follow = true;
       box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
+      // スムーズスクロールの途中で再描画や画像読み込みが来ても、
+      // 最後は必ず最下部に着地させる
+      setTimeout(() => {
+        if (ctl.follow) {
+          box.scrollTop = box.scrollHeight;
+          ctl._lastTop = box.scrollTop;
+          ctl.update();
+        }
+      }, 420);
     });
     ctl.update = update;
     scrollFollowers.push(ctl);
     return ctl;
   }
-  // 再描画（ポーリング）後の位置決め：描画前に上を読んでいた人は
-  // 同じ scrollTop に戻し、追尾中の人だけ最下部へ
+  // 再描画（ポーリング）後の位置決め：追尾中なら最下部へ。
+  // 追尾していない（上を読んでいる）人だけ、描画前と同じ位置に戻す。
+  // ※追尾を先に見ること。「最新へ」のスムーズスクロール中に再描画が
+  // 来ると、移動途中の位置で固定されてしまう事故があった
   function settleScroll(ctl, box, before) {
+    if (ctl && ctl.follow) {
+      box.scrollTop = box.scrollHeight;
+      ctl._lastTop = box.scrollTop;
+      ctl.update();
+      return;
+    }
     if (before && before.away > FOLLOW_LIMIT) {
       box.scrollTop = Math.min(before.top, Math.max(0, box.scrollHeight - box.clientHeight));
       if (ctl) {
@@ -1855,7 +1872,7 @@
       }
       return;
     }
-    if (!ctl || ctl.follow) box.scrollTop = box.scrollHeight;
+    box.scrollTop = box.scrollHeight;
     if (ctl) ctl.update();
   }
   function awayFromBottom(box) {
@@ -2694,6 +2711,15 @@
     $('dm-scroll-bottom').addEventListener('click', () => {
       dmFollow.follow = true;
       scrollDmToBottom(true);
+      // フォント・画像の遅延読み込みで丈が伸びても最後は最下部へ
+      setTimeout(() => {
+        if (dmFollow.follow) {
+          const b = $('dm-messages');
+          b.scrollTop = b.scrollHeight;
+          dmFollow._lastTop = b.scrollTop;
+          updateScrollBottomBtn();
+        }
+      }, 420);
     });
     $('dm-send').addEventListener('click', sendDm);
     $('dm-input').addEventListener('keydown', (e) => {
