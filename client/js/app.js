@@ -149,9 +149,9 @@
 
   // 左右の席列の1枠（待機室・対戦画面で共用。本家の画面配置を Lite の
   // デザインで再現：人が来たら枠が埋まっていく・2026-11-25 おぎ）
-  function slotEl({ no, user = null, empty = false, ready = false, isHost = false, kick = null, onTap = null }) {
+  function slotEl({ no, user = null, empty = false, ready = false, isHost = false, kick = null, onTap = null, inResult = false }) {
     const el = document.createElement('div');
-    el.className = `slot${empty ? ' empty' : ''}${ready ? ' ready' : ''}`;
+    el.className = `slot${empty ? ' empty' : ''}${ready ? ' ready' : ''}${inResult ? ' in-result' : ''}`;
     if (user) el.dataset.userId = user.id;
     const face = document.createElement('div');
     face.className = 'slot-face';
@@ -180,6 +180,13 @@
       rb.className = 'slot-ready-badge';
       rb.textContent = '✓';
       face.appendChild(rb);
+    }
+    if (inResult) {
+      // 結果確認中（終了直後20秒）：グレーアウト＋アイコンに帯（2026-11-25 おぎ）
+      const band = document.createElement('span');
+      band.className = 'slot-result-band';
+      band.textContent = '操作中…';
+      face.appendChild(band);
     }
     if (kick) {
       const kb = document.createElement('button');
@@ -2053,7 +2060,8 @@
         user: m,
         ready: d.status === 'lobby' && !m.isHost && !!m.ready,
         isHost: !!m.isHost,
-        kick: kickable ? { id: m.id, name: m.name } : null,
+        kick: kickable && !m.inResult ? { id: m.id, name: m.name } : null,
+        inResult: m.id !== state.me.id && !!m.inResult,
         onTap: m.id !== state.me.id ? () => openUserProfile(m) : null,
       }));
     }
@@ -2669,9 +2677,9 @@
   }
 
   // 結果画面を開きっぱなしにしないため、制限時間で自動的にルームへ
-  // 戻す（席はキープ＝「残る」概念）。ギフト選択などモーダルが開いて
-  // いる間はカウントを止める。時間は調整可能な定数（2026-11-25 おぎ）
-  const END_RETURN_SEC = 15;
+  // 戻す（席はキープ＝「残る」概念）。モーダルを開いたまま放置される
+  // と永遠に止まるため、カウントは止めない。時間は調整可能な定数
+  const END_RETURN_SEC = 20;
   function startEndReturnCountdown() {
     stopEndReturnCountdown();
     let left = END_RETURN_SEC;
@@ -2680,8 +2688,6 @@
     el.classList.remove('hidden');
     paint();
     endReturnTimer = setInterval(() => {
-      if (!$('modal-backdrop').classList.contains('hidden')
-        || !$('modal-backdrop2').classList.contains('hidden')) return;
       left -= 1;
       if (left <= 0) { stopEndReturnCountdown(); autoReturnToRoom(); return; }
       paint();
@@ -2693,6 +2699,7 @@
   }
   async function autoReturnToRoom() {
     const roomId = state.gameView?.roomId ?? state.roomId;
+    closeModal();
     closeGameScreen();
     state.endShownGameId = null;
     if (roomId) {

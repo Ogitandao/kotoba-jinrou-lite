@@ -388,6 +388,16 @@ visible($('room-screen')) &&!visible($('game-screen'))
 `rows=${document.querySelectorAll('#room-members .slot').length}`);
 check('[13] ゲーム後は自分の準備OKがリセットされている',
 $('btn-ready').textContent === '準備OK！', $('btn-ready').textContent);
+check('[22] 終了直後は参加者が「操作中…」（帯つき）でキック不可',
+document.querySelectorAll('#room-members .slot.in-result').length === 6
+&& document.querySelector('#room-members .slot.in-result .slot-result-band')?.textContent === '操作中…'
+&& document.querySelectorAll('#room-members .slot.in-result .slot-kick').length === 0,
+`n=${document.querySelectorAll('#room-members .slot.in-result').length}`);
+KL().__simAdvanceTime(21);
+await tick(1600);
+check('[22] 20秒過ぎると「操作中…」は外れる',
+document.querySelectorAll('#room-members .slot.in-result').length === 0,
+`n=${document.querySelectorAll('#room-members .slot.in-result').length}`);
 $('room-back').click();
 await tick(450);
 check('待機室から退室してロビーに戻れる',!visible($('room-screen')));

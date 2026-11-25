@@ -626,6 +626,9 @@
         // no＝プレイヤー番号（参加順で1〜N。ルーム内固定表示用）
         members: room.members.map((m, i) => ({
           ...pub(users.get(m.userId)), ready: m.ready, isHost: m.userId === room.hostId,
+          // 結果確認中（セット終了から20秒・参加者だけ）
+          inResult: !!(room.lastResult && wwNow() - room.lastResult.atSec < 20
+            && room.lastResult.playerIds.includes(m.userId)),
           no: i + 1,
         })),
         allReadyAtMs: room.allReadyAtSec == null ? null : room.allReadyAtSec * 1000,
@@ -808,6 +811,7 @@
         room.status = 'lobby';
         room.currentSetId = null;
         room.allReadyAtSec = null;
+        room.lastResult = { playerIds: [...set.playerIds], atSec: wwNow() };
         room.members = room.members.filter((m) => !userIds.includes(m.userId));
         for (const m of room.members) m.ready = false;
         // マスター本人が対象なら最古参の残存メンバーへ移譲する
@@ -960,6 +964,7 @@
           } else {
             set.status = 'finished';
             const room = wwState.rooms.get(set.roomId);
+            room.lastResult = { playerIds: [...set.playerIds], atSec: wwNow() };
             room.status = 'lobby';
             room.currentSetId = null;
             room.allReadyAtSec = null;
@@ -1545,6 +1550,10 @@
         }
         if (!room.members.some((m) => m.userId === targetId)) {
           return Promise.reject(fail('NOT_A_MEMBER', '対象はこのルームのメンバーではありません'));
+        }
+        if (room.lastResult && wwNow() - room.lastResult.atSec < 20
+          && room.lastResult.playerIds.includes(targetId)) {
+          return Promise.reject(fail('IN_RESULT', '結果確認中のメンバーはキックできません'));
         }
         room.members = room.members.filter((m) => m.userId !== targetId);
         penClearRoomPoints(targetId, roomId);
@@ -2161,6 +2170,18 @@
           roomMessages: [],
           currentGame: null,
         };
+        // 結果確認中（直近セット終了から20秒・参加者だけに inResult を付ける）
+        try {
+          const { data: finSets } = await sb
+            .from('ww_sets').select('player_ids, finished_at')
+            .eq('room_id', roomId).eq('status', 'finished')
+            .order('finished_at', { ascending: false }).limit(1);
+          const fin = finSets?.[0];
+          if (fin?.finished_at && Date.now() - Date.parse(fin.finished_at) < 20000) {
+            const ids = new Set(fin.player_ids ?? []);
+            for (const m of detail.members) m.inResult = ids.has(m.id);
+          }
+        } catch { /* 付けられなければ通常表示 */ }
         // 待機室チャット（直近100件。RLS でメンバーだけが読める）
         try {
           const { data: roomMsgRows } = await sb
