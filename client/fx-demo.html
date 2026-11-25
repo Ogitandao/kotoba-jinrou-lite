@@ -59,17 +59,8 @@
   }
   .fullfx .rays {
     position: absolute; inset: 0;
+    background: repeating-conic-gradient(from 0deg, rgba(255,214,90,.38) 0deg 9deg, rgba(140,220,255,.34) 9deg 18deg);
   }
-  .fullfx .rays.a {
-    background: repeating-conic-gradient(from 0deg, rgba(255,214,90,.38) 0deg 9deg, rgba(255,214,90,0) 9deg 18deg);
-    animation: swapA .56s steps(1) infinite;
-  }
-  .fullfx .rays.b {
-    background: repeating-conic-gradient(from 9deg, rgba(140,220,255,.34) 0deg 9deg, rgba(140,220,255,0) 9deg 18deg);
-    animation: swapB .56s steps(1) infinite;
-  }
-  @keyframes swapA { 0%, 49.9% { opacity: 1; } 50%, 100% { opacity: 0; } }
-  @keyframes swapB { 0%, 49.9% { opacity: 0; } 50%, 100% { opacity: 1; } }
   @keyframes spin { to { transform: translate(-50%,-50%) rotate(360deg); } }
   .fullfx .big {
     position: absolute; left: 50%; top: 44%; width: 190px; height: 190px; object-fit: contain;
