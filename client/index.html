@@ -466,6 +466,7 @@
       <button id="up-gift" class="sub-btn" type="button">ギフト</button>
       <button class="sub-btn" data-close type="button">閉じる</button>
     </div>
+    <p class="up-report-row"><button id="up-report" class="danger-link" type="button">通報する</button></p>
   </div>
 
   <div id="modal-gift" class="modal hidden">
@@ -608,6 +609,24 @@
     <p class="gc-text" id="confirm-text"></p>
     <div class="gc-actions">
       <button id="confirm-yes" class="primary-btn" type="button">はい</button>
+    </div>
+  </div>
+  <!-- 通報フォーム（理由を選んで送信。✕でのみキャンセル） -->
+  <div id="modal-report" class="modal hidden">
+    <button class="modal-x" id="report-x" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="4.1" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <h3>通報する</h3>
+    <p class="modal-note"><span id="report-target-name"></span> さんを通報します<br>理由を選んでください</p>
+    <div id="report-reasons" class="report-reasons">
+      <button class="report-reason" type="button" data-reason="暴言・嫌がらせ">暴言・嫌がらせ</button>
+      <button class="report-reason" type="button" data-reason="脅迫">脅迫</button>
+      <button class="report-reason" type="button" data-reason="性的・不適切な内容">性的・不適切な内容</button>
+      <button class="report-reason" type="button" data-reason="スパム・宣伝">スパム・宣伝</button>
+      <button class="report-reason" type="button" data-reason="その他">その他</button>
+    </div>
+    <textarea id="report-detail" class="bio-input" rows="3" maxlength="200" placeholder="詳しい内容（任意）"></textarea>
+    <p id="report-error" class="form-error hidden">理由を選んでください</p>
+    <div class="gc-actions">
+      <button id="report-submit" class="primary-btn" type="button">通報する</button>
     </div>
   </div>
 </div>

@@ -1547,6 +1547,54 @@
     }
     confirmAction = null;
   }
+
+  // ---------- 通報フォーム ----------
+  let reportTarget = null;
+  let reportReason = null;
+  function openReport(target) {
+    reportTarget = target;
+    reportReason = null;
+    $('report-target-name').textContent = target.name ?? '';
+    $('report-detail').value = '';
+    $('report-error').classList.add('hidden');
+    for (const b of $('report-reasons').children) b.classList.remove('selected');
+    $('modal-gift-confirm').classList.add('hidden');
+    $('modal-confirm').classList.add('hidden');
+    $('modal-report').classList.remove('hidden');
+    $('modal-backdrop2').classList.remove('hidden');
+  }
+  function closeReport() {
+    $('modal-report').classList.add('hidden');
+    if ($('modal-gift-confirm').classList.contains('hidden')
+      && $('modal-confirm').classList.contains('hidden')) {
+      $('modal-backdrop2').classList.add('hidden');
+    }
+    reportTarget = null;
+  }
+  async function submitReport() {
+    if (!reportTarget) return;
+    if (!reportReason) {
+      $('report-error').classList.remove('hidden');
+      return;
+    }
+    const detail = $('report-detail').value.trim();
+    try {
+      await DATA.report({
+        kind: reportTarget.kind, ref: reportTarget.ref ?? null,
+        userId: reportTarget.userId ?? null, reason: reportReason,
+        detail: detail || null,
+      });
+      closeReport();
+      toast('通報しました。運営が確認します');
+    } catch (e) {
+      const code = e?.code ?? '';
+      if (code === 'ALREADY_REPORTED') toast('この対象は通報済みです');
+      else if (code === 'REPORT_LIMIT') toast('通報は1日20件までです');
+      else if (code === 'REPORT_BLOCKED') toast('通報機能の利用が制限されています');
+      else if (code === 'CANNOT_REPORT_SELF') toast('自分の投稿は通報できません');
+      else toast('通報できませんでした');
+    }
+  }
   function askLeaveGroup() {
     const g = state.dmGroup;
     if (!g) return;
@@ -2755,6 +2803,21 @@
       const u = state.profileUser;
       if (u) openGift(u);
     });
+    $('up-report').addEventListener('click', () => {
+      const u = state.profileUser;
+      if (u) openReport({ kind: 'user', userId: u.id, name: u.name });
+    });
+    $('report-x').addEventListener('click', closeReport);
+    $('report-reasons').addEventListener('click', (ev) => {
+      const btn = ev.target.closest('.report-reason');
+      if (!btn) return;
+      reportReason = btn.dataset.reason;
+      $('report-error').classList.add('hidden');
+      for (const b of $('report-reasons').children) {
+        b.classList.toggle('selected', b === btn);
+      }
+    });
+    $('report-submit').addEventListener('click', submitReport);
     $('btn-rules').addEventListener('click', () => openTutorial('view'));
     $('btn-tutorial-close').addEventListener('click', closeModal);
     $('btn-tutorial-cancel').addEventListener('click', () => {

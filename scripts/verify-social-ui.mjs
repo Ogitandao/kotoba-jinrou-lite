@@ -81,6 +81,17 @@ check('プロフを見るでプロフィールが開く（自己紹介・勝利�
   $('up-wins').textContent === '42');
 check('プロフにその人のギフト帯（王冠アート）が出る',
   document.querySelector('#up-gift-strip .gift-icon-img')?.getAttribute('src') === 'gifts/gift-crown.webp');
+// 通報フォーム：プロフから開き、理由未選択はエラー、選んで送信で閉じる
+$('up-report').click();
+await tick();
+check('プロフから通報フォームが開く', visible($('modal-report')) && $('report-target-name').textContent === 'みか');
+$('report-submit').click();
+await tick();
+check('理由未選択で送信するとエラーが出る', visible($('modal-report')) && !$('report-error').classList.contains('hidden'));
+document.querySelector('.report-reason[data-reason="暴言・嫌がらせ"]').click();
+$('report-submit').click();
+await tick();
+check('理由を選んで送信するとフォームが閉じる', !visible($('modal-report')));
 document.querySelector('#modal-user-profile [data-close]').click();
 await tick();
 mikaStrip.click();

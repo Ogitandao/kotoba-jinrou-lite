@@ -2223,6 +2223,7 @@
     removeFriend: (id) => active.removeFriend(id),
     blockUser: (id) => active.blockUser(id),
     unblockUser: (id) => active.unblockUser(id),
+    report: (target) => active.report(target),
     listBlocked: () => active.listBlocked(),
     listConversations: () => active.listConversations(),
     listMessages: (id) => active.listMessages(id),
