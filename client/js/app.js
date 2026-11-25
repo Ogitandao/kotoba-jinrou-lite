@@ -806,9 +806,8 @@
       b.className = 'gift-item';
       b.dataset.giftKey = g.key;
       b.innerHTML = `<span class="gift-cell-art"><span class="gift-cell-emoji">${g.icon}</span><img src="gifts/gift-${g.key}.webp" alt="" onerror="this.remove()"></span>` +
-        `<span class="gift-name"></span>` +
         `<span class="gift-price"><svg class="gift-coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#ffc93c"/><circle cx="12" cy="12" r="9" fill="none" stroke="#dfa40f" stroke-width="2"/><circle cx="12" cy="12" r="3.6" fill="#dfa40f"/></svg>${fmt(g.price)}</span>`;
-      b.querySelector('.gift-name').textContent = g.name;
+      b.setAttribute('aria-label', g.name);
       b.addEventListener('click', () => confirmGift(g));
       grid.appendChild(b);
     }
