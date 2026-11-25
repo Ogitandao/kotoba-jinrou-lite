@@ -726,19 +726,23 @@
     $('request-section').classList.toggle('hidden', incoming.length === 0);
     for (const u of incoming) {
       reqList.appendChild(userRow(u, [
-        smallBtn('承認', 'mini-btn primary', async () => {
-          try {
-            await DATA.respondFriendRequest(u.id, true);
-            toast(`${u.name}さんとフレンドになりました`);
-            await refreshSocial();
-          } catch (e) { toastError(e); }
+        smallBtn('承認', 'mini-btn primary', () => {
+          openConfirm(`${u.name}さんのフレンド申請を\n承認しますか？`, '承認する', async () => {
+            try {
+              await DATA.respondFriendRequest(u.id, true);
+              toast(`${u.name}さんとフレンドになりました`);
+              await refreshSocial();
+            } catch (e) { toastError(e); }
+          });
         }),
-        smallBtn('拒否', 'mini-btn', async () => {
-          try {
-            await DATA.respondFriendRequest(u.id, false);
-            toast('申請を拒否しました');
-            await refreshSocial();
-          } catch (e) { toastError(e); }
+        smallBtn('拒否', 'mini-btn', () => {
+          openConfirm(`${u.name}さんのフレンド申請を\n拒否しますか？`, '拒否する', async () => {
+            try {
+              await DATA.respondFriendRequest(u.id, false);
+              toast('申請を拒否しました');
+              await refreshSocial();
+            } catch (e) { toastError(e); }
+          });
         }),
       ]));
     }
@@ -756,26 +760,63 @@
     const list = $('friend-list');
     list.innerHTML = '';
     $('friend-empty').classList.toggle('hidden', friends.length > 0);
-    for (const u of friends) {
-      const row = userRow(u, [
-        smallBtn('トーク', 'mini-btn primary', () => openDm(u)),
-        smallBtn('ギフト', 'mini-btn', () => openGift(u)),
-        smallBtn('ブロック', 'mini-btn danger', async () => {
-          try {
-            await DATA.blockUser(u.id);
-            toast(`${u.name}さんをブロックしました`);
-            await refreshSocial();
-          } catch (e) { toastError(e); }
-        }),
-      ]);
-      // アイコンタップでもフレンドメニュー（プロフ／ルーム参加）を出す
-      const av = row.querySelector('.avatar');
-      if (av) {
-        av.classList.add('tappable');
-        av.addEventListener('click', () => openFriendMenu(u));
-      }
-      list.appendChild(row);
-    }
+    // 並び順：オンライン中が上、その中では最終ログインが新しい順（2026-11-25 おぎ）
+    const sorted = [...friends].sort((a, b) =>
+      ((b.online ? 1 : 0) - (a.online ? 1 : 0))
+      || ((a.lastActiveMin ?? Infinity) - (b.lastActiveMin ?? Infinity)));
+    for (const u of sorted) list.appendChild(friendCard(u));
+  }
+
+  function lastActiveText(u) {
+    if (u.online) return 'オンライン中';
+    if (u.lastActiveMin == null) return 'オフライン';
+    const m = u.lastActiveMin;
+    if (m < 60) return `最終ログイン：${m}分前`;
+    if (m < 1440) return `最終ログイン：${Math.floor(m / 60)}時間前`;
+    return `最終ログイン：${Math.floor(m / 1440)}日前`;
+  }
+  // フレンド一覧のカード：1行目＝名前＋最終ログイン、2行目＝ボタン（2026-11-25 おぎ）
+  function friendCard(u) {
+    const row = document.createElement('div');
+    row.className = 'user-row friend-card';
+    row.dataset.userId = u.id;
+    const av = avatarSpan(u, 'avatar-md', { online: true });
+    av.classList.add('tappable');
+    av.addEventListener('click', () => openFriendMenu(u));
+    const body = document.createElement('div');
+    body.className = 'friend-body';
+    const line1 = document.createElement('div');
+    line1.className = 'friend-line1';
+    const name = document.createElement('span');
+    name.className = 'user-name';
+    name.textContent = u.name;
+    const last = document.createElement('span');
+    last.className = `friend-last${u.online ? ' on' : ''}`;
+    last.textContent = lastActiveText(u);
+    line1.append(name, last);
+    const actions = document.createElement('div');
+    actions.className = 'friend-actions';
+    actions.append(
+      smallBtn('トーク', 'mini-btn primary', () => openDm(u)),
+      smallBtn('ギフト', 'mini-btn', () => openGift(u)),
+      smallBtn('ブロック', 'mini-btn danger', () => askBlockUser(u)),
+    );
+    body.append(line1, actions);
+    row.append(av, body);
+    return row;
+  }
+  function askBlockUser(u) {
+    openConfirm(
+      `${u.name}さんをブロックしますか？\nフレンドが解除され、DMもできなくなります`,
+      'ブロックする',
+      async () => {
+        try {
+          await DATA.blockUser(u.id);
+          toast(`${u.name}さんをブロックしました`);
+          await refreshSocial();
+        } catch (e) { toastError(e); }
+      },
+    );
   }
 
   async function doSearch() {
@@ -798,11 +839,13 @@
         action = smallBtn('申請中', 'mini-btn', () => {});
         action.disabled = true;
       } else if (u.relation === 'requested_in') {
-        action = smallBtn('承認する', 'mini-btn primary', async () => {
-          await DATA.respondFriendRequest(u.id, true);
-          toast(`${u.name}さんとフレンドになりました`);
-          await refreshSocial();
-          doSearch();
+        action = smallBtn('承認する', 'mini-btn primary', () => {
+          openConfirm(`${u.name}さんのフレンド申請を\n承認しますか？`, '承認する', async () => {
+            await DATA.respondFriendRequest(u.id, true);
+            toast(`${u.name}さんとフレンドになりました`);
+            await refreshSocial();
+            doSearch();
+          });
         });
       } else if (u.relation === 'blocked_by') {
         action = smallBtn('申請できません', 'mini-btn', () => {});

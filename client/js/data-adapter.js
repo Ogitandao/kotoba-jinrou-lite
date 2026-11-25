@@ -98,9 +98,15 @@
       return (friendGiftsLedger[userId] ??= []);
     };
     const users = new Map();
-    const addUser = (u) => users.set(u.id, {
-      popularity: 0, wordwolfWins: 0, online: false, ...u,
-    });
+    const addUser = (u) => {
+      const user = { popularity: 0, wordwolfWins: 0, online: false, ...u };
+      // オフラインの人には最終ログイン（◯分前）を適当に割り振る（表示確認用シード）
+      if (!user.online && user.lastActiveMin == null) {
+        const hash = [...user.id].reduce((a, c) => a + c.charCodeAt(0), 0);
+        user.lastActiveMin = 40 + (hash * 37) % 2600;
+      }
+      users.set(u.id, user);
+    };
     addUser({
       id: 'me', publicId: D.me.userId, name: D.me.name, icon: D.me.icon, iconKey: 'wolf',
       iconBg: D.me.iconBg, bio: D.me.bio, popularity: D.me.popularity, online: true,
@@ -110,8 +116,8 @@
     addUser({ id: 'u-ken', publicId: 'ken_7788', name: 'けん', icon: '🦉', iconKey: 'owl', iconBg: '#eef7ff', bio: '毎晩ワードウルフで遊んでます！推理で追い詰めるのが快感。初心者さん歓迎、まったり部屋によく出没します', popularity: 560000, online: true, roomTitle: null, wordwolfWins: 1024 });
     addUser({ id: 'u-risu', publicId: 'risu_2049', name: 'りす', icon: '🐿️', iconKey: null, iconBg: '#fff4e0', bio: 'まったり勢です〜', popularity: 87, online: true, roomTitle: 'まったり3分で1戦！', wordwolfWins: 15 });
     addUser({ id: 'u-nyan', publicId: 'nyan_5566', name: 'にゃん', icon: '🐱', iconKey: 'cat', iconBg: '#f0ecff', bio: 'にゃーん', popularity: 45, online: true, roomTitle: null, wordwolfWins: 8 });
-    addUser({ id: 'u-sora', publicId: 'sora_3310', name: 'そら', icon: '🐥', iconKey: 'chick', iconBg: '#eafff3', bio: '昨日はじめました！よろしくです', popularity: 3, online: false, wordwolfWins: 1 });
-    addUser({ id: 'u-mochi', publicId: 'mochi_9012', name: 'もち', icon: '🐹', iconKey: null, iconBg: '#fff0f3', bio: 'もちもちしてます', popularity: 12, online: false, wordwolfWins: 3 });
+    addUser({ id: 'u-sora', publicId: 'sora_3310', name: 'そら', icon: '🐥', iconKey: 'chick', iconBg: '#eafff3', bio: '昨日はじめました！よろしくです', popularity: 3, online: false, lastActiveMin: 65, wordwolfWins: 1 });
+    addUser({ id: 'u-mochi', publicId: 'mochi_9012', name: 'もち', icon: '🐹', iconKey: null, iconBg: '#fff0f3', bio: 'もちもちしてます', popularity: 12, online: false, lastActiveMin: 1560, wordwolfWins: 3 });
     addUser({ id: 'u-ai', publicId: 'ai_6611', name: 'あい', icon: '🐨', iconKey: 'koala', iconBg: '#e6f7ff', bio: 'コアラのようにのんびり遊んでます', popularity: 28, online: false, wordwolfWins: 5 });
     addUser({ id: 'u-d01', publicId: 'yuna_0312', name: 'ゆうな', icon: '👩', iconKey: 'woman1', iconBg: '#ffeef5', bio: '放課後よくいます', popularity: 64, online: true, wordwolfWins: 12 });
     addUser({ id: 'u-d02', publicId: 'kaito_7741', name: 'かいと', icon: '👨', iconKey: 'man1', iconBg: '#eef7ff', bio: '推理はまかせて', popularity: 210, online: false, wordwolfWins: 38 });

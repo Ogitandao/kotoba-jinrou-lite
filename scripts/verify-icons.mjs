@@ -137,8 +137,8 @@ check('[I4] フレンド一覧：みかは画像（うさぎ）で表示され�
 check('[I4] フレンド一覧：りすはプリセットが無いので絵文字のまま',
   !friendRow('りす')?.querySelector('img.avatar-img')
   && (friendRow('りす')?.textContent.includes('🐿️') ?? false));
-check('[I5] フレンド一覧に緑ドットは出ない',
-  document.querySelectorAll('#friend-list .dot').length === 0);
+check('[I5] フレンド一覧ではオンラインの人に緑ドットが出る（2026-11-25 おぎ）',
+  friendRow('みか')?.querySelector('.dot') != null);
 const talkRow = (name) => [...document.querySelectorAll('#talk-list .talk-row')]
   .find((r) => r.querySelector('.talk-name')?.textContent === name);
 check('[I5] トーク一覧に緑ドットは出ない（画像アイコンは出る）',

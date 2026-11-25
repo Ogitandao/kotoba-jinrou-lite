@@ -208,6 +208,10 @@ check('届いている申請（そら）が見える',
 const soraRow = rowByName($('request-list'), 'そら');
 [...soraRow.querySelectorAll('button')].find((b) => b.textContent === '承認').click();
 await tick();
+check('承認にも確認ポップアップを挟む',
+  visible($('modal-confirm')) && $('confirm-text').textContent.includes('承認しますか'));
+$('confirm-yes').click();
+await tick();
 check('承認するとフレンド一覧に移り、申請欄が消える',
   !visible($('request-section')) && !!rowByName($('friend-list'), 'そら'));
 const mikaFriendRow = rowByName($('friend-list'), 'みか');
@@ -310,6 +314,10 @@ check('グループを抜けるとDM画面が閉じ、一覧から消える',
 // --- ブロック ---
 const kenRow = rowByName($('friend-list'), 'けん');
 [...kenRow.querySelectorAll('button')].find((b) => b.textContent === 'ブロック').click();
+await tick();
+check('ブロックにも確認ポップアップを挟む',
+  visible($('modal-confirm')) && $('confirm-text').textContent.includes('ブロックしますか'));
+$('confirm-yes').click();
 await tick();
 check('ブロックするとフレンド一覧から消える',
   !rowByName($('friend-list'), 'けん'));
