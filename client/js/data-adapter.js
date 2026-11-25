@@ -1059,9 +1059,10 @@
         return ok(GIFT_CATALOG.slice());
       },
       myGiftSummary() {
+        const lookup = [...GIFT_CATALOG, ...(D.extraGifts ?? [])];
         const items = (D.myGifts ?? [])
           .map((g) => {
-            const c = GIFT_CATALOG.find((x) => x.key === g.giftKey);
+            const c = lookup.find((x) => x.key === g.giftKey);
             return c ? { giftKey: c.key, name: c.name, icon: c.icon, price: c.price, count: g.count } : null;
           })
           .filter(Boolean)

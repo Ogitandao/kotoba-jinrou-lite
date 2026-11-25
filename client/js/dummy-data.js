@@ -13,11 +13,34 @@ window.KL_DUMMY = {
     popularity: 98,
     bonusClaimed: false,
   },
-  // もらったギフト（ロビーのギフト帯表示用デモ）
+  // 未実装ギフト（ギフト帯の表示確認用デモ。実カタログには入れない）
+  extraGifts: [
+    { key: 'diamond', name: 'ダイヤモンド', icon: '💎', price: 10000 },
+    { key: 'dragon', name: 'ドラゴン', icon: '🐲', price: 5000 },
+    { key: 'devil', name: '小悪魔', icon: '😈', price: 2000 },
+    { key: 'angel', name: '天使', icon: '👼', price: 1500 },
+    { key: 'moon', name: '三日月', icon: '🌙', price: 800 },
+    { key: 'star', name: '星', icon: '⭐', price: 200 },
+    { key: 'donut', name: 'ドーナツ', icon: '🍩', price: 150 },
+    { key: 'balloon', name: '風船', icon: '🎈', price: 80 },
+  ],
+  // もらったギフト（ロビーのギフト帯表示用デモ。全16種で帯があふれる量）
   myGifts: [
+    { giftKey: 'diamond', count: 1 },
+    { giftKey: 'dragon', count: 1 },
     { giftKey: 'crown', count: 2 },
+    { giftKey: 'devil', count: 3 },
+    { giftKey: 'angel', count: 2 },
     { giftKey: 'ring', count: 5 },
+    { giftKey: 'moon', count: 4 },
+    { giftKey: 'teddy', count: 7 },
     { giftKey: 'cake', count: 12 },
+    { giftKey: 'star', count: 9 },
+    { giftKey: 'donut', count: 15 },
+    { giftKey: 'coffee', count: 20 },
+    { giftKey: 'candy', count: 18 },
+    { giftKey: 'balloon', count: 25 },
+    { giftKey: 'flower', count: 30 },
     { giftKey: 'heart', count: 34 },
   ],
   onlineFriends: [

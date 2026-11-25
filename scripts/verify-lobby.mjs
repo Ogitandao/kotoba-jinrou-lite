@@ -52,12 +52,11 @@ check('人気度ピル（98）が表示される',
 check('人気度ピルに「人気度」のラベル文字が無い（アイコン＋数字のみ）',
   !$('pill-popularity').textContent.includes('人気度'));
 await new Promise((r) => setTimeout(r, 60));
-check('ギフト帯が価格順（王冠→指輪→ケーキ→ハート）で表示される',
-  $('gift-strip').textContent.includes('👑') &&
-  $('gift-strip').textContent.includes('×2') &&
-  $('gift-strip').textContent.indexOf('👑') < $('gift-strip').textContent.indexOf('💍') &&
-  $('gift-strip').textContent.indexOf('💍') < $('gift-strip').textContent.indexOf('🎂') &&
-  $('gift-strip').textContent.indexOf('🎂') < $('gift-strip').textContent.indexOf('❤️'));
+check('ギフト帯が価格順に専用アート＋個数（2行表示）で並ぶ',
+  document.querySelectorAll('#gift-strip .gift-strip-item').length === 16 &&
+  document.querySelector('#gift-strip .gift-strip-item .gift-icon-img')?.getAttribute('src') === 'gifts/gift-diamond.webp' &&
+  document.querySelector('#gift-strip .gift-strip-item .gift-count')?.textContent === '×1' &&
+  $('gift-strip').textContent.includes('×34'));
 check('ギフト帯は表示専用（ボタンではない・すべて見るも無い）',
   $('gift-strip').tagName === 'DIV' && !$('gift-strip').textContent.includes('すべて見る'));
 check('ログインボーナスバナーが表示される', visible($('bonus-banner')));

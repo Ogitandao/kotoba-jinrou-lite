@@ -161,8 +161,17 @@
         return;
       }
       el.innerHTML = items
-        .map((g) => `<span class="gift-strip-item">${g.icon} <span>×${g.count}</span></span>`)
+        .map((g) => `<span class="gift-strip-item"><img class="gift-icon-img" src="gifts/gift-${g.giftKey}.webp" alt="${g.name}" data-emoji="${g.icon}" /><span class="gift-count">×${g.count}</span></span>`)
         .join('');
+      // 専用アートが無いギフトは絵文字表示にフォールバックする
+      el.querySelectorAll('.gift-icon-img').forEach((img) => {
+        img.addEventListener('error', () => {
+          const s = document.createElement('span');
+          s.className = 'gift-icon-emoji';
+          s.textContent = img.dataset.emoji ?? '🎁';
+          img.replaceWith(s);
+        });
+      });
     } catch { /* 取得失敗時は帯を空のままにする */ }
   }
 
