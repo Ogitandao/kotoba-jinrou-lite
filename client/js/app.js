@@ -1106,12 +1106,6 @@
       n.className = 'member-cell-name';
       n.textContent = m.name;
       cell.appendChild(n);
-      if (m.id === state.me.id) {
-        const you = document.createElement('span');
-        you.className = 'member-cell-you';
-        you.textContent = 'あなた';
-        cell.appendChild(you);
-      }
       ml.appendChild(cell);
     }
     const friends = await DATA.listFriends();
