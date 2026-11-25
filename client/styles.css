@@ -268,7 +268,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .section-head h2 { font-size: 19px; font-weight: 800; }
 .link-btn { color: var(--sky); font-weight: 700; font-size: 14.5px; }
 .refresh-btn { display: inline-flex; align-items: center; gap: 5px; }
-.refresh-icon { width: 16px; height: 16px; display: block; }
+.refresh-icon { width: 17px; height: 17px; display: block; }
+.see-all-btn { display: inline-flex; align-items: center; gap: 4px; }
+.see-all-icon { width: 17px; height: 17px; display: block; flex: 0 0 auto; }
 
 /* オンラインの友達 */
 .friends-strip { display: flex; gap: 14px; overflow-x: auto; padding: 2px 2px 6px; }
