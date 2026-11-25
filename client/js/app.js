@@ -297,9 +297,60 @@
     return b;
   }
   function renderRooms() {
+    detectRoomEvents(state.rooms);
     const list = $('room-list');
     list.innerHTML = '';
     for (const r of state.rooms) list.appendChild(roomCard(r));
+  }
+
+  // ---------- ライブティッカー ----------
+  // ロビーに「今起きていること」を流す帯。お知らせ（固定）＋ルーム一覧の
+  // 変化から拾う実イベント（作成／対戦開始／満室）を流す（2026-11-25 おぎ）
+  const TICKER_BASE = [
+    '📣 ことば人狼へようこそ！マナーを守って楽しく遊ぼう',
+    '🎁 試合のあとは、活躍した人にギフトを贈ってみよう',
+    '🔰 はじめての人は「初心者歓迎」のルームがおすすめ',
+  ];
+  function renderTicker() {
+    const track = $('ticker-track');
+    if (!track) return;
+    const items = [...(state.tickerEvents ?? []), ...TICKER_BASE];
+    const setHtml = items
+      .map((t) => `<span class="ticker-item">${t}</span>`)
+      .join('');
+    // 同じ並びを2セット並べて -50% まで流すと切れ目なくループする
+    track.innerHTML = `<span class="ticker-set">${setHtml}</span><span class="ticker-set">${setHtml}</span>`;
+    requestAnimationFrame(() => {
+      const set = track.querySelector('.ticker-set');
+      if (!set) return;
+      const w = set.getBoundingClientRect().width;
+      // 約45px/秒のゆっくりした速さ。短いときも最低18秒はかける
+      track.style.animationDuration = `${Math.max(18, w / 45)}s`;
+    });
+  }
+  function pushTickerEvent(text) {
+    state.tickerEvents = state.tickerEvents ?? [];
+    state.tickerEvents.unshift(text);
+    state.tickerEvents = state.tickerEvents.slice(0, 6);
+    renderTicker();
+  }
+  function detectRoomEvents(rooms) {
+    const prev = state.prevRooms;
+    const next = new Map(rooms.map((r) => [r.id, { players: r.players, status: r.status }]));
+    state.prevRooms = next;
+    if (!prev) return; // 初回は種まきだけ（既存ルームをイベント化しない）
+    for (const r of rooms) {
+      const p = prev.get(r.id);
+      if (!p) {
+        if (r.hostName) pushTickerEvent(`🏠 ${r.hostName}さんがルーム『${r.title}』を作りました`);
+      } else {
+        if (p.status !== 'playing' && r.status === 'playing') {
+          pushTickerEvent(`🔥 ルーム『${r.title}』で対戦が始まりました`);
+        } else if (p.players < r.capacity && r.players >= r.capacity) {
+          pushTickerEvent(`👀 ルーム『${r.title}』が満室になりました`);
+        }
+      }
+    }
   }
 
   // ルーム作成バーは「ロビー表示中」だけ出す。ルーム／対戦／DM など
@@ -1463,6 +1514,7 @@
     renderPenalty();
     renderFriendsLock();
     renderRooms();
+    renderTicker();
     refreshSocial();
     // ジャンル選択肢（おまかせ＋全19種）は起動時に先読みして構築する
     // （作成モーダルを開く処理を同期に保つため）

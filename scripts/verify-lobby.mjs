@@ -124,10 +124,13 @@ check('同意するとフレンドタブのグレーアウトが解除される'
   !$('tabbtn-friends').classList.contains('locked'));
 $('create-title').value = '検証用ルーム';
 $('btn-create-confirm').click();
+check('ティッカーにお知らせが流れている', $('ticker-track').textContent.includes('ことば人狼へようこそ'));
 check('公開ルームを作成すると一覧の先頭に増える',
   document.querySelectorAll('#room-list .room-card').length === 7 &&
   document.querySelector('#room-list .room-card').textContent.includes('検証用ルーム'));
 
+check('ルームを作るとティッカーに実イベントが流れる',
+  $('ticker-track').textContent.includes('検証用ルーム') && $('ticker-track').textContent.includes('作りました'));
 // --- ルーム作成（非公開：100コイン消費） ---
 $('btn-create-room').click();
 document.querySelector('input[name="create-visibility"][value="private"]').click();

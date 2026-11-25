@@ -72,6 +72,31 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .tab-panel { padding-bottom: 8px; }
 
 /* プロフィールカード */
+/* ライブティッカー：ロビーに動きを出す細い帯。実イベント＋お知らせを流す */
+.ticker {
+  overflow: hidden;
+  background: linear-gradient(90deg, #e6f7ff, #d9fbe8);
+  border-radius: 999px;
+  padding: 7px 0;
+  margin-bottom: 12px;
+  box-shadow: inset 0 0 0 1px rgba(43, 157, 244, 0.15);
+}
+.ticker-track {
+  display: inline-flex;
+  gap: 0;
+  white-space: nowrap;
+  will-change: transform;
+  animation: ticker-scroll 30s linear infinite;
+}
+.ticker-set { display: inline-flex; }
+.ticker-item {
+  font-size: 12.5px; font-weight: 700; color: #33536d;
+  padding: 0 26px;
+}
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
 .profile-card {
   display: flex;
   gap: 14px;
