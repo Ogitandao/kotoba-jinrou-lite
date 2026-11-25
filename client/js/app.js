@@ -382,10 +382,12 @@
     const hostAvatar = hostSrc
       ? `<span class="avatar avatar-md"><img class="avatar-img" src="${hostSrc}" alt="" /></span>`
       : `<span class="avatar avatar-md" style="background:${room.hostBg}">${room.hostIcon}</span>`;
-    // メタ情報は2行固定：1行目＝人数＋ジャンル、2行目＝対戦中（左）＋初心者歓迎。
+    // メタ情報は2行固定：1行目＝人数＋ジャンル、2行目＝対戦中（左）＋初心者歓迎＋逆転回答なし。
     // どちらの行も途中で改行させない（2026-11-25 おぎ）
-    const metaRow2 = (playing || beginner)
-      ? `<span class="meta-row">${playing}${beginner}</span>`
+    // 逆転回答は「あり」が標準なので、例外の「なし」の部屋だけカードにもラベルを出す（おぎ）
+    const revOff = room.reversalEnabled === false ? '<span class="tag tag-rev-off">逆転回答なし</span>' : '';
+    const metaRow2 = (playing || beginner || revOff)
+      ? `<span class="meta-row">${playing}${beginner}${revOff}</span>`
       : '';
     b.innerHTML =
       hostAvatar +

@@ -65,6 +65,16 @@ check('オンラインの友達が4人表示される',
 check('ランダム入室ボタンが表示される', visible($('btn-random')));
 check('ルーム一覧に8件表示される',
   document.querySelectorAll('#room-list .room-card').length === 8);
+const r3CardEl = [...document.querySelectorAll('#room-list .room-card')]
+  .find((c) => c.dataset.roomId === 'r3');
+const r8CardEl = [...document.querySelectorAll('#room-list .room-card')]
+  .find((c) => c.dataset.roomId === 'r8');
+check('逆転回答なしの部屋はカードにも「逆転回答なし」が出る',
+  r3CardEl?.textContent.includes('逆転回答なし'));
+check('逆転回答あり（標準）の部屋のカードには逆転ラベルが出ない',
+  !r8CardEl?.textContent.includes('逆転回答'));
+check('最長サンプル部屋は 7/8人 と表示される',
+  r8CardEl?.textContent.includes('7/8人'));
 const firstCard = document.querySelector('#room-list .room-card');
 check('対戦中ルームに点滅ドット付き「対戦中」タグが入っている',
   firstCard.textContent.includes('対戦中') && !!firstCard.querySelector('.pulse-dot'));

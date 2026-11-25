@@ -112,6 +112,7 @@
     addUser({ id: 'u-nyan', publicId: 'nyan_5566', name: 'にゃん', icon: '🐱', iconKey: 'cat', iconBg: '#f0ecff', bio: 'にゃーん', popularity: 45, online: true, roomTitle: null, wordwolfWins: 8 });
     addUser({ id: 'u-sora', publicId: 'sora_3310', name: 'そら', icon: '🐥', iconKey: 'chick', iconBg: '#eafff3', bio: '昨日はじめました！よろしくです', popularity: 3, online: false, wordwolfWins: 1 });
     addUser({ id: 'u-mochi', publicId: 'mochi_9012', name: 'もち', icon: '🐹', iconKey: null, iconBg: '#fff0f3', bio: 'もちもちしてます', popularity: 12, online: false, wordwolfWins: 3 });
+    addUser({ id: 'u-ai', publicId: 'ai_6611', name: 'あい', icon: '🐨', iconKey: 'koala', iconBg: '#e6f7ff', bio: 'コアラのようにのんびり遊んでます', popularity: 28, online: false, wordwolfWins: 5 });
     // 自分の選択アイコンは Sim でも再読込で維持する（実 DB では
     // profiles.icon_key が正本。Sim は localStorage で肩代わり）
     try {
@@ -434,7 +435,7 @@
       }
       return a;
     };
-    const BOT_POOL = ['u-mika', 'u-ken', 'u-risu', 'u-nyan', 'u-sora', 'u-mochi'];
+    const BOT_POOL = ['u-mika', 'u-ken', 'u-risu', 'u-nyan', 'u-sora', 'u-mochi', 'u-ai'];
 
     function wwSeedRooms() {
       if (wwState.rooms.size) return;
