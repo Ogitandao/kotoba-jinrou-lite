@@ -116,7 +116,7 @@ check('[18] body のフォントに M PLUS Rounded 1c が入っている',
 css.includes('font-family: "M PLUS Rounded 1c"'), 'styles.css の font-family');
 check('お題テキストの大きな文字スタイルが当たる（topic-words クラス一致）',
 html.includes('id="game-my-topic" class="topic-words"')
-&& cssRule('.topic-words').includes('font-size: 26px'),
+&& css.includes('.topic-words { font-size: 26px;'),
 cssRule('.topic-words'));
 
 await tick(60);
