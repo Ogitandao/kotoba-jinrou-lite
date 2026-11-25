@@ -687,7 +687,11 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   object-fit: cover; border-radius: 10px; display: block;
 }
 .gift-name { font-size: clamp(9.5px, 4.2cqw, 12.5px); font-weight: 700; white-space: nowrap; }
-.gift-price { font-size: clamp(9px, 3.8cqw, 11.5px); color: var(--ink-soft); white-space: nowrap; }
+.gift-price {
+  font-size: clamp(9px, 3.8cqw, 11.5px); color: var(--ink-soft); white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 3px;
+}
+.gift-coin { width: clamp(11px, 4cqw, 14px); height: auto; flex: none; }
 /* ギフト確認ポップアップ（第2レイヤー） */
 .backdrop2 { z-index: 60; background: rgba(23, 50, 74, 0.58); }
 .gc-art {
