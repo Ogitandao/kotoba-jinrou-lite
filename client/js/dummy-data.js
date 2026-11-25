@@ -13,6 +13,13 @@ window.KL_DUMMY = {
     popularity: 98,
     bonusClaimed: false,
   },
+  // もらったギフト（ロビーのギフト帯表示用デモ）
+  myGifts: [
+    { giftKey: 'crown', count: 2 },
+    { giftKey: 'ring', count: 5 },
+    { giftKey: 'cake', count: 12 },
+    { giftKey: 'heart', count: 34 },
+  ],
   onlineFriends: [
     { name: 'みか', icon: '🐰', iconBg: '#ffeef5', roomTitle: 'はじめてさん集合！' },
     { name: 'けん', icon: '🦉', iconBg: '#eef7ff', roomTitle: null },

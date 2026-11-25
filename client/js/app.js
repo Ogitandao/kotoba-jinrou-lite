@@ -146,6 +146,24 @@
     }
     $('avatar-modal-name').textContent = me.name;
     fillAvatar($('avatar-modal-preview'), me);
+    renderGiftStrip();
+  }
+
+  // もらったギフト帯：単品価格が高い順に1行だけ、入りきらない分は
+  // そのまま見えない（詳細画面は作らない・タップもできない表示専用）
+  async function renderGiftStrip() {
+    const el = $('gift-strip');
+    if (!el) return;
+    try {
+      const items = await DATA.myGiftSummary();
+      if (!items.length) {
+        el.innerHTML = '<span class="gift-strip-empty">🎁 まだギフトがありません</span>';
+        return;
+      }
+      el.innerHTML = items
+        .map((g) => `<span class="gift-strip-item">${g.icon} <span>×${g.count}</span></span>`)
+        .join('');
+    } catch { /* 取得失敗時は帯を空のままにする */ }
   }
 
   // ---------- アイコン選択 ----------

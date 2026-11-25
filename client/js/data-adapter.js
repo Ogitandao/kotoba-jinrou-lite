@@ -1058,6 +1058,16 @@
       giftCatalog() {
         return ok(GIFT_CATALOG.slice());
       },
+      myGiftSummary() {
+        const items = (D.myGifts ?? [])
+          .map((g) => {
+            const c = GIFT_CATALOG.find((x) => x.key === g.giftKey);
+            return c ? { giftKey: c.key, name: c.name, icon: c.icon, price: c.price, count: g.count } : null;
+          })
+          .filter(Boolean)
+          .sort((a, b) => b.price - a.price || b.count - a.count);
+        return ok(items);
+      },
       tickerFeed() {
         return ok((state.ticker ?? []).slice(0, 8));
       },
@@ -1613,6 +1623,13 @@
         if (userId === 'system') return rpc('kl_mark_system_dm_read');
         return rpc('kl_mark_dm_read', { p_other: userId });
       },
+      async myGiftSummary() {
+        const rows = await rpc('kl_my_gift_summary');
+        return (rows ?? []).map((r) => ({
+          giftKey: r.giftKey, name: r.name, icon: r.icon,
+          price: r.price, count: Number(r.count),
+        }));
+      },
       async giftCatalog() {
         const { data, error } = await getClient()
           .from('gift_catalog').select('*').eq('active', true).order('sort');
@@ -1914,6 +1931,7 @@
     sendMessage: (id, body) => active.sendMessage(id, body),
     markRead: (id) => active.markRead(id),
     giftCatalog: () => active.giftCatalog(),
+    myGiftSummary: () => active.myGiftSummary(),
     sendGift: (id, key) => active.sendGift(id, key),
     tickerFeed: () => active.tickerFeed(),
     listIcons: () => active.listIcons(),

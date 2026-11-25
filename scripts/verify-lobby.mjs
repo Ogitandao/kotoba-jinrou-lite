@@ -51,6 +51,15 @@ check('人気度ピル（98）が表示される',
   visible($('pill-popularity')) && $('popularity-count').textContent === '98');
 check('人気度ピルに「人気度」のラベル文字が無い（アイコン＋数字のみ）',
   !$('pill-popularity').textContent.includes('人気度'));
+await new Promise((r) => setTimeout(r, 60));
+check('ギフト帯が価格順（王冠→指輪→ケーキ→ハート）で表示される',
+  $('gift-strip').textContent.includes('👑') &&
+  $('gift-strip').textContent.includes('×2') &&
+  $('gift-strip').textContent.indexOf('👑') < $('gift-strip').textContent.indexOf('💍') &&
+  $('gift-strip').textContent.indexOf('💍') < $('gift-strip').textContent.indexOf('🎂') &&
+  $('gift-strip').textContent.indexOf('🎂') < $('gift-strip').textContent.indexOf('❤️'));
+check('ギフト帯は表示専用（ボタンではない・すべて見るも無い）',
+  $('gift-strip').tagName === 'DIV' && !$('gift-strip').textContent.includes('すべて見る'));
 check('ログインボーナスバナーが表示される', visible($('bonus-banner')));
 check('オンラインの友達が4人表示される',
   document.querySelectorAll('#online-friends .friend-item').length === 4);
