@@ -96,15 +96,18 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .profile-name-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 /* 名前もオンライン表示も改行させない。狭い画面では文字サイズを下げて収める */
 .profile-name-btn {
-  position: relative; min-width: 0;
-  background: none; border: none; padding: 0 10px 0 0; cursor: pointer;
+  min-width: 0;
+  background: none; border: none; padding: 0; cursor: pointer;
   font-family: inherit; color: inherit; text-align: left;
+  white-space: nowrap;
 }
 .profile-name { font-size: clamp(17px, 5.8vw, 26px); font-weight: 800; white-space: nowrap; }
 .profile-name.long { font-size: clamp(14px, 4.6vw, 20px); }
+/* 鉛筆は名前の流れの中に置き、名前の長さに必ず追随させる（絶対配置だと
+   名前が長いときにボタン枠だけ縮んで文字に被るため） */
 .name-pencil {
-  position: absolute; top: -2px; right: -2px;
   font-size: 11px; color: var(--ink-soft);
+  vertical-align: super; margin-left: 3px;
 }
 .online-label {
   color: #159a5f; font-weight: 700;
