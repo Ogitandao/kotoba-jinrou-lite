@@ -1752,6 +1752,7 @@
   // 待機室チャットの描画（本編と同じLINE式：他者は左・自分は右、
   // 名前の左にプレイヤー番号バッジ）
   function renderRoomChat(d) {
+    const awayBefore = awayFromBottom($('room-chat-messages'));
     const inner = $('room-chat-msgs-inner');
     inner.innerHTML = '';
     const msgs = d.roomMessages ?? [];
@@ -1787,7 +1788,7 @@
       row.append(nameEl, bubble);
       inner.appendChild(row);
     }
-    settleScroll(roomFollow, $('room-chat-messages'));
+    settleScroll(roomFollow, $('room-chat-messages'), awayBefore);
   }
 
   // ログの自動追尾（待機室・対戦画面）：過去ログを読むために上へ
@@ -1809,9 +1810,23 @@
     ctl.update = update;
     return ctl;
   }
-  function settleScroll(ctl, box) {
+  // awayBefore = 再描画前に測った「最下部からの距離」。再描画で中身を
+  // 作り直すと一瞬スクロール位置が 0 に潰れて「下にいる」と誤判定する
+  // ため、描画前の距離を保ったまま同じ分だけ離して復元する
+  function settleScroll(ctl, box, awayBefore) {
+    if (awayBefore != null && awayBefore > 240) {
+      box.scrollTop = Math.max(0, box.scrollHeight - box.clientHeight - awayBefore);
+      if (ctl) {
+        ctl.follow = false;
+        ctl.update();
+      }
+      return;
+    }
     if (!ctl || ctl.follow) box.scrollTop = box.scrollHeight;
     if (ctl) ctl.update();
+  }
+  function awayFromBottom(box) {
+    return box.scrollHeight - box.scrollTop - box.clientHeight;
   }
   let roomFollow = null;
   let gameFollow = null;
@@ -2005,6 +2020,7 @@
     });
 
     // 発言（下端寄せ）
+    const gameAwayBefore = awayFromBottom($('game-messages'));
     const inner = $('game-msgs-inner');
     inner.innerHTML = '';
     const nameOf = (id) => v.players.find((p) => p.id === id)?.name ?? 'プレイヤー';
@@ -2031,7 +2047,7 @@
       row.append(sender, bubble);
       inner.appendChild(row);
     }
-    settleScroll(gameFollow, $('game-messages'));
+    settleScroll(gameFollow, $('game-messages'), gameAwayBefore);
 
     // 無発言警告：判定はサーバー時刻基準の残り秒数（phaseRemainSec）と
     // 自分の発言数（myMessageCount）で行う。ビューに無い場合は手元の
