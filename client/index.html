@@ -397,9 +397,9 @@
     <p class="modal-note"><span id="gift-target-name"></span> さんへ</p>
     <p class="modal-note">所持コイン：<span id="gift-balance">0</span>コイン</p>
     <div id="gift-grid" class="gift-grid"></div>
-    <p id="gift-error" class="form-error hidden">コインが足りません（チャージしますか？）</p>
+    <p id="gift-error" class="form-error hidden">コインが足りません<br>チャージしますか？</p>
     <div class="modal-actions">
-      <button id="btn-gift-charge" class="sub-btn hidden" type="button">チャージ</button>
+      <button id="btn-gift-charge" class="primary-btn hidden" type="button">チャージ</button>
       <button class="modal-close" data-close type="button">閉じる</button>
     </div>
   </div>
@@ -514,6 +514,18 @@
       <button id="btn-create-charge" class="sub-btn hidden" type="button">チャージ</button>
       <button id="btn-create-cancel" class="sub-btn" type="button">キャンセル</button>
       <button id="btn-create-confirm" class="primary-btn" type="button">作る</button>
+    </div>
+  </div>
+</div>
+
+<!-- ギフト送信の確認（第2レイヤー：外側タップでは閉じない） -->
+<div id="modal-backdrop2" class="modal-backdrop backdrop2 hidden">
+  <div id="modal-gift-confirm" class="modal hidden">
+    <button class="modal-x" id="gc-x" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="4.1" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="gc-art" id="gc-art"></div>
+    <p class="gc-text" id="gc-text"></p>
+    <div class="gc-actions">
+      <button id="gc-send" class="primary-btn" type="button">送る</button>
     </div>
   </div>
 </div>

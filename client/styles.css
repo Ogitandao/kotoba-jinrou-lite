@@ -528,6 +528,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .radio-row { display: flex; gap: 16px; font-weight: 700; font-size: 14.5px; margin-bottom: 6px; }
 .form-error { color: var(--danger); font-weight: 700; font-size: 14px; margin: 8px 0; }
 .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+.modal-actions > * { flex: 1 1 0; min-width: 0; }
+.modal-actions .modal-close { width: auto; margin-top: 0; }
 .sub-btn {
   flex: 1 1 0; background: #eef6fd; color: #1473c9;
   border-radius: 999px; padding: 10px 0; font-weight: 800;
@@ -667,10 +669,38 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .gift-item {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   background: #f4fbff; border: 1.5px solid var(--line); border-radius: 14px;
-  padding: 10px 4px;
+  padding: 10px 2px;
 }
 .gift-item:active { background: var(--mint-bg); }
 .gift-icon { font-size: 26px; }
+.gift-cell-art { position: relative; width: 44px; height: 44px; display: block; }
+.gift-cell-emoji {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+}
+.gift-cell-art img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; border-radius: 10px; display: block;
+}
+.gift-name { font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+.gift-price { font-size: 11.5px; color: var(--ink-soft); white-space: nowrap; }
+/* ギフト確認ポップアップ（第2レイヤー） */
+.backdrop2 { z-index: 60; background: rgba(23, 50, 74, 0.58); }
+.gc-art {
+  position: relative; width: 84px; height: 84px; margin: 6px auto 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.gc-emoji { font-size: 52px; }
+.gc-art img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; border-radius: 18px; display: block;
+}
+.gc-text {
+  text-align: center; font-weight: 700; font-size: 15px;
+  white-space: pre-line; margin: 12px 0 4px; line-height: 1.55;
+}
+.gc-actions { display: flex; justify-content: center; margin-top: 12px; }
+.gc-actions .primary-btn { min-width: 180px; }
 .gift-name { font-size: 12px; font-weight: 700; }
 .gift-price { font-size: 11.5px; color: var(--ink-soft); }
 

@@ -143,6 +143,10 @@ check('ギフトモーダルが開き、カタログ8種が出る',
   visible($('modal-gift')) && document.querySelectorAll('#gift-grid .gift-item').length === 8);
 document.querySelector('#gift-grid .gift-item[data-gift-key="heart"]').click();
 await tick();
+check('ギフトタップで確認ポップアップが出る（即送信しない）',
+  visible($('modal-gift-confirm')) && $('gc-text').textContent.includes('ハート'));
+$('gc-send').click();
+await tick();
 check('ギフト送信でコインピルが30減る',
   coinsBefore === '1,240' && $('coin-count').textContent === '1,210',
   `${coinsBefore} → ${$('coin-count').textContent}`);

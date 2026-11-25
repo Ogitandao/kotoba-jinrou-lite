@@ -805,14 +805,33 @@
       b.type = 'button';
       b.className = 'gift-item';
       b.dataset.giftKey = g.key;
-      b.innerHTML = `<span class="gift-icon">${g.icon}</span>` +
+      b.innerHTML = `<span class="gift-cell-art"><span class="gift-cell-emoji">${g.icon}</span><img src="gifts/gift-${g.key}.webp" alt="" onerror="this.remove()"></span>` +
         `<span class="gift-name"></span>` +
         `<span class="gift-price">${fmt(g.price)}コイン</span>`;
       b.querySelector('.gift-name').textContent = g.name;
-      b.addEventListener('click', () => sendGift(g));
+      b.addEventListener('click', () => confirmGift(g));
       grid.appendChild(b);
     }
     openModal('modal-gift');
+  }
+  // 送信前に確認ポップアップを挟む（外側タップでは閉じない）
+  function confirmGift(g) {
+    const target = state.giftTarget;
+    if (!target) return;
+    if (g.price > state.coins) {
+      $('gift-error').classList.remove('hidden');
+      $('btn-gift-charge').classList.remove('hidden');
+      return;
+    }
+    state.pendingGift = g;
+    $('gc-art').innerHTML = `<span class="gc-emoji">${g.icon}</span><img src="gifts/gift-${g.key}.webp" alt="" onerror="this.remove()">`;
+    $('gc-text').textContent = `${target.name}さんへ\n${g.name}（${fmt(g.price)}コイン）を送りますか？`;
+    $('modal-backdrop2').classList.remove('hidden');
+    $('modal-gift-confirm').classList.remove('hidden');
+  }
+  function closeGiftConfirm() {
+    $('modal-backdrop2').classList.add('hidden');
+    $('modal-gift-confirm').classList.add('hidden');
   }
   async function sendGift(gift) {
     const target = state.giftTarget;
@@ -1905,6 +1924,12 @@
       if (state.dmPeer) openGift(state.dmPeer);
     });
     $('btn-gift-charge').addEventListener('click', () => openModal('modal-charge'));
+    $('gc-x').addEventListener('click', closeGiftConfirm);
+    $('gc-send').addEventListener('click', () => {
+      const g = state.pendingGift;
+      closeGiftConfirm();
+      if (g) sendGift(g);
+    });
     for (const c of document.querySelectorAll('[data-close]')) {
       c.addEventListener('click', closeModal);
     }
