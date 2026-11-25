@@ -200,8 +200,8 @@ check('ルームカードをタップすると入室確認が出る（即入室�
   visible($('modal-join-confirm')) && !visible($('room-screen')));
 check('入室確認にルーム名と人数が出る',
   $('jc-title').textContent.includes('はじめてさん集合') && $('jc-meta').textContent.includes('人'));
-check('入室確認に逆転回答ありが出る（デフォルトONの部屋）',
-  $('jc-meta').textContent.includes('逆転回答あり'));
+check('逆転回答あり（標準）の部屋は入室確認に逆転ラベルが出ない',
+  !$('jc-meta').textContent.includes('逆転回答'));
 document.querySelector('#modal-join-confirm [data-close]').click();
 await tick();
 check('入室確認でキャンセルするとロビーのまま', !visible($('room-screen')));

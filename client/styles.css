@@ -531,7 +531,6 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .jc-meta > span { white-space: nowrap; }
 .jc-row { display: flex; gap: 8px; align-items: center; }
-.tag-rev-on { background: var(--mint-bg); color: #128a54; }
 .tag-rev-off { background: #e8edf2; color: #5a6b7a; }
 .modal-note { font-size: 13.5px; color: var(--ink-soft); text-align: center; margin: 8px 0; }
 .modal-close {

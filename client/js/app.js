@@ -983,15 +983,16 @@
   function openJoinConfirm(room) {
     state.joinTarget = room;
     $('jc-title').textContent = room.title;
-    // 2段組み（おぎ決定）：1段目＝人数＋初心者歓迎、2段目＝ジャンル＋逆転回答のチップ
-    // 逆転回答あり／なしは入室前に知りたい情報なので常時表示（おぎ）
-    const revOn = room.reversalEnabled !== false;
+    // 2段組み（おぎ決定）：1段目＝人数＋初心者歓迎、2段目＝ジャンル等のチップ
+    // 逆転回答は「あり」が標準（デフォルトON）なので、例外の「なし」のときだけラベルを出す
+    const revOff = room.reversalEnabled === false;
+    const chips =
+      (room.genre ? `<span class="tag tag-genre">${IC.tag} ${room.genre}</span>` : '') +
+      (revOff ? `<span class="tag tag-rev-off">逆転回答なし</span>` : '');
     $('jc-meta').innerHTML =
       `<span class="jc-row"><span>${IC.people} ${room.players}/${room.capacity}人</span>` +
       (room.beginner ? `<span>${IC.wakaba} 初心者歓迎</span>` : '') + `</span>` +
-      `<span class="jc-row">` +
-      (room.genre ? `<span class="tag tag-genre">${IC.tag} ${room.genre}</span>` : '') +
-      `<span class="tag ${revOn ? 'tag-rev-on' : 'tag-rev-off'}">逆転回答${revOn ? 'あり' : 'なし'}</span></span>`;
+      (chips ? `<span class="jc-row">${chips}</span>` : '');
     openModal('modal-join-confirm');
   }
 
