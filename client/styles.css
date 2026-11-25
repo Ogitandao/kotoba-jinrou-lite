@@ -814,9 +814,11 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .dm-input-row input {
   flex: 1 1 auto; min-width: 0; height: 42px;
-  border: 1.5px solid var(--line); border-radius: 999px;
+  /* 「ここに入力する」が色で分かるように、枠は空色をはっきり出す */
+  border: 1.5px solid #9fd8f7; border-radius: 999px;
   padding: 0 16px; font: inherit; background: #fff; color: var(--ink);
 }
+.dm-input-row input:focus { border-color: var(--sky); outline: none; }
 /* 送信ボタンは潰れない（固定幅・改行なし。2026-11-25 おぎ） */
 .dm-input-row .primary-btn {
   flex: 0 0 auto; white-space: nowrap; height: 42px;
