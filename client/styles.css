@@ -28,6 +28,9 @@ body {
   color: var(--ink);
   background: #cfeefc;
 }
+/* 全画面（PWA）時のステータスバー裏・ジェスチャーバー裏は白で塗る。
+   上下バー（半透明白）と同色にして、帯がはみ出して見えないようにする（2026-11-25 おぎ） */
+html { background: #ffffff; }
 button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
 /* タップ時にブラウザが勝手に出す青い四角（タップハイライト）を消す */
 * { -webkit-tap-highlight-color: transparent; }
