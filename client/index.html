@@ -347,6 +347,9 @@
   <!-- フレンドメニュー（アイコンタップで出す2択。いきなり入室を防ぐ。
        2026-11-25 おぎ） -->
   <div id="modal-friend-menu" class="modal hidden">
+    <button class="modal-x" data-close type="button" aria-label="閉じる">
+      <svg viewBox="0 0 24 24" width="27" height="27" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8.8 8.8 L15.2 15.2 M15.2 8.8 L8.8 15.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
     <div class="fm-head">
       <span id="fm-avatar" class="avatar avatar-lg"></span>
       <div id="fm-name" class="fm-name"></div>
@@ -355,7 +358,6 @@
     <div class="fm-actions">
       <button id="fm-profile" class="primary-btn" type="button">プロフを見る</button>
       <button id="fm-join" class="sub-btn" type="button">ルームに参加</button>
-      <button class="sub-btn" data-close type="button">キャンセル</button>
     </div>
   </div>
 
