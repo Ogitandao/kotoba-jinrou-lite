@@ -1380,6 +1380,7 @@
   const dmFollow = { follow: true, _lastTop: 0 };
   function updateScrollBottomBtn() {
     const box = $('dm-messages');
+    cancelBottomAnim(box, dmFollow);
     const away = awayFromBottom(box);
     if (away <= FOLLOW_LIMIT) dmFollow.follow = true;
     else if (box.scrollTop < dmFollow._lastTop - 1) dmFollow.follow = false;
@@ -1395,7 +1396,7 @@
       && !$('dm-screen').classList.contains('hidden')) {
       appendDmNode($('dm-msgs-inner'), timedRow(messageNode(msg), msg), msg);
       // 履歴を読んでいる途中なら勝手に飛ばさず、「最新へ」ボタンで知らせる
-      if (dmFollow.follow) scrollDmToBottom();
+      if (dmFollow.follow && !dmFollow.animating) scrollDmToBottom();
       updateScrollBottomBtn();
       try { await DATA.markRead(msg.from); } catch { /* 一覧更新でも追随する */ }
     }
@@ -1823,11 +1824,54 @@
   // 下端へ戻す（fitPhoneToViewport 参照）
   const FOLLOW_LIMIT = 60;
   const scrollFollowers = [];
+  // 「最新へ」専用の滑らかスクロール。ブラウザ任せの smooth は
+  // 再描画やタイマー処理で中断・瞬間移動しやすいので、自前アニメで
+  // 一定時間かけて着地させる。途中でユーザーが掴んだら中止する
+  function animateToBottom(box, st, update) {
+    if (typeof requestAnimationFrame !== 'function') {
+      box.scrollTop = box.scrollHeight;
+      st._lastTop = box.scrollTop;
+      update();
+      return;
+    }
+    if (st._anim) cancelAnimationFrame(st._anim);
+    const startTop = box.scrollTop;
+    const start = performance.now();
+    const DURATION = 460;
+    st.animating = true;
+    const step = (now) => {
+      if (!st.follow) { st.animating = false; st._anim = null; update(); return; }
+      const t = Math.min(1, (now - start) / DURATION);
+      const target = Math.max(0, box.scrollHeight - box.clientHeight);
+      const eased = 1 - Math.pow(1 - t, 3);
+      box.scrollTop = startTop + (target - startTop) * eased;
+      st._lastTop = box.scrollTop;
+      if (t < 1) {
+        st._anim = requestAnimationFrame(step);
+      } else {
+        st.animating = false;
+        st._anim = null;
+        box.scrollTop = box.scrollHeight;
+        st._lastTop = box.scrollTop;
+        update();
+      }
+    };
+    st._anim = requestAnimationFrame(step);
+  }
+  function cancelBottomAnim(box, st) {
+    if (st.animating && box.scrollTop < st._lastTop - 2) {
+      cancelAnimationFrame(st._anim);
+      st.animating = false;
+      st._anim = null;
+      st.follow = false;
+    }
+  }
   function makeScrollFollow(boxId, btnId) {
     const box = $(boxId);
     const btn = $(btnId);
     const ctl = { follow: true, box, _lastTop: box.scrollTop };
     const update = () => {
+      cancelBottomAnim(box, ctl);
       const away = awayFromBottom(box);
       if (away <= FOLLOW_LIMIT) ctl.follow = true;
       else if (box.scrollTop < ctl._lastTop - 1) ctl.follow = false;
@@ -1837,16 +1881,7 @@
     box.addEventListener('scroll', update, { passive: true });
     btn.addEventListener('click', () => {
       ctl.follow = true;
-      box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
-      // スムーズスクロールの途中で再描画や画像読み込みが来ても、
-      // 最後は必ず最下部に着地させる
-      setTimeout(() => {
-        if (ctl.follow) {
-          box.scrollTop = box.scrollHeight;
-          ctl._lastTop = box.scrollTop;
-          ctl.update();
-        }
-      }, 420);
+      animateToBottom(box, ctl, update);
     });
     ctl.update = update;
     scrollFollowers.push(ctl);
@@ -1857,6 +1892,8 @@
   // ※追尾を先に見ること。「最新へ」のスムーズスクロール中に再描画が
   // 来ると、移動途中の位置で固定されてしまう事故があった
   function settleScroll(ctl, box, before) {
+    // 「最新へ」のアニメーション中は位置決めをアニメ側に任せる
+    if (ctl && ctl.animating) return;
     if (ctl && ctl.follow) {
       box.scrollTop = box.scrollHeight;
       ctl._lastTop = box.scrollTop;
@@ -2369,10 +2406,10 @@
     // 追尾中の欄は下端に貼り直し、「最新へ」ボタンの誤表示を防ぐ
     requestAnimationFrame(() => {
       for (const ctl of scrollFollowers) {
-        if (ctl.follow) ctl.box.scrollTop = ctl.box.scrollHeight;
+        if (ctl.follow && !ctl.animating) ctl.box.scrollTop = ctl.box.scrollHeight;
         ctl.update();
       }
-      if (dmFollow.follow) {
+      if (dmFollow.follow && !dmFollow.animating) {
         const b = $('dm-messages');
         if (b) b.scrollTop = b.scrollHeight;
       }
@@ -2710,16 +2747,7 @@
     $('dm-messages').addEventListener('scroll', updateScrollBottomBtn, { passive: true });
     $('dm-scroll-bottom').addEventListener('click', () => {
       dmFollow.follow = true;
-      scrollDmToBottom(true);
-      // フォント・画像の遅延読み込みで丈が伸びても最後は最下部へ
-      setTimeout(() => {
-        if (dmFollow.follow) {
-          const b = $('dm-messages');
-          b.scrollTop = b.scrollHeight;
-          dmFollow._lastTop = b.scrollTop;
-          updateScrollBottomBtn();
-        }
-      }, 420);
+      animateToBottom($('dm-messages'), dmFollow, updateScrollBottomBtn);
     });
     $('dm-send').addEventListener('click', sendDm);
     $('dm-input').addEventListener('keydown', (e) => {
