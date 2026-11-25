@@ -776,7 +776,7 @@
         });
     } else {
       bg = mk('gfx-rays-wrap');
-      bg.append(mk('gfx-rays a'), mk('gfx-rays b'));
+      bg.append(mk('gfx-rays'));
       center = gfxBigImg(gift);
     }
     const cap = mk('gfx-cap');

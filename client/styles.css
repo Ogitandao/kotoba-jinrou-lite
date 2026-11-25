@@ -662,20 +662,14 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   transform: translate(-50%, -50%);
   -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 62%);
   mask-image: radial-gradient(circle, #000 0%, transparent 62%);
-  animation: gfx-spin 7s linear infinite, gfx-dimf 3.2s ease forwards; opacity: 0;
+  animation: gfx-spin 6s linear infinite, gfx-dimf 3.2s ease forwards; opacity: 0;
 }
-@keyframes gfx-spin { to { transform: translate(-50%, -50%) rotate(24deg); } }
-.gift-fx .gfx-rays { position: absolute; inset: 0; }
-.gift-fx .gfx-rays.a {
-  background: repeating-conic-gradient(from 0deg, rgba(255, 214, 90, .38) 0deg 9deg, rgba(255, 214, 90, 0) 9deg 18deg);
-  animation: gfx-swap-a .56s steps(1) infinite;
+@keyframes gfx-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+/* 色替えのチカチカはやめ、金と水色の縞がそのまま回る形に（おぎ指定） */
+.gift-fx .gfx-rays {
+  position: absolute; inset: 0;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 214, 90, .38) 0deg 9deg, rgba(140, 220, 255, .34) 9deg 18deg);
 }
-.gift-fx .gfx-rays.b {
-  background: repeating-conic-gradient(from 9deg, rgba(140, 220, 255, .34) 0deg 9deg, rgba(140, 220, 255, 0) 9deg 18deg);
-  animation: gfx-swap-b .56s steps(1) infinite;
-}
-@keyframes gfx-swap-a { 0%, 49.9% { opacity: 1; } 50%, 100% { opacity: 0; } }
-@keyframes gfx-swap-b { 0%, 49.9% { opacity: 0; } 50%, 100% { opacity: 1; } }
 /* ダイヤ（Lottie）用はストライプでなくグロー：中心からパァッと光が広がる */
 .gift-fx .gfx-glow-wrap {
   position: absolute; left: 50%; top: 44%; width: 135vmax; height: 135vmax;
