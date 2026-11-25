@@ -119,24 +119,29 @@
   const gn = document.getElementById('gn');
   function sparks(host, n, spread) {
     for (let i = 0; i < n; i++) {
-      const s = document.createElement('i');
-      s.className = 'spark';
+      const sp = document.createElement('i');
+      sp.className = 'spark';
       const ang = (i / n) * Math.PI * 2 + Math.random() * 0.5;
       const dist = spread * (0.6 + Math.random() * 0.7);
-      s.style.setProperty('--dx', Math.cos(ang) * dist + 'px');
-      s.style.setProperty('--dy', Math.sin(ang) * dist + 'px');
-      s.style.left = (15 + Math.random() * 70) + '%';
-      s.style.top = (10 + Math.random() * 70) + '%';
-      s.style.animationDelay = (Math.random() * 0.25) + 's';
-      s.style.background = ['#ffc93c', '#ff9d5c', '#7cc7f5'][i % 3];
-      host.appendChild(s);
+      sp.style.setProperty('--dx', Math.cos(ang) * dist + 'px');
+      sp.style.setProperty('--dy', Math.sin(ang) * dist + 'px');
+      sp.style.left = (15 + Math.random() * 70) + '%';
+      sp.style.top = (10 + Math.random() * 70) + '%';
+      sp.style.animationDelay = (Math.random() * 0.25) + 's';
+      sp.style.background = ['#ffc93c', '#ff9d5c', '#7cc7f5'][i % 3];
+      host.appendChild(sp);
     }
   }
-  if (mode === 'small') {
-    gn.classList.add('glow');
-    gn.style.overflow = 'visible';
-    sparks(gn, 14, 62);
-  } else {
+  function playFx() {
+    gn.querySelectorAll('.spark').forEach((e) => e.remove());
+    gn.classList.remove('glow');
+    void gn.offsetWidth;
+    if (mode === 'small') {
+      gn.classList.add('glow');
+      gn.style.overflow = 'visible';
+      sparks(gn, 14, 62);
+      return;
+    }
     document.getElementById('gn-text').textContent = 'ダイヤモンドが届きました';
     document.getElementById('gn-art').src = 'gifts/gift-diamond.webp';
     const fx = document.getElementById('fullfx');
@@ -153,6 +158,8 @@
       fx.appendChild(f);
     }
   }
+  playFx();
+  setInterval(playFx, 4200);
 </script>
 </body>
 </html>
