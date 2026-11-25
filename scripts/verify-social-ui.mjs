@@ -159,8 +159,8 @@ check('リンク入りメッセージは送れず、件数も増えない',
 const coinsBefore = $('coin-count').textContent;
 $('dm-gift-btn').click();
 await tick();
-check('ギフトモーダルが開き、カタログ8種が出る',
-  visible($('modal-gift')) && document.querySelectorAll('#gift-grid .gift-item').length === 8);
+check('ギフトモーダルが開き、カタログ11種が出る',
+  visible($('modal-gift')) && document.querySelectorAll('#gift-grid .gift-item').length === 11);
 document.querySelector('#gift-grid .gift-item[data-gift-key="heart"]').click();
 await tick();
 check('ギフトタップで確認ポップアップが出る（即送信しない）',

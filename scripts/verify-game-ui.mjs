@@ -338,6 +338,9 @@ reachedResult
 && document.querySelectorAll('#game-reveal-list .reveal-row').length === 7,
 `banner=${$('game-result-banner').textContent} rows=${document.querySelectorAll('#game-reveal-list .reveal-row').length} label=${$('game-phase-label').textContent}`);
 check('[7] 結果発表でも参加者アイコン帯を出さない',$('game-frame').classList.contains('players-off'));
+check('結果画面：自分以外の全員にギフトボタンが出る',
+document.querySelectorAll('#game-reveal-list .result-gift-btn').length === 6,
+`n=${document.querySelectorAll('#game-reveal-list .result-gift-btn').length}`);
 check('[11] 結果リストにも番号バッジ',
 document.querySelectorAll('#game-reveal-list .reveal-row .no-badge').length === 7,
 `n=${document.querySelectorAll('#game-reveal-list .reveal-row .no-badge').length}`);

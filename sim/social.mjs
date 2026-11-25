@@ -22,7 +22,10 @@ export const GIFT_CATALOG = Object.freeze([
   { key: 'cake', name: 'ケーキ', icon: '🎂', price: 300 },
   { key: 'teddy', name: 'テディベア', icon: '🧸', price: 500 },
   { key: 'ring', name: '指輪', icon: '💍', price: 1000 },
+  { key: 'devil', name: '小悪魔', icon: '😈', price: 2000 },
   { key: 'crown', name: '王冠', icon: '👑', price: 3000 },
+  { key: 'dragon', name: 'ドラゴン', icon: '🐲', price: 5000 },
+  { key: 'diamond', name: 'ダイヤモンド', icon: '💎', price: 10000 },
 ]);
 
 export const WELCOME_COINS = 100;

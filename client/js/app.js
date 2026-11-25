@@ -2282,6 +2282,15 @@
       const rnb = noBadge(p.no);
       if (rnb) row.append(avatarSpan(p, 'avatar-sm'), rnb, main, badge);
       else row.append(avatarSpan(p, 'avatar-sm'), main, badge);
+      // 結果画面からそのままギフトを贈れる導線（おぎ決定 2026-11-25）
+      if (r.id !== state.me.id) {
+        const gb = document.createElement('button');
+        gb.type = 'button';
+        gb.className = 'mini-btn result-gift-btn';
+        gb.textContent = 'ギフト';
+        gb.addEventListener('click', () => openGift(p));
+        row.appendChild(gb);
+      }
       rl.appendChild(row);
     }
   }
