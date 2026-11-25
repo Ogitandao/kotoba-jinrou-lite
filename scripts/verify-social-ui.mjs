@@ -179,7 +179,8 @@ document.querySelector('#modal-gift [data-close]').click();
 await tick();
 check('ギフト画面の閉じるでモーダルが閉じる', !visible($('modal-gift')));
 $('dm-back').click();
-check('戻るでDM画面が閉じる', !visible($('dm-screen')));
+await tick(420);
+check('戻るでDM画面が閉じる（スライドアウト後）', !visible($('dm-screen')));
 
 // --- 送ったギフトが相手プロフへ即時反映される ---
 {
@@ -288,7 +289,7 @@ check('メンバーを追加すると3人になり、参加システムメッセ
   document.querySelectorAll('#group-member-list .member-row').length === 3
   && [...document.querySelectorAll('#dm-msgs-inner .dm-system-msg')].some((b) => b.textContent.includes('参加しました')));
 $('btn-group-leave').click();
-await tick();
+await tick(420);
 check('グループを抜けるとDM画面が閉じ、一覧から消える',
   !visible($('dm-screen'))
   && ![...document.querySelectorAll('#talk-list .talk-row')]

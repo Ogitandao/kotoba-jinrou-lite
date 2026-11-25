@@ -738,11 +738,15 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 /* DM画面：画面全体のオーバーレイ。発言は下端寄せ（本家のクランチャット様式） */
 .dm-screen {
   position: fixed; z-index: 40;
-  top: 0; bottom: 0; left: 50%; transform: translateX(-50%);
+  top: 0; bottom: 0; left: 50%;
+  transform: translateX(-50%) translateX(100vw);
+  transition: transform .33s cubic-bezier(.22, .9, .3, 1);
   width: min(430px, 100%);
   display: flex; flex-direction: column;
   background: linear-gradient(180deg, #e4fbf0 0%, #e0f3ff 55%, #d8efff 100%);
 }
+/* 開くと右からぬるっとスライドイン（2026-11-25 おぎ） */
+.dm-screen.open { transform: translateX(-50%) translateX(0); }
 .dm-header {
   flex: 0 0 auto;
   display: flex; align-items: center; gap: 10px;

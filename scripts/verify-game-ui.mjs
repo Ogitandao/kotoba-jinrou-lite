@@ -464,7 +464,7 @@ await tick(30);
 $('tabbtn-friends').click();
 await tick(30);
 const kenRow = [...document.querySelectorAll('#talk-list .talk-row')]
-.find((r) => r.textContent.includes('けん'));
+.find((r) => r.querySelector('.talk-name')?.textContent === 'けん');
 check('トーク一覧にけんとの会話がある',!!kenRow);
 kenRow.click();
 await tick(30);

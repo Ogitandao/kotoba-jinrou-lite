@@ -964,6 +964,24 @@
     // 本家のクランチャット様式：最新が下端に来るよう末尾へスクロール
     $('dm-messages').scrollTop = $('dm-messages').scrollHeight;
   }
+  // チャット画面のスライド開閉（右からぬるっと。2026-11-25 おぎ）
+  let dmCloseTimer = null;
+  function showDmScreen() {
+    clearTimeout(dmCloseTimer);
+    const s = $('dm-screen');
+    s.classList.remove('hidden');
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => requestAnimationFrame(() => s.classList.add('open')));
+    } else {
+      s.classList.add('open');
+    }
+  }
+  function hideDmScreen() {
+    const s = $('dm-screen');
+    s.classList.remove('open');
+    clearTimeout(dmCloseTimer);
+    dmCloseTimer = setTimeout(() => s.classList.add('hidden'), 340);
+  }
   async function openDm(user) {
     state.dmPeer = user;
     state.dmGroup = null;
@@ -974,7 +992,7 @@
     $('dm-input-row').classList.toggle('hidden', isSystem);
     $('dm-gift-btn').classList.toggle('hidden', isSystem);
     $('dm-members-btn').classList.add('hidden');
-    $('dm-screen').classList.remove('hidden');
+    showDmScreen();
     updateCreateBar();
     try {
       const messages = await DATA.listMessages(user.id);
@@ -986,7 +1004,7 @@
   function closeDm() {
     state.dmPeer = null;
     state.dmGroup = null;
-    $('dm-screen').classList.add('hidden');
+    hideDmScreen();
     updateCreateBar();
   }
   // ---------- グループチャット ----------
@@ -1021,7 +1039,7 @@
     $('dm-input-row').classList.remove('hidden');
     $('dm-gift-btn').classList.add('hidden');
     $('dm-members-btn').classList.remove('hidden');
-    $('dm-screen').classList.remove('hidden');
+    showDmScreen();
     updateCreateBar();
     try {
       renderGroupMessages(await DATA.listGroupMessages(g.id));

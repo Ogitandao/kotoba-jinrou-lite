@@ -140,7 +140,7 @@ check('[I4] フレンド一覧：りすはプリセットが無いので絵文�
 check('[I5] フレンド一覧に緑ドットは出ない',
   document.querySelectorAll('#friend-list .dot').length === 0);
 const talkRow = (name) => [...document.querySelectorAll('#talk-list .talk-row')]
-  .find((r) => r.textContent.includes(name));
+  .find((r) => r.querySelector('.talk-name')?.textContent === name);
 check('[I5] トーク一覧に緑ドットは出ない（画像アイコンは出る）',
   document.querySelectorAll('#talk-list .dot').length === 0
   && talkRow('みか')?.querySelector('img.avatar-img') != null);
