@@ -1205,6 +1205,12 @@
     const bubble = document.createElement('div');
     bubble.className = `dm-msg ${mine ? 'mine' : 'theirs'}`;
     bubble.textContent = m.body ?? '';
+    // 長押しメニュー（DM とグループで共用。文脈で通報の種別を切り替える）
+    attachMsgPress(bubble, {
+      kind: state.dmGroup ? 'group_message' : 'dm_message',
+      ref: m.id, userId: m.from, body: m.body ?? '', mine,
+      name: state.users.get(m.from)?.name ?? state.dmPeer?.name ?? '',
+    });
     return bubble;
   }
   // 日付・時刻表示（LINE式：日付は区切りピル、時刻は吹き出しの横）
@@ -1571,6 +1577,48 @@
     }
     reportTarget = null;
   }
+  // ---------- メッセージ長押しメニュー（通報／コピー） ----------
+  // 500ms の長押しで開く。スクロール（10px 超の移動）や再描画で
+  // 要素が外れたら開かない。レイアウトには一切触れない（重ね表示のみ）
+  let msgMenuTarget = null;
+  // 長押し中はポーリング再描画で吹き出しを作り替えない（要素が外れて
+  // 長押しが不発になるため。待機室・対戦の発言リスト描画が参照する）
+  let msgPressActive = false;
+  function openMsgMenu(target) {
+    msgMenuTarget = target;
+    $('mm-report').classList.toggle('hidden', !!target.mine);
+    openModal('modal-msg-menu');
+  }
+  function attachMsgPress(el, target) {
+    let timer = null;
+    let sx = 0;
+    let sy = 0;
+    const cancel = () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      msgPressActive = false;
+      el.classList.remove('pressing');
+    };
+    el.addEventListener('pointerdown', (ev) => {
+      sx = ev.clientX ?? 0;
+      sy = ev.clientY ?? 0;
+      msgPressActive = true;
+      el.classList.add('pressing');
+      timer = setTimeout(() => {
+        timer = null;
+        msgPressActive = false;
+        el.classList.remove('pressing');
+        if (el.isConnected) openMsgMenu(target);
+      }, 500);
+    });
+    el.addEventListener('pointermove', (ev) => {
+      if (timer && (Math.abs((ev.clientX ?? 0) - sx) > 10
+        || Math.abs((ev.clientY ?? 0) - sy) > 10)) cancel();
+    });
+    el.addEventListener('pointerup', cancel);
+    el.addEventListener('pointercancel', cancel);
+    el.addEventListener('contextmenu', (ev) => ev.preventDefault());
+  }
+
   async function submitReport() {
     if (!reportTarget) return;
     if (!reportReason) {
@@ -2026,6 +2074,7 @@
   // 待機室チャットの描画（本編と同じLINE式：他者は左・自分は右、
   // 名前の左にプレイヤー番号バッジ）
   function renderRoomChat(d) {
+    if (msgPressActive) return; // 長押し中は吹き出しを作り替えない
     const scrollBefore = captureScroll($('room-chat-messages'));
     const inner = $('room-chat-msgs-inner');
     inner.innerHTML = '';
@@ -2059,6 +2108,10 @@
       const bubble = document.createElement('div');
       bubble.className = `dm-msg${mine ? ' mine' : ''}`;
       bubble.textContent = m.body;
+      attachMsgPress(bubble, {
+        kind: 'room_message', ref: m.id, userId: m.from, body: m.body, mine,
+        name: sender?.name ?? state.users.get(m.from)?.name ?? '',
+      });
       row.append(nameEl, bubble);
       inner.appendChild(row);
     }
@@ -2368,12 +2421,12 @@
       gl.appendChild(slotEl({ no: p.no ?? i + 1, user: p }));
     });
 
-    // 発言（下端寄せ）
-    const gameScrollBefore = captureScroll($('game-messages'));
-    const inner = $('game-msgs-inner');
-    inner.innerHTML = '';
+    // 発言（下端寄せ）。長押し中は吹き出しを作り替えない
     const nameOf = (id) => v.players.find((p) => p.id === id)?.name ?? 'プレイヤー';
-    for (const m of v.messages) {
+    const gameScrollBefore = msgPressActive ? null : captureScroll($('game-messages'));
+    const inner = $('game-msgs-inner');
+    if (!msgPressActive) inner.innerHTML = '';
+    for (const m of msgPressActive ? [] : v.messages) {
       if (m.kind === 'system') {
         const log = document.createElement('div');
         log.className = 'game-system-log';
@@ -2393,10 +2446,14 @@
       const bubble = document.createElement('div');
       bubble.className = `dm-msg${mine ? ' mine' : ''}`;
       bubble.textContent = m.body;
+      attachMsgPress(bubble, {
+        kind: 'game_message', ref: m.id, userId: m.from, body: m.body, mine,
+        name: nameOf(m.from),
+      });
       row.append(sender, bubble);
       inner.appendChild(row);
     }
-    settleScroll(gameFollow, $('game-messages'), gameScrollBefore);
+    if (!msgPressActive) settleScroll(gameFollow, $('game-messages'), gameScrollBefore);
 
     // 無発言警告：判定はサーバー時刻基準の残り秒数（phaseRemainSec）と
     // 自分の発言数（myMessageCount）で行う。ビューに無い場合は手元の
@@ -2818,6 +2875,20 @@
       }
     });
     $('report-submit').addEventListener('click', submitReport);
+    $('mm-report').addEventListener('click', () => {
+      const t = msgMenuTarget;
+      closeModal();
+      if (t) openReport({ kind: t.kind, ref: t.ref, userId: t.userId, name: t.name });
+    });
+    $('mm-copy').addEventListener('click', async () => {
+      const t = msgMenuTarget;
+      closeModal();
+      if (!t) return;
+      try {
+        await navigator.clipboard.writeText(t.body);
+        toast('コピーしました');
+      } catch { toast('コピーできませんでした'); }
+    });
     $('btn-rules').addEventListener('click', () => openTutorial('view'));
     $('btn-tutorial-close').addEventListener('click', closeModal);
     $('btn-tutorial-cancel').addEventListener('click', () => {

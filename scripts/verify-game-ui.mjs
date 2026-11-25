@@ -244,6 +244,15 @@ check('[15] 待機室チャットはデータ層にも残る（roomMessages）',
 (detail.roomMessages?? []).some((m) => m.body === 'よろしくお願いします！'),
 JSON.stringify(detail.roomMessages));
 }
+{
+const roomBubble = document.querySelector('#room-chat-msgs-inner .dm-msg');
+roomBubble.dispatchEvent(new window.MouseEvent('pointerdown', { bubbles: true, clientX: 5, clientY: 5 }));
+await tick(650);
+check('[15] 待機室の吹き出し長押しでもメニューが開く（自分の発言は通報なし）',
+visible($('modal-msg-menu')) && $('mm-report').classList.contains('hidden'));
+document.querySelector('#modal-msg-menu [data-close]').click();
+await tick(60);
+}
 
 $('btn-ready').click();
 await tick(60);
@@ -273,6 +282,12 @@ check('挨拶タイムでも発言でき、自分の吹き出しが出る',
 const senderBadge = document.querySelector('#game-msgs-inner .game-msg-row.mine .game-msg-sender .no-badge');
 check('[11] チャットの発言者名の左にも番号バッジ（自分=7）',
 senderBadge?.textContent === '7', senderBadge?.textContent?? 'バッジなし');
+myBubble.dispatchEvent(new window.MouseEvent('pointerdown', { bubbles: true, clientX: 5, clientY: 5 }));
+await tick(650);
+check('対戦中の吹き出し長押しでもメニューが開く（自分の発言は通報なし）',
+visible($('modal-msg-menu')) && $('mm-report').classList.contains('hidden'));
+document.querySelector('#modal-msg-menu [data-close]').click();
+await tick(60);
 }
 
 KL().__simAdvanceTime(20);

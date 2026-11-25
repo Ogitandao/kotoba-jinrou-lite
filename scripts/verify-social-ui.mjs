@@ -163,6 +163,28 @@ check('送信すると自分の吹き出しが末尾に追加される',
   msgs().length === 3 && msgs()[2].classList.contains('mine')
   && msgs()[2].textContent.includes('うん、行く行く！'));
 
+// --- メッセージ長押しメニュー（通報導線） ---
+{
+  const theirs = document.querySelector('#dm-msgs-inner > .msg-line.theirs .dm-msg');
+  theirs.dispatchEvent(new dom.window.MouseEvent('pointerdown', { bubbles: true, clientX: 5, clientY: 5 }));
+  await tick(650);
+  check('吹き出し長押しでメニューが開き、通報するが見える',
+    visible($('modal-msg-menu')) && !$('mm-report').classList.contains('hidden'));
+  $('mm-report').click();
+  await tick();
+  check('メニューの通報するから通報フォームが開く',
+    visible($('modal-report')) && $('report-target-name').textContent === 'みか');
+  $('report-x').click();
+  await tick();
+  const mineBubble = document.querySelector('#dm-msgs-inner > .msg-line.mine .dm-msg');
+  mineBubble.dispatchEvent(new dom.window.MouseEvent('pointerdown', { bubbles: true, clientX: 5, clientY: 5 }));
+  await tick(650);
+  check('自分の吹き出しのメニューに通報するは出ない',
+    visible($('modal-msg-menu')) && $('mm-report').classList.contains('hidden'));
+  document.querySelector('#modal-msg-menu [data-close]').click();
+  await tick();
+}
+
 $('dm-input').value = 'これ見て https://example.com';
 $('dm-send').click();
 await tick();

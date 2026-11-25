@@ -944,7 +944,20 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   max-width: min(86%, calc(15em + 30px)); padding: 9px 13px; border-radius: 16px;
   font-size: 14.5px; line-height: 1.45; word-break: break-word;
   background: #fff; align-self: flex-start; box-shadow: var(--shadow);
+  /* 長押しメニュー用：選択・コールアウトを止め、押下フィードバックを滑らかに */
+  -webkit-touch-callout: none; user-select: none;
+  transition: transform .15s ease, opacity .15s ease;
 }
+.dm-msg.pressing { transform: scale(.96); opacity: .7; }
+/* メッセージ長押しメニュー */
+.msg-menu { padding: 8px; }
+.msg-menu-btns { display: flex; flex-direction: column; }
+.msg-menu-btn {
+  background: none; border: none; padding: 13px 10px; cursor: pointer;
+  font-size: 15px; font-weight: 700; color: var(--ink); border-radius: 10px;
+}
+.msg-menu-btn:active { background: #eef6fc; }
+.msg-menu-btn.danger { color: #d64545; }
 /* 自分の吹き出しはブランドの空色グラデ（LINEの緑に寄せない。2026-11-25 おぎ） */
 .dm-msg.mine { background: linear-gradient(120deg, #9adcff 0%, #c9efff 100%); align-self: flex-end; }
 .dm-gift-card {
