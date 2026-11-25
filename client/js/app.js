@@ -2341,9 +2341,12 @@
     if (window.innerHeight - vv.height > 80) {
       phone.style.height = `${vv.height}px`;
       phone.style.top = `${vv.offsetTop}px`;
+      // キーボード表示中：席グリッドとお題を詰めて発言欄を確保する
+      phone.classList.add('kb-open');
     } else {
       phone.style.height = '';
       phone.style.top = '';
+      phone.classList.remove('kb-open');
     }
     // 枠が縮む・伸びる（キーボード開閉）でチャット欄の高さが変わる。
     // 追尾中の欄は下端に貼り直し、「最新へ」ボタンの誤表示を防ぐ

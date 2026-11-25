@@ -909,6 +909,18 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 /* 入力欄のある作業モーダルは、キーボードで枠が縮んだ時に中身が
    見切れないようモーダル自体がスクロールできるようにする */
 #modal-create, #modal-group-create { overflow-y: auto; }
+/* キーボード表示中（.kb-open）は席グリッドとお題カードを詰めて、
+   発言欄の高さを確保する。名前は番号バッジで判別できるので隠す */
+.kb-open .slot-grid { gap: 6px 8px; padding: 0 0 2px; }
+.kb-open .slot-face { width: 34px; height: 34px; }
+.kb-open .slot-face .avatar { width: 34px; height: 34px; border-radius: 10px; }
+.kb-open .slot.empty .slot-face { border-radius: 10px; }
+.kb-open .slot-wolf { width: 20px; }
+.kb-open .slot-name { display: none; }
+.kb-open .phase-genre-row { margin-bottom: 4px; }
+.kb-open .topic-card { padding: 6px 12px; margin-bottom: 6px; }
+.kb-open .topic-label { font-size: 11px; }
+.kb-open .topic-words { font-size: 21px; }
 .gc-art {
   position: relative; width: 84px; height: 84px; margin: 6px auto 0;
   display: flex; align-items: center; justify-content: center;
