@@ -1706,7 +1706,7 @@
       nameSetupMode = !!setup;
       $('name-title').textContent = setup ? '名前を決めよう' : '名前を編集';
       $('name-setup-note').classList.toggle('hidden', !setup);
-      $('name-cancel').classList.toggle('hidden', !!setup);
+      $('name-x').classList.toggle('hidden', !!setup);
       $('name-save').textContent = setup ? '決定する' : '保存する';
       $('name-input').value = setup ? '' : (state.me?.name ?? '');
       $('name-count').textContent = [...$('name-input').value].length;
@@ -1893,7 +1893,7 @@
       if (!$('modal-tutorial').classList.contains('hidden')) return;
       // 名前決定ポップアップ（新規登録後）も外タップでは閉じられない
       if (!$('modal-name').classList.contains('hidden')
-        && $('name-cancel').classList.contains('hidden')) return;
+        && $('name-x').classList.contains('hidden')) return;
       closeModal();
     });
     // 新規登録後、名前が未決定なら最初に決めてもらう（1回だけ）

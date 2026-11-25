@@ -310,24 +310,28 @@
 
   <!-- 名前の編集 -->
   <div id="modal-name" class="modal hidden">
+    <button id="name-x" class="modal-x" data-close type="button" aria-label="閉じる">
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M5 5 L19 19 M19 5 L5 19" stroke="currentColor" stroke-width="4.1" stroke-linecap="round" fill="none"/></svg>
+    </button>
     <h3 id="name-title">名前を編集</h3>
     <p id="name-setup-note" class="modal-note hidden">ゲームで使う名前を決めてね。あとから変更もできます</p>
     <input id="name-input" class="name-input" type="text" maxlength="9" placeholder="名前（9文字まで）" />
     <p class="modal-note"><span id="name-count">0</span> / 9文字</p>
     <div class="modal-actions">
-      <button id="name-cancel" class="btn btn-ghost" data-close type="button">キャンセル</button>
-      <button id="name-save" class="btn btn-primary" type="button">保存する</button>
+      <button id="name-save" class="primary-btn" type="button">保存する</button>
     </div>
   </div>
 
   <!-- 自己紹介の編集 -->
   <div id="modal-bio" class="modal hidden">
+    <button class="modal-x" data-close type="button" aria-label="閉じる">
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M5 5 L19 19 M19 5 L5 19" stroke="currentColor" stroke-width="4.1" stroke-linecap="round" fill="none"/></svg>
+    </button>
     <h3>自己紹介を編集</h3>
     <textarea id="bio-input" class="bio-input" rows="4" maxlength="50" placeholder="はじめまして！みんなで楽しくワードウルフしたいです"></textarea>
     <p class="modal-note"><span id="bio-count">0</span> / 50文字</p>
     <div class="modal-actions">
-      <button class="btn btn-ghost" data-close type="button">キャンセル</button>
-      <button id="bio-save" class="btn btn-primary" type="button">保存する</button>
+      <button id="bio-save" class="primary-btn" type="button">保存する</button>
     </div>
   </div>
 

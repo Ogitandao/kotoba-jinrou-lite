@@ -331,7 +331,6 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .gift-count { font-size: 11.5px; font-weight: 800; color: var(--ink-soft); line-height: 1.15; }
 .gift-strip-empty { color: var(--ink-soft); font-size: 13px; font-weight: 700; }
 .tappable { cursor: pointer; }
-#modal-friend-menu { position: relative; }
 /* 枠の右上角に被せてはみ出させる（おぎ指定）。色はリンク系の青 */
 .modal-x {
   position: absolute; top: -13px; right: -13px;
@@ -471,6 +470,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   z-index: 50;
 }
 .modal {
+  position: relative;
   background: #fff; border-radius: var(--radius);
   width: 100%; max-width: 360px;
   padding: 20px;
