@@ -1866,7 +1866,66 @@
             iconBg: '#eef4ff', bio: '', popularity: 0, online: false, roomTitle: null,
           });
         }
-        return [...byPartner.values()].map((c) => ({ ...c, partner: byId.get(c.partnerId) }));
+        const dmConvs = [...byPartner.values()].map((c) => ({ ...c, partner: byId.get(c.partnerId) }));
+        // グループ会話も合流させる（Sim と同じく最新順に混ぜる）
+        const groupConvs = await this.listGroupConversations();
+        return [...dmConvs, ...groupConvs]
+          .sort((a, b) => (b.last?.at ?? 0) - (a.last?.at ?? 0));
+      },
+      // 自分が入っているグループを会話の形に組み立てる（listConversations 用）
+      async listGroupConversations() {
+        const sb = getClient();
+        const { data: myRows, error: e1 } = await sb
+          .from('kl_group_members').select('group_id, last_read_at, joined_at')
+          .eq('user_id', meId);
+        if (e1) throw fail('GROUP_ERROR', e1.message);
+        if (!myRows?.length) return [];
+        const groupIds = myRows.map((r) => r.group_id);
+        const mine = new Map(myRows.map((r) => [r.group_id, r]));
+        const [gRes, mRes, msgRes] = await Promise.all([
+          sb.from('kl_groups').select('*').in('id', groupIds),
+          sb.from('kl_group_members').select('group_id, user_id, joined_at')
+            .in('group_id', groupIds).order('joined_at'),
+          sb.from('kl_group_messages').select('*')
+            .in('group_id', groupIds).order('created_at', { ascending: false }),
+        ]);
+        const err = gRes.error ?? mRes.error ?? msgRes.error;
+        if (err) throw fail('GROUP_ERROR', err.message);
+        const memberIdsByGroup = new Map();
+        for (const r of mRes.data) {
+          if (!memberIdsByGroup.has(r.group_id)) memberIdsByGroup.set(r.group_id, []);
+          memberIdsByGroup.get(r.group_id).push(r.user_id);
+        }
+        const profs = await profilesByIds([...new Set(mRes.data.map((r) => r.user_id))]);
+        const profById = new Map(profs.map((p) => [p.id, p]));
+        const lastByGroup = new Map();
+        const unreadByGroup = new Map();
+        for (const m of msgRes.data) { // created_at の新しい順
+          if (!lastByGroup.has(m.group_id)) {
+            lastByGroup.set(m.group_id, {
+              id: m.id, from: m.kind === 'system' ? 'system' : m.sender_id,
+              kind: m.kind, body: maskHidden(m), at: Date.parse(m.created_at),
+            });
+          }
+          const my = mine.get(m.group_id);
+          const since = my.last_read_at ?? my.joined_at;
+          if (m.sender_id && m.sender_id !== meId && m.created_at > since) {
+            unreadByGroup.set(m.group_id, (unreadByGroup.get(m.group_id) ?? 0) + 1);
+          }
+        }
+        return gRes.data.map((g) => {
+          const memberIds = memberIdsByGroup.get(g.id) ?? [];
+          return {
+            partnerId: g.id,
+            partner: {
+              id: g.id, name: g.name, isGroup: true, memberIds,
+              members: memberIds.map((id) => profById.get(id)).filter(Boolean),
+            },
+            last: lastByGroup.get(g.id) ?? null,
+            isGroup: true,
+            unread: unreadByGroup.get(g.id) ?? 0,
+          };
+        });
       },
       async sendMessage(userId, body) {
         if (userId === 'system') throw fail('SYSTEM_READ_ONLY', 'システムからのお知らせには返信できません');
@@ -1900,15 +1959,60 @@
           if (dmChannel) { getClient().removeChannel(dmChannel); dmChannel = null; }
         };
       },
-      // グループチャットは実 DB 未配線（1階は Sim で先行実装。
-      // 会話モデルのマイグレーションは次フェーズ）
-      createGroup() { throw fail('NOT_READY', 'グループチャットは準備中です'); },
-      listGroupMessages() { return []; },
-      sendGroupMessage() { throw fail('NOT_READY', 'グループチャットは準備中です'); },
-      markGroupRead() { return null; },
-      addGroupMembers() { throw fail('NOT_READY', 'グループチャットは準備中です'); },
-      leaveGroup() { return null; },
-      renameGroup() { throw fail('NOT_READY', 'グループチャットは準備中です'); },
+      // グループチャット（0036 で実 DB 配線。書き込みは RPC 経由のみ）
+      // RPC の { id, name, memberIds } に profiles を合わせて Sim の
+      // pubGroup と同じ形に組み立てる
+      async groupView(view) {
+        const memberIds = [...(view.memberIds ?? [])];
+        const profs = await profilesByIds(memberIds);
+        const byId = new Map(profs.map((p) => [p.id, p]));
+        return {
+          id: view.id, name: view.name, isGroup: true, memberIds,
+          members: memberIds.map((id) => byId.get(id)).filter(Boolean),
+        };
+      },
+      async createGroup(name, memberIds) {
+        const view = await rpc('kl_create_group', {
+          p_name: name ?? '', p_member_ids: memberIds,
+        });
+        return this.groupView(view);
+      },
+      async listGroupMessages(groupId) {
+        const { data, error } = await getClient()
+          .from('kl_group_messages').select('*')
+          .eq('group_id', groupId).order('created_at', { ascending: true });
+        if (error) throw fail('GROUP_ERROR', error.message);
+        return data.map((m) => ({
+          id: m.id, groupId: m.group_id,
+          from: m.kind === 'system' ? 'system' : m.sender_id,
+          kind: m.kind, body: maskHidden(m), read: true,
+          at: Date.parse(m.created_at),
+        }));
+      },
+      async sendGroupMessage(groupId, body) {
+        const m = await rpc('kl_send_group_message', { p_group: groupId, p_body: body });
+        return {
+          id: m.id, groupId: m.group_id, from: m.sender_id, kind: m.kind,
+          body: m.body, read: true, at: Date.parse(m.created_at),
+        };
+      },
+      markGroupRead(groupId) {
+        return rpc('kl_mark_group_read', { p_group: groupId });
+      },
+      async addGroupMembers(groupId, memberIds) {
+        const view = await rpc('kl_add_group_members', {
+          p_group: groupId, p_member_ids: memberIds,
+        });
+        return this.groupView(view);
+      },
+      async leaveGroup(groupId) {
+        await rpc('kl_leave_group', { p_group: groupId });
+        return null;
+      },
+      async renameGroup(groupId, name) {
+        const view = await rpc('kl_rename_group', { p_group: groupId, p_name: name });
+        return this.groupView(view);
+      },
       async myGiftSummary() {
         const rows = await rpc('kl_my_gift_summary');
         return (rows ?? []).map((r) => ({
