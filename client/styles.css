@@ -983,12 +983,13 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .game-layout { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .game-layout.players-off #game-slots { display: none; }
 .phase-genre-row {
-  display: flex; align-items: baseline; justify-content: center; gap: 4px 10px;
-  flex: 0 0 auto; flex-wrap: wrap; margin-bottom: 8px;
+  display: flex; align-items: baseline; justify-content: center; gap: 4px 14px;
+  flex: 0 0 auto; flex-wrap: wrap; margin-bottom: 6px;
 }
 .game-phase-note {
+  flex: 0 0 auto; text-align: center;
   font-size: 12.5px; font-weight: 700; color: var(--ink-soft);
-  white-space: nowrap;
+  white-space: nowrap; margin-bottom: 6px;
 }
 .phase-genre-row .game-phase-label { margin-bottom: 0; font-size: 17px; }
 .phase-genre-row .game-genre-line { margin-bottom: 0; }
@@ -1069,8 +1070,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .topic-label { font-size: 12.5px; font-weight: 800; color: #128a54; }
 .topic-words { font-size: 26px; font-weight: 800; }
 .game-genre-line {
-  flex: 0 0 auto; text-align: center; font-size: 13px; font-weight: 800;
-  color: #14549e; margin-bottom: 8px;
+  flex: 0 0 auto; text-align: center; font-size: 14.5px; font-weight: 800;
+  color: #14549e;
 }
 .tag-genre { background: #e8f3ff; color: #14549e; }
 

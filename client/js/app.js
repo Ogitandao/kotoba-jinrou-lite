@@ -2341,12 +2341,19 @@
     $('btn-create-charge').classList.toggle('hidden', !need);
   }
   async function confirmCreate() {
+    // ルーム名は1文字でも必須（おぎ決定）。空なら小さい赤文字で警告
+    const title = $('create-title').value.trim();
+    if (!title) {
+      $('create-title-error').classList.remove('hidden');
+      $('create-title').focus();
+      return;
+    }
+    $('create-title-error').classList.add('hidden');
     const isPrivate = createVisibility() === 'private';
     if (isPrivate && state.coins < PRIVATE_ROOM_COST) {
       refreshCreateError();
       return;
     }
-    const title = $('create-title').value.trim() || 'タイトル未設定の部屋';
     const beginner = $('create-beginner').checked;
     const capacity = Number($('create-capacity').value) || 4;
     const genre = $('create-genre').value || null;
@@ -2731,6 +2738,8 @@
       radio.addEventListener('change', refreshCreateError);
     }
     $('btn-create-confirm').addEventListener('click', confirmCreate);
+    $('create-title').addEventListener('input', () =>
+      $('create-title-error').classList.add('hidden'));
     $('btn-create-cancel').addEventListener('click', closeModal);
     $('btn-create-charge').addEventListener('click', () => openModal('modal-charge'));
     $('tabbtn-lobby').addEventListener('click', () => switchTab('lobby'));

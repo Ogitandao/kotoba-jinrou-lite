@@ -243,9 +243,9 @@
           <div class="game-center">
         <div class="phase-genre-row">
           <span id="game-phase-label" class="game-phase-label"></span>
-          <span id="game-phase-note" class="game-phase-note hidden"></span>
           <span id="game-genre-line" class="game-genre-line hidden">ジャンル：<span id="game-genre-name"></span></span>
         </div>
+        <div id="game-phase-note" class="game-phase-note hidden"></div>
         <div id="game-topic-card" class="topic-card hidden">
           <span class="topic-label">あなたのお題</span>
           <span id="game-my-topic" class="topic-words"></span>
@@ -558,6 +558,7 @@
     <label class="form-label">ルーム名
       <input id="create-title" type="text" maxlength="10" placeholder="例：はじめてさん集合！" />
     </label>
+    <p id="create-title-error" class="form-error hidden">ルーム名を入力してください</p>
     <div class="radio-row">
       <label><input type="radio" name="create-visibility" value="public" checked /> 公開</label>
       <label><input type="radio" name="create-visibility" value="private" /> 非公開（100コイン）</label>

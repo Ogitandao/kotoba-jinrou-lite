@@ -1436,7 +1436,10 @@
         if (isPrivate && state.coins < 100) {
           return Promise.reject(fail('INSUFFICIENT_COINS', 'コインが足りません'));
         }
-        if (opts.title && [...opts.title.trim()].length > 10) {
+        if (!opts.title || ![...opts.title.trim()].length) {
+          return Promise.reject(fail('TITLE_REQUIRED', 'ルーム名を入力してください'));
+        }
+        if ([...opts.title.trim()].length > 10) {
           return Promise.reject(fail('TITLE_TOO_LONG', 'ルーム名は10文字までです'));
         }
         if (isPrivate) state.coins -= 100;
@@ -1445,7 +1448,7 @@
         const genre = opts.genre && WW_GENRE_LIST.includes(opts.genre) ? opts.genre : null;
         const room = {
           id: wwId('room'),
-          title: opts.title || 'タイトル未設定の部屋',
+          title: opts.title.trim(),
           isPrivate,
           beginner: !!opts.beginner, capacity, genre, status: 'lobby',
           reversalEnabled: opts.reversalEnabled !== false,

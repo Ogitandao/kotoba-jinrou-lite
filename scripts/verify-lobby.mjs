@@ -176,6 +176,7 @@ check('非公開ルーム作成で100コイン減る',
 for (let i = 0; i < 12; i++) {
   $('btn-create-room').click();
   document.querySelector('input[name="create-visibility"][value="private"]').click();
+  $('create-title').value = '検証用・鍵部屋';
   $('btn-create-confirm').click();
   await tick();
 }
