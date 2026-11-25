@@ -983,8 +983,12 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .game-layout { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .game-layout.players-off #game-slots { display: none; }
 .phase-genre-row {
-  display: flex; align-items: baseline; justify-content: center; gap: 10px;
-  flex: 0 0 auto; flex-wrap: nowrap; margin-bottom: 8px;
+  display: flex; align-items: baseline; justify-content: center; gap: 4px 10px;
+  flex: 0 0 auto; flex-wrap: wrap; margin-bottom: 8px;
+}
+.game-phase-note {
+  font-size: 12.5px; font-weight: 700; color: var(--ink-soft);
+  white-space: nowrap;
 }
 .phase-genre-row .game-phase-label { margin-bottom: 0; font-size: 17px; }
 .phase-genre-row .game-genre-line { margin-bottom: 0; }

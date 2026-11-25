@@ -2078,16 +2078,22 @@
       timer.classList.toggle('urgent', remain <= 10);
     }
     const closed = remain !== null && remain <= 0 && v.phase !== 'done';
+    // 補足（あと○秒など）は（）をやめて小さい文字で別要素に。
+    // 行に収まらない時はジャンルが2行目に回る（おぎ指定）
     let label = PHASE_LABEL[v.phase] ?? v.phase;
+    let note = '';
     // 開始待機（挨拶タイム）：お題はまだ出さない。残り秒数を出す
     if (v.phase === 'intro') {
-      label = remain !== null
-        ? `🤝 挨拶タイム（あと${remain}秒でお題が出ます…）`
-        : '🤝 挨拶タイム（まもなくお題が出ます…）';
+      note = remain !== null
+        ? `あと${remain}秒でお題が出ます…`
+        : 'まもなくお題が出ます…';
     }
-    if (v.phase === 'discussion' && v.extended) label += '（同票で延長中）';
-    if (v.phase === 'voting') label += `（${v.votesCast}/${v.playerCount}人 投票済み）`;
+    if (v.phase === 'discussion' && v.extended) note = '同票で延長中';
+    if (v.phase === 'voting') note = `${v.votesCast}/${v.playerCount}人 投票済み`;
     $('game-phase-label').textContent = label;
+    const noteEl = $('game-phase-note');
+    noteEl.textContent = note;
+    noteEl.classList.toggle('hidden', !note);
 
     // ジャンル：全員に公開（挨拶〜結果まで常時表示。ペアは同ジャンル
     // 同士なので正体はバレない）

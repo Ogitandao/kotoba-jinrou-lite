@@ -254,8 +254,8 @@ check('[2] 対戦画面に待機室へ戻る導線がない（要素自体がな
 // ---- [4] 挨拶タイム：お題はまだ出ない ----
 check('[4] 挨拶タイムの表示（あと○秒でお題が出ます）',
 $('game-phase-label').textContent.includes('挨拶タイム')
-&& $('game-phase-label').textContent.includes('お題が出ます'),
-$('game-phase-label').textContent);
+&& $('game-phase-note').textContent.includes('お題が出ます'),
+$('game-phase-label').textContent + ' / ' + $('game-phase-note').textContent);
 check('[4] 挨拶タイム中はお題カードが隠れている',!visible($('game-topic-card')));
 {
 const detail = await KL().getRoom('r1');
