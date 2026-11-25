@@ -277,9 +277,9 @@
     b.type = 'button';
     b.className = 'room-card';
     b.dataset.roomId = room.id;
-    const vis = room.isPrivate
-      ? '<span class="tag tag-private">🔒 非公開</span>'
-      : '<span class="tag tag-public">公開</span>';
+    // 公開はデフォルトなのでタグ自体を廃止。非公開だけ鍵アイコンを
+    // タイトル行の右端に小さく置く（2026-11-25 おぎ：公開タグの形が崩れる問題）
+    const lock = room.isPrivate ? '<span class="room-lock">🔒</span>' : '';
     const beginner = room.beginner ? '<span class="tag tag-beginner">🔰 初心者歓迎</span>' : '';
     const playing = room.status === 'playing' ? '<span class="tag tag-playing"><span class="pulse-dot"></span>対戦中</span>' : '';
     const genre = `<span class="tag tag-genre">${room.genre ? `🏷️ ${room.genre}` : '🎲 おまかせ'}</span>`;
@@ -294,9 +294,8 @@
       : '';
     b.innerHTML =
       hostAvatar +
-      `<span class="room-main"><span class="room-title"></span>` +
-      `<span class="room-meta"><span class="meta-row"><span class="room-players">👥 ${room.players}/${room.capacity}人</span>${genre}</span>${metaRow2}</span></span>` +
-      vis;
+      `<span class="room-main"><span class="room-title-row"><span class="room-title"></span>${lock}</span>` +
+      `<span class="room-meta"><span class="meta-row"><span class="room-players">👥 ${room.players}/${room.capacity}人</span>${genre}</span>${metaRow2}</span></span>`;
     b.querySelector('.room-title').textContent = room.title;
     b.addEventListener('click', () => enterRoom(room));
     return b;

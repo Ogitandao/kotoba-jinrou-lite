@@ -471,7 +471,7 @@ if (inviteCard) {
 inviteCard.click();
 await tick(60);
 check('招待カードから待機室に入れる',
-visible($('room-screen')) && $('room-screen-title').textContent.includes('真剣勝負'));
+visible($('room-screen')) && $('room-screen-title').textContent.includes('経験者もOK'));
 $('room-back').click();
 await tick(30);
 }

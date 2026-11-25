@@ -120,7 +120,7 @@
         { id: 'dm-3', from: 'me', to: 'u-ken', kind: 'text', body: 'この前の推理すごかった！', read: true },
         { id: 'dm-4', from: 'u-ken', to: 'me', kind: 'text', body: 'ありがとう！また真剣勝負しよう', read: true },
         // デモ用シード：非公開ルームへの招待カード（入室導線の確認用）
-        { id: 'dm-5', from: 'u-ken', to: 'me', kind: 'invite', invite: { roomId: 'r2', roomTitle: '経験者もOK！真剣勝負部屋', password: 'wolf777' }, read: false },
+        { id: 'dm-5', from: 'u-ken', to: 'me', kind: 'invite', invite: { roomId: 'r2', roomTitle: '経験者もOK部屋', password: 'wolf777' }, read: false },
       ],
       seq: 100,
     };
@@ -1193,6 +1193,9 @@
         }
         if (isPrivate && (!opts.password || opts.password.length < 4)) {
           return Promise.reject(fail('PASSWORD_REQUIRED', '非公開ルームには4文字以上のパスワードが必要です'));
+        }
+        if (opts.title && [...opts.title.trim()].length > 10) {
+          return Promise.reject(fail('TITLE_TOO_LONG', 'ルーム名は10文字までです'));
         }
         if (isPrivate) state.coins -= 100;
         const capacity = Math.min(8, Math.max(4, opts.capacity ?? 4));

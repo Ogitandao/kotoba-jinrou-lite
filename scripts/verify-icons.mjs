@@ -157,7 +157,7 @@ talkRow('けん').click();
 await tick(40);
 const card = document.querySelector('#dm-msgs-inner .dm-invite-card');
 check('[I6] 招待カードにルーム名が出る',
-  !!card && card.textContent.includes('経験者もOK！真剣勝負部屋'),
+  !!card && card.textContent.includes('経験者もOK部屋'),
   card?.textContent ?? 'no card');
 check('[I6] 非公開の招待にはパスワード表示＋コピーボタンが付く',
   card?.textContent.includes('パスワード：wolf777')

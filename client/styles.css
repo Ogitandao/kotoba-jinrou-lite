@@ -300,7 +300,13 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   padding: 12px 14px;
 }
 .room-main { flex: 1 1 auto; min-width: 0; }
-.room-title { font-weight: 800; font-size: 15.5px; line-height: 1.35; }
+.room-title-row { display: flex; align-items: center; gap: 6px; }
+.room-title {
+  font-weight: 800; font-size: 15.5px; line-height: 1.35;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  min-width: 0; flex: 1 1 auto;
+}
+.room-lock { flex: 0 0 auto; font-size: 13px; line-height: 1; }
 .room-meta { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 5px; }
 .meta-row { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .room-players { color: var(--ink-soft); font-weight: 700; font-size: 14px; }

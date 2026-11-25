@@ -62,12 +62,14 @@ check('対戦中ルームに点滅ドット付き「対戦中」タグが入っ�
   firstCard.textContent.includes('対戦中') && !!firstCard.querySelector('.pulse-dot'));
 const r1Card = [...document.querySelectorAll('#room-list .room-card')]
   .find((c) => c.textContent.includes('はじめてさん集合'));
-check('ルームカードに公開タグ＋🔰初心者歓迎＋人数が入っている',
-  r1Card.textContent.includes('公開') &&
+check('ルームカードに🔰初心者歓迎＋人数が入っていて、公開タグは無い',
+  !r1Card.textContent.includes('公開') &&
   r1Card.textContent.includes('初心者歓迎') &&
-  r1Card.textContent.includes('6/7人'));
-check('非公開ルームに🔒非公開タグが入っている',
-  [...document.querySelectorAll('#room-list .room-card')].some((c) => c.textContent.includes('非公開')));
+  r1Card.textContent.includes('6/7人') &&
+  !r1Card.querySelector('.room-lock'));
+check('非公開ルームには鍵アイコンだけが出る（非公開の文字タグは無い）',
+  [...document.querySelectorAll('#room-list .room-card')].some((c) => !!c.querySelector('.room-lock')) &&
+  ![...document.querySelectorAll('#room-list .room-card')].some((c) => c.textContent.includes('非公開')));
 check('一覧末尾にボタン分の余白（スペーサー）がある',
   !!document.querySelector('.list-end-spacer'));
 
