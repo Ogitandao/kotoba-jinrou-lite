@@ -1058,6 +1058,9 @@
       giftCatalog() {
         return ok(GIFT_CATALOG.slice());
       },
+      tickerFeed() {
+        return ok((state.ticker ?? []).slice(0, 8));
+      },
       sendGift(userId, giftKey) {
         const gift = GIFT_CATALOG.find((g) => g.key === giftKey);
         if (!gift) return Promise.reject(fail('GIFT_NOT_FOUND', 'ギフトが存在しません'));
@@ -1072,6 +1075,15 @@
           read: true,
         };
         state.dm.push(msg);
+        // 最高額ギフトは全体ティッカー行き（実DBの kl_send_gift フックと同仕様）
+        const maxPrice = Math.max(...GIFT_CATALOG.map((g) => g.price));
+        if (gift.price >= maxPrice) {
+          state.ticker = state.ticker ?? [];
+          state.ticker.unshift({
+            id: ++state.tickerSeq || (state.tickerSeq = 1),
+            text: `🎁 ${users.get('me').name}さんが${target.name}さんに『${gift.name}』をプレゼントしました！`,
+          });
+        }
         return ok({ coins: state.coins, receiverPopularity: target.popularity, message: msg });
       },
       // ---------- アイコン（0017 の kl_set_icon と同じ判定） ----------
@@ -1608,6 +1620,10 @@
         const r = await rpc('kl_send_gift', { p_to: userId, p_gift_key: giftKey });
         return { coins: r.freeBalance + r.paidBalance, receiverPopularity: r.receiverPopularity, message: null };
       },
+      async tickerFeed() {
+        const r = await rpc('kl_ticker_feed');
+        return (r ?? []).map((e) => ({ id: e.id, text: e.text }));
+      },
       // ---------- アイコン（カタログは icons テーブルが正本） ----------
       async listIcons() {
         const sb = getClient();
@@ -1896,6 +1912,7 @@
     markRead: (id) => active.markRead(id),
     giftCatalog: () => active.giftCatalog(),
     sendGift: (id, key) => active.sendGift(id, key),
+    tickerFeed: () => active.tickerFeed(),
     listIcons: () => active.listIcons(),
     setIcon: (key) => active.setIcon(key),
     updateBio: (bio) => active.updateBio(bio),

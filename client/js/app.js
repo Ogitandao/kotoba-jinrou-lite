@@ -314,7 +314,11 @@
   function renderTicker() {
     const track = $('ticker-track');
     if (!track) return;
-    const items = [...(state.tickerEvents ?? []), ...TICKER_BASE];
+    const items = [
+      ...(state.feedEvents ?? []).map((e) => e.text),
+      ...(state.tickerEvents ?? []),
+      ...TICKER_BASE,
+    ];
     const setHtml = items
       .map((t) => `<span class="ticker-item">${t}</span>`)
       .join('');
@@ -327,6 +331,18 @@
       // 約45px/秒のゆっくりした速さ。短いときも最低18秒はかける
       track.style.animationDuration = `${Math.max(18, w / 45)}s`;
     });
+  }
+  // サーバー側フィード（100勝の節目／最高額ギフト）を取り込む
+  async function refreshTickerFeed() {
+    try {
+      const evts = await DATA.tickerFeed();
+      const key = evts.map((e) => e.id).join(',');
+      if (key !== (state.feedKey ?? '')) {
+        state.feedKey = key;
+        state.feedEvents = evts;
+        renderTicker();
+      }
+    } catch { /* フィード取得の失敗時は表示を維持 */ }
   }
   function pushTickerEvent(text) {
     state.tickerEvents = state.tickerEvents ?? [];
@@ -710,6 +726,7 @@
         renderMessages(await DATA.listMessages(target.id));
       }
       renderTalkList();
+      refreshTickerFeed();
     } catch (e) {
       if (e.code === 'INSUFFICIENT_COINS') {
         $('gift-error').classList.remove('hidden');
@@ -744,6 +761,7 @@
       renderRooms();
     } catch { /* 一覧取得の失敗時は表示を維持 */ }
     refreshPenalty();
+    refreshTickerFeed();
   }
 
   // チュートリアル（旧「初回ルール同意ポップアップ」を一本化）。
