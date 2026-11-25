@@ -2702,8 +2702,8 @@
       const choices = $('game-reversal-choices');
       choices.innerHTML = '';
       if (v.reversalChoices) {
-        $('game-reversal-text').textContent =
-          '追放されたウルフはあなた！市民のお題を当てれば逆転勝ち';
+        $('game-reversal-text').innerHTML =
+          '<span class="reversal-title">あなたがウルフでした！</span>正体がバレましたが、市民のお題を当てれば勝ち';
         for (const c of v.reversalChoices) {
           const b = document.createElement('button');
           b.type = 'button';
