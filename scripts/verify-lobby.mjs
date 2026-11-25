@@ -130,7 +130,7 @@ check('チュートリアルは5枚のスライド構成',
 check('チュートリアルに遊び方とマナー（ペナルティ）の説明が入っている',
   $('modal-tutorial').textContent.includes('ウルフ')
   && $('modal-tutorial').textContent.includes('ペナルティ'));
-check('最初のスライドでは「同意してはじめる」が出ない（キャンセルは出る）',
+check('最初のスライドでは「同意する」が出ない（キャンセルは出る）',
   !visible($('btn-tutorial-agree')) && visible($('btn-tutorial-cancel')));
 $('modal-backdrop').click();
 check('枠の外をタップしてもチュートリアルは閉じない',

@@ -1858,7 +1858,7 @@
   // 招待カード）を試みた時に強制表示し、同意はサーバーに記録される。
   // モーダル仕様（おぎ指定）：一個の大きいポップアップ内でスライドを
   // 左右に送り、枠の外をタップしても閉じられない。閉じる手段は
-  // 最後のスライドの「同意してはじめる」と「キャンセル」だけ。
+  // 最後のスライドの「同意する」と「キャンセル」だけ。
   // キャンセルしても未同意のままなので、入室を試みるたびに再表示される。
   // 設定／ようこそDMからは閲覧モード（「閉じる」で閉じられる）で開く。
   const TUTORIAL_LAST = 5; // スライドは6枚（0始まり）
@@ -1889,7 +1889,7 @@
     $('btn-tutorial-prev').classList.toggle('hidden', i === 0);
     $('btn-tutorial-next').classList.toggle('hidden', i === TUTORIAL_LAST);
     const consent = state.tutorialMode === 'consent';
-    // 「同意してはじめる」は最後のスライドにだけ出す（おぎ仕様）
+    // 「同意する」は最後のスライドにだけ出す（おぎ仕様）
     $('btn-tutorial-agree').classList.toggle('hidden', !(consent && i === TUTORIAL_LAST));
     $('btn-tutorial-cancel').classList.toggle('hidden', !consent);
     $('btn-tutorial-close').classList.toggle('hidden', consent);
