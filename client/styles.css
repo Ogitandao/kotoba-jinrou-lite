@@ -91,6 +91,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .avatar-md { width: 56px; height: 56px; font-size: 34px; border-radius: 14px; }
 .avatar-sm { width: 52px; height: 52px; font-size: 32px; border-radius: 14px; position: relative; }
 .avatar-xl { width: 128px; height: 128px; font-size: 76px; margin: 10px auto; }
+.profile-side { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .profile-main { min-width: 0; }
 .profile-name-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 /* 名前もオンライン表示も改行させない。狭い画面では文字サイズを下げて収める */
@@ -107,9 +108,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .online-label {
   color: #159a5f; font-weight: 700;
-  font-size: clamp(9px, 3vw, 13px);
+  font-size: clamp(10px, 3.4vw, 13px);
   display: inline-flex; align-items: center; gap: 5px;
-  white-space: nowrap; flex: 0 0 auto;
+  white-space: nowrap;
 }
 .name-input {
   width: 100%; font: inherit; font-size: 16px; font-weight: 700;
