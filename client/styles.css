@@ -464,6 +464,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-size: 17px; font-weight: 800;
   color: var(--ink-soft);
   background: transparent;
+  /* 文字が若干下に寄って見える対策：flexで縦中央に固定する */
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  line-height: 1;
 }
 .tabbtn.active { background: #bfe3ff; color: #1473c9; }
 
@@ -473,7 +476,10 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   background: #fff; border-radius: 999px; padding: 5px;
   box-shadow: var(--shadow);
 }
-.subtab { flex: 1 1 0; border-radius: 999px; padding: 9px 0; font-weight: 800; color: var(--ink-soft); }
+.subtab {
+  flex: 1 1 0; border-radius: 999px; padding: 9px 0; font-weight: 800; color: var(--ink-soft);
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+}
 .subtab.active { background: var(--mint-bg); color: #128a54; }
 .subpanel { padding: 26px 10px; }
 .empty-state { text-align: center; color: var(--ink-soft); }
