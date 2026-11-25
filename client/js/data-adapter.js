@@ -163,9 +163,16 @@
       d.setHours(h, m, 0, 0);
       return d.getTime() - daysAgo * 86400e3;
     };
+    // スタートダッシュ（新規特典）：7日分・合計500（実DBは migration 0044）
+    const STARTER_AMOUNTS = [50, 50, 50, 50, 100, 100, 100];
     const state = {
       coins: D.me.coins,
       bonusClaimed: D.me.bonusClaimed,
+      starterDays: (() => {
+        try {
+          return Math.min(7, parseInt(localStorage.getItem('kl_starter_days') ?? '0', 10) || 0);
+        } catch { return 0; }
+      })(),
       friends: new Set(['u-mika', 'u-ken', 'u-risu', 'u-nyan', 'u-d01', 'u-d02', 'u-d03', 'u-d04', 'u-d05', 'u-d06', 'u-d07', 'u-d08', 'u-d09', 'u-d10', 'u-d11', 'u-d12', 'u-d13', 'u-d14', 'u-d15', 'u-d16', 'u-d17', 'u-d18', 'u-d19', 'u-d20', 'u-d21', 'u-d22', 'u-d23', 'u-d24', 'u-d25', 'u-d26']),
       incoming: new Set(['u-sora']),
       outgoing: new Set(),
@@ -1103,6 +1110,7 @@
         return ok({
           me: {
             ...pub(users.get('me')), coins: state.coins, bonusClaimed: state.bonusClaimed,
+            starterDays: state.starterDays, starterEligible: true,
             penaltyUntilMs: penInfo('me'), rulesAgreed,
           },
           rooms: D.rooms.slice(),
@@ -1135,10 +1143,21 @@
         return ok(null);
       },
       claimLoginBonus() {
-        if (state.bonusClaimed) return ok({ claimed: false, amount: 0, coins: state.coins });
+        if (state.bonusClaimed) {
+          return ok({ claimed: false, amount: 0, starterAmount: 0, starterDay: null, starterDaysClaimed: state.starterDays, coins: state.coins });
+        }
         state.bonusClaimed = true;
         state.coins += 10;
-        return ok({ claimed: true, amount: 10, coins: state.coins });
+        let starterAmount = 0;
+        let starterDay = null;
+        if (state.starterDays < 7) {
+          starterAmount = STARTER_AMOUNTS[state.starterDays];
+          state.starterDays += 1;
+          starterDay = state.starterDays;
+          state.coins += starterAmount;
+          try { localStorage.setItem('kl_starter_days', String(state.starterDays)); } catch { /* メモリのみ */ }
+        }
+        return ok({ claimed: true, amount: 10, starterAmount, starterDay, starterDaysClaimed: state.starterDays, coins: state.coins });
       },
       listOnlineFriends() {
         return ok([...state.friends].map((id) => pub(users.get(id))).filter((u) => u.online));
@@ -1761,11 +1780,20 @@
         await sb.rpc('kl_touch_presence');
         const [p, w] = await Promise.all([myProfile(), myWallet()]);
         const todayJst = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+        let starterDays = 0;
+        try {
+          const { data: sRow } = await sb.from('kl_starter_bonus')
+            .select('days_claimed').eq('user_id', meId).maybeSingle();
+          starterDays = sRow?.days_claimed ?? 0;
+        } catch { /* 未適用なら0 */ }
+        const starterEligible = !!p.created_at
+          && Date.parse(p.created_at) >= Date.parse('2026-11-26T00:00:00+09:00');
         return {
           me: {
             ...profileRow(p),
             coins: w.free_balance + w.paid_balance,
             bonusClaimed: w.last_login_bonus_date === todayJst,
+            starterDays, starterEligible,
             penaltyUntilMs: p.penalty_until ? Date.parse(p.penalty_until) : null,
             rulesAgreed: p.rules_agreed_at != null,
           },
@@ -1789,7 +1817,11 @@
       heartbeat(roomId) { return rpc('ww_heartbeat', { p_room: roomId }); },
       async claimLoginBonus() {
         const r = await rpc('kl_claim_login_bonus');
-        return { claimed: r.claimed, amount: r.amount, coins: r.freeBalance + r.paidBalance };
+        return {
+          claimed: r.claimed, amount: r.amount, coins: r.freeBalance + r.paidBalance,
+          starterAmount: r.starterAmount ?? 0, starterDay: r.starterDay ?? null,
+          starterDaysClaimed: r.starterDaysClaimed ?? 0,
+        };
       },
       async listFriends() {
         const { data, error } = await getClient()

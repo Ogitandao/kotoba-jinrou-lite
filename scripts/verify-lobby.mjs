@@ -106,10 +106,17 @@ check('作成バーはスクロール領域の外（固定帯）にある',
 // --- ログインボーナス受け取り ---
 // データ層が非同期（Promise）になったため、反映を待ってから確認する
 const tick = () => new Promise((r) => setTimeout(r, 10));
+check('スタートダッシュのスタンプカードが出る（7マス）',
+  visible($('starter-card')) && document.querySelectorAll('#starter-stamps .stamp').length === 7);
 $('bonus-banner').click();
 await tick();
-check('ボーナス受け取りでコインが +10 される',
-  $('coin-count').textContent === '1,250' && $('bonus-state').textContent === '獲得済み！');
+check('ボーナス受け取りでコインが +60 される（通常10＋スタートダッシュ1日目50）',
+  $('coin-count').textContent === '1,300' && $('bonus-state').textContent === '獲得済み！',
+  $('coin-count').textContent);
+check('スタートダッシュ1日目のスタンプが押される',
+  document.querySelectorAll('#starter-stamps .stamp.got').length === 1
+  && $('starter-progress').textContent === '1/7日',
+  $('starter-progress').textContent);
 
 // --- フレンドタブの同意ゲート（未同意の間は開けない） ---
 check('未同意ではフレンドタブがグレーアウト（locked）になる',
@@ -168,13 +175,13 @@ $('create-title').value = '検証用・鍵部屋';
 $('btn-create-confirm').click();
 await tick();
 check('非公開ルーム作成で100コイン減る',
-  $('coin-count').textContent === '1,150' &&
+  $('coin-count').textContent === '1,200' &&
   document.querySelector('#room-list .room-card').textContent.includes('検証用・鍵部屋'));
 
 // --- コイン不足フロー ---
 // 残高を不足状態にしてから作成すると、エラー＋チャージボタンが出ること
-// 残高1,150から100ずつ消費：11回成功して50になり、12回目で不足エラーになる
-for (let i = 0; i < 12; i++) {
+// 残高1,200から100ずつ消費：12回成功して0になり、13回目で不足エラーになる
+for (let i = 0; i < 13; i++) {
   $('btn-create-room').click();
   document.querySelector('input[name="create-visibility"][value="private"]').click();
   $('create-title').value = '検証用・鍵部屋';
@@ -182,7 +189,7 @@ for (let i = 0; i < 12; i++) {
   await tick();
 }
 check('コイン不足時は「コインが足りません」＋チャージボタンが出る',
-  visible($('create-error')) && visible($('btn-create-charge')) && $('coin-count').textContent === '50',
+  visible($('create-error')) && visible($('btn-create-charge')) && $('coin-count').textContent === '0',
   `残高=${$('coin-count').textContent}`);
 $('btn-create-cancel').click();
 

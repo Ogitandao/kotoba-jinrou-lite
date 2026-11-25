@@ -12,6 +12,8 @@
     coins: 0,
     popularity: 0,
     bonusClaimed: false,
+    starterDays: 0,
+    starterEligible: false,
     rooms: [],
     tab: 'lobby',
     subtab: 'talk',
@@ -418,6 +420,23 @@
   function renderBonus() {
     $('bonus-banner').classList.toggle('claimed', state.bonusClaimed);
     $('bonus-state').textContent = state.bonusClaimed ? '獲得済み！' : '受け取る';
+  }
+  // スタートダッシュ（新規特典・7日で合計500）のスタンプカード
+  const STARTER_AMOUNTS_UI = [50, 50, 50, 50, 100, 100, 100];
+  function renderStarter() {
+    const card = $('starter-card');
+    const show = state.starterEligible && state.starterDays < 7;
+    card.classList.toggle('hidden', !show);
+    if (!show) return;
+    $('starter-progress').textContent = `${state.starterDays}/7日`;
+    const box = $('starter-stamps');
+    box.innerHTML = '';
+    STARTER_AMOUNTS_UI.forEach((amt, i) => {
+      const s = document.createElement('span');
+      s.className = `stamp${i < state.starterDays ? ' got' : ''}${i === state.starterDays ? ' next' : ''}`;
+      s.textContent = i < state.starterDays ? '✓' : String(amt);
+      box.appendChild(s);
+    });
   }
   function renderPenalty() {
     const b = $('penalty-banner');
@@ -2905,6 +2924,8 @@
     state.coins = boot.me.coins;
     state.popularity = boot.me.popularity;
     state.bonusClaimed = boot.me.bonusClaimed;
+    state.starterDays = boot.me.starterDays ?? 0;
+    state.starterEligible = !!boot.me.starterEligible;
     state.rulesAgreed = !!boot.me.rulesAgreed;
     state.penaltyUntilMs = boot.me.penaltyUntilMs ?? null;
     state.rooms = boot.rooms ?? [];
@@ -2914,6 +2935,7 @@
     renderCoins();
     renderPopularity();
     renderBonus();
+    renderStarter();
     renderPenalty();
     renderFriendsLock();
     renderRooms();
@@ -3111,9 +3133,13 @@
         if (r.claimed) {
           state.coins = r.coins;
           state.bonusClaimed = true;
+          if (r.starterDaysClaimed != null) state.starterDays = r.starterDaysClaimed;
           renderCoins();
           renderBonus();
-          toast(`ログインボーナス +${r.amount}コインを受け取りました`);
+          renderStarter();
+          toast(r.starterAmount > 0
+            ? `スタートダッシュ${r.starterDay}日目 +${r.starterAmount}コイン！`
+            : `ログインボーナス +${r.amount}コインを受け取りました`);
         }
       } catch (e) { toastError(e); }
     });
