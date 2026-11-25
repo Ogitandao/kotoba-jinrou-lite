@@ -36,12 +36,14 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 * { -webkit-tap-highlight-color: transparent; }
 .hidden { display: none !important; }
 
-/* スマホ枠 */
+/* スマホ枠。position: fixed で画面に固定する：height: 100dvh だと
+   引っ張って更新の後にブラウザの高さ計算がずれて、下部メニューが
+   画面外に落ちる端末があるため（2026-11-25 おぎ実機で発生） */
 .phone {
-  position: relative;
+  position: fixed;
+  inset: 0;
   max-width: 430px;
   margin: 0 auto;
-  height: 100dvh;
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, #e4fbf0 0%, #e0f3ff 55%, #d8efff 100%);
