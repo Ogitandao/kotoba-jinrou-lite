@@ -1099,13 +1099,20 @@
     const ml = $('group-member-list');
     ml.innerHTML = '';
     for (const m of g.members) {
-      const row = document.createElement('div');
-      row.className = 'member-row';
-      row.append(avatarSpan(m, 'avatar-sm'));
+      const cell = document.createElement('div');
+      cell.className = 'member-cell';
+      cell.append(avatarSpan(m, 'avatar-sm'));
       const n = document.createElement('span');
-      n.textContent = m.name + (m.id === state.me.id ? '（あなた）' : '');
-      row.appendChild(n);
-      ml.appendChild(row);
+      n.className = 'member-cell-name';
+      n.textContent = m.name;
+      cell.appendChild(n);
+      if (m.id === state.me.id) {
+        const you = document.createElement('span');
+        you.className = 'member-cell-you';
+        you.textContent = 'あなた';
+        cell.appendChild(you);
+      }
+      ml.appendChild(cell);
     }
     const friends = await DATA.listFriends();
     const al = $('group-add-list');
@@ -1144,6 +1151,32 @@
       renderTalkList();
       backModal();
     } catch (e) { toastError(e); }
+  }
+  // 重要な決断には確認ポップアップを1回挟む（汎用確認。2026-11-25 おぎ方針）
+  let confirmAction = null;
+  function openConfirm(text, yesLabel, onYes) {
+    $('confirm-text').textContent = text;
+    $('confirm-yes').textContent = yesLabel;
+    confirmAction = onYes;
+    $('modal-gift-confirm').classList.add('hidden');
+    $('modal-confirm').classList.remove('hidden');
+    $('modal-backdrop2').classList.remove('hidden');
+  }
+  function closeConfirm() {
+    $('modal-confirm').classList.add('hidden');
+    if ($('modal-gift-confirm').classList.contains('hidden')) {
+      $('modal-backdrop2').classList.add('hidden');
+    }
+    confirmAction = null;
+  }
+  function askLeaveGroup() {
+    const g = state.dmGroup;
+    if (!g) return;
+    openConfirm(
+      `グループ「${g.name}」を抜けますか？\n抜けると会話が見られなくなります`,
+      '脱退する',
+      doLeaveGroup,
+    );
   }
   async function doLeaveGroup() {
     const g = state.dmGroup;
@@ -1239,6 +1272,7 @@
     state.pendingGift = g;
     $('gc-art').innerHTML = `<span class="gc-emoji">${g.icon}</span><img src="gifts/gift-${g.key}.webp" alt="" onerror="this.remove()">`;
     $('gc-text').textContent = `${target.name}さんへ\n${g.name}（${fmt(g.price)}コイン）を送りますか？`;
+    $('modal-confirm').classList.add('hidden');
     $('modal-backdrop2').classList.remove('hidden');
     $('modal-gift-confirm').classList.remove('hidden');
   }
@@ -2388,7 +2422,13 @@
     $('dm-members-btn').addEventListener('click', openGroupMembers);
     $('btn-group-add').addEventListener('click', doAddGroupMembers);
     $('btn-group-rename').addEventListener('click', doRenameGroup);
-    $('btn-group-leave').addEventListener('click', doLeaveGroup);
+    $('btn-group-leave').addEventListener('click', askLeaveGroup);
+    $('confirm-x').addEventListener('click', closeConfirm);
+    $('confirm-yes').addEventListener('click', () => {
+      const fn = confirmAction;
+      closeConfirm();
+      if (fn) fn();
+    });
     $('btn-gift-charge').addEventListener('click', () => openModal('modal-charge'));
     $('gc-x').addEventListener('click', closeGiftConfirm);
     $('gc-send').addEventListener('click', () => {

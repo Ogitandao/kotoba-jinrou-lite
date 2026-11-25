@@ -279,16 +279,20 @@ $('dm-members-btn').click();
 await tick();
 check('メンバーシートが開き、追加候補（残りのフレンド）が出る',
   visible($('modal-group-members'))
-  && document.querySelectorAll('#group-member-list .member-row').length === 2
+  && document.querySelectorAll('#group-member-list .member-cell').length === 2
   && document.querySelectorAll('#group-add-list .pick-row').length === 30);
 [...document.querySelectorAll('#group-add-list .pick-row')]
   .find((r) => r.textContent.includes('りす')).click();
 $('btn-group-add').click();
 await tick();
 check('メンバーを追加すると3人になり、参加システムメッセージが出る',
-  document.querySelectorAll('#group-member-list .member-row').length === 3
+  document.querySelectorAll('#group-member-list .member-cell').length === 3
   && [...document.querySelectorAll('#dm-msgs-inner .chat-notice')].some((b) => b.textContent.includes('参加しました')));
 $('btn-group-leave').click();
+await tick();
+check('脱退には確認ポップアップを挟む（重要な決断の習慣）',
+  visible($('modal-confirm')) && $('confirm-text').textContent.includes('抜けますか'));
+$('confirm-yes').click();
 await tick(420);
 check('グループを抜けるとDM画面が閉じ、一覧から消える',
   !visible($('dm-screen'))
