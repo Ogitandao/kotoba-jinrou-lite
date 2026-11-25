@@ -1237,4 +1237,4 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
 - 一覧表示のダイヤも Lottie で回し続ける（おぎ案）：ギフトピッカーとギフト帯（ロビー／プロフ）のダイヤは [data-gift-art] プレースホルダ＋遅延ロードに置換。DMカードと通知サムネは静止画のまま
 - Lottie プレイヤー（lottie.min.js）と diamond.json は client/lot/ に同梱し、必要時に動的ロード。素材の原典 zip は ~/workspace/kotoba-jinrou-lite-data/lottie/ に保管
 - デモページ fx-demo.html／fx-demo-lot.html は確認用に残置（ループ再生版）
-- 追補（同日）：一覧ダイヤの位置・大きさを修正。Lottie素材は画布内で中心が約14.6%下寄り＆小さめ。svg への CSS transform はプレイヤーの inline style に上書きされるため、拡大1.45倍＋上寄せ（-21%）はコンテナ（.gift-icon-lot/.gift-cell-lot）側に掛けるのが正解。実測で中心ズレ +17.5px → +0.5px に収束、ピッカー／ギフト帯とも他ギフトと中心が揃った
+- 追補（同日）：一覧ダイヤの位置・大きさを修正。Lottie素材は画布内で中心が約14.6%下寄り＆小さめ。svg への CSS transform はプレイヤーの inline style に上書きされるため、拡大＋寄せはコンテナ（.gift-icon-lot/.gift-cell-lot）側に掛けるのが正解。最終値（おぎ実機確認で確定）：transform: translate(-3%, -20%) scale(1.38)。実測で中心ズレも解消し、ピッカー／ギフト帯とも他ギフトと中心が揃った。おぎ総評「高額ギフトだけ他と毛色が違うの良い」＝高額帯の別画風は正式なデザイン方針として確定
