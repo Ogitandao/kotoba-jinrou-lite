@@ -217,7 +217,7 @@ const badges = [...document.querySelectorAll('#room-members .member-row .no-badg
 check('[11] 待機室のメンバーに番号バッジ（参加順1〜7）',
 badges.join(',') === '1,2,3,4,5,6,7', badges.join(','));
 const myRow = [...document.querySelectorAll('#room-members .member-row')]
-.find((r) => r.textContent.includes('（あなた）'));
+.find((r) => r.dataset.userId === 'me');
 check('[11] 自分は最後に参加したので7番',
 myRow?.querySelector('.no-badge')?.textContent === '7', myRow?.textContent?? '');
 }
@@ -391,7 +391,7 @@ visible($('btn-start-game')) &&!$('btn-start-game').disabled
 check('[13] マスターには準備OKボタンは出ない',!visible($('btn-ready')));
 {
 const myRow = [...document.querySelectorAll('#room-members .member-row')]
-.find((r) => r.textContent.includes('（あなた）'));
+.find((r) => r.dataset.userId === 'me');
 check('[11] 自分の部屋では自分が1番', myRow?.querySelector('.no-badge')?.textContent === '1',
 myRow?.textContent?? '');
 }

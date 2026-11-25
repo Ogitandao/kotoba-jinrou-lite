@@ -285,6 +285,10 @@ check('メンバーシートが開き、追加候補（残りのフレンド）�
   .find((r) => r.textContent.includes('りす')).click();
 $('btn-group-add').click();
 await tick();
+check('メンバー追加にも確認ポップアップを挟む（取り消せない操作）',
+  visible($('modal-confirm')) && $('confirm-text').textContent.includes('追加しますか'));
+$('confirm-yes').click();
+await tick();
 check('メンバーを追加すると3人になり、参加システムメッセージが出る',
   document.querySelectorAll('#group-member-list .member-cell').length === 3
   && [...document.querySelectorAll('#dm-msgs-inner .chat-notice')].some((b) => b.textContent.includes('参加しました')));

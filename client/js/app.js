@@ -1121,6 +1121,16 @@
     for (const f of candidates) al.appendChild(pickRow(f, groupAddPick));
     openModal('modal-group-members');
   }
+  function askAddGroupMembers() {
+    const g = state.dmGroup;
+    if (!g || !groupAddPick.size) return;
+    const names = [...groupAddPick]
+      .map((id) => state.users.get(id)?.name ?? '')
+      .filter(Boolean)
+      .join('、');
+    // 追加は取り消せない（外す機能がない）ので、重要な決断として確認を挟む
+    openConfirm(`${names}さんを\nグループに追加しますか？`, '追加する', doAddGroupMembers);
+  }
   async function doAddGroupMembers() {
     const g = state.dmGroup;
     if (!g || !groupAddPick.size) return;
@@ -1505,7 +1515,7 @@
       if (badge) line.appendChild(badge);
       const name = document.createElement('span');
       name.className = 'member-name';
-      name.textContent = m.name + (m.id === state.me.id ? '（あなた）' : '');
+      name.textContent = m.name;
       line.appendChild(name);
       main.append(line);
       row.append(avatarSpan(m), main);
@@ -1979,7 +1989,7 @@
       main.className = 'reveal-main';
       const nm = document.createElement('span');
       nm.className = 'reveal-name';
-      nm.textContent = p.name + (r.id === state.me.id ? '（あなた）' : '');
+      nm.textContent = p.name;
       const tp = document.createElement('span');
       tp.className = 'reveal-topic';
       tp.textContent = r.topic ? `お題：${r.topic}` : '';
@@ -2414,7 +2424,7 @@
     $('btn-group-new').addEventListener('click', openGroupCreate);
     $('btn-group-create').addEventListener('click', doCreateGroup);
     $('dm-members-btn').addEventListener('click', openGroupMembers);
-    $('btn-group-add').addEventListener('click', doAddGroupMembers);
+    $('btn-group-add').addEventListener('click', askAddGroupMembers);
     $('btn-group-rename').addEventListener('click', doRenameGroup);
     $('btn-group-leave').addEventListener('click', askLeaveGroup);
     $('confirm-x').addEventListener('click', closeConfirm);
