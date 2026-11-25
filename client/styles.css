@@ -489,7 +489,42 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   position: sticky; top: -14px; z-index: 30;
   margin: -14px -14px 0; padding: 14px 14px 12px;
   background: linear-gradient(180deg, #e4fbf0 0%, rgba(228, 251, 240, .97) 72%, rgba(228, 251, 240, 0) 100%);
+  display: flex; align-items: center; gap: 8px;
 }
+.subtab-sticky .subtab-bar { flex: 1 1 auto; min-width: 0; }
+/* グループ作成ボタン（バーの右端の丸ボタン。おぎ決定 2026-11-25） */
+.group-plus-btn {
+  flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%;
+  background: #fff; box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: center;
+}
+/* グループ作成・追加のフレンド選択リスト */
+.pick-list { display: flex; flex-direction: column; gap: 6px; max-height: 38dvh; overflow-y: auto; }
+.pick-row {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 7px 10px; background: #f4faff; border-radius: 12px;
+  border: 2px solid transparent; text-align: left; font-weight: 700;
+}
+.pick-row.selected { border-color: #35b558; background: #eefbf3; }
+.pick-row .pick-check {
+  margin-left: auto; flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%;
+  background: #35b558; color: #fff; display: none;
+  align-items: center; justify-content: center;
+}
+.pick-row.selected .pick-check { display: flex; }
+.member-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 10px; background: #f4faff; border-radius: 12px; font-weight: 700;
+}
+/* グループのアバター（メンバーの顔を2×2に敷く） */
+.group-avatar { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; overflow: hidden; }
+.group-avatar .ga-cell { overflow: hidden; }
+.group-avatar .ga-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.group-avatar .ga-cell.emoji-cell { display: flex; align-items: center; justify-content: center; font-size: 13px; }
+/* グループチャットの発言者名 */
+.gmsg { display: flex; flex-direction: column; align-items: flex-start; }
+.gmsg-name { font-size: 11px; color: var(--ink-soft); margin: 0 0 2px 4px; font-weight: 700; }
+.danger-text { color: var(--danger); }
 .subtab-bar {
   display: flex; gap: 8px;
   background: #fff; border-radius: 999px; padding: 5px;
@@ -690,7 +725,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 /* DM画面：画面全体のオーバーレイ。発言は下端寄せ（本家のクランチャット様式） */
 .dm-screen {
-  position: fixed; z-index: 20;
+  position: fixed; z-index: 40;
   top: 0; bottom: 0; left: 50%; transform: translateX(-50%);
   width: min(430px, 100%);
   display: flex; flex-direction: column;
@@ -703,6 +738,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   background: rgba(255, 255, 255, 0.85);
   border-bottom: 1px solid var(--line);
 }
+#dm-back { white-space: nowrap; flex: 0 0 auto; }
+.dm-peer-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dm-peer-name { flex: 1 1 auto; font-weight: 800; }
 .gift-open-btn {
   flex: 0 0 auto;

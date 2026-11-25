@@ -17,6 +17,7 @@
     subtab: 'talk',
     users: new Map(), // id -> 公開プロフィール（DM・ギフトの宛先解決用）
     dmPeer: null,
+    dmGroup: null,
     giftTarget: null,
     roomId: null,        // 待機室を開いているルーム
     roomDetail: null,    // 待機室の表示データ
@@ -107,6 +108,36 @@
     const s = document.createElement('span');
     s.className = `avatar ${size}`;
     return fillAvatar(s, u, opts);
+  }
+  // グループのアバター：メンバーの顔を最大4つ、2×2に敷く
+  function groupAvatarEl(g, size = 'avatar-md') {
+    const s = document.createElement('span');
+    s.className = `avatar ${size} group-avatar`;
+    const members = (g.members ?? []).slice(0, 4);
+    for (const m of members) {
+      const cell = document.createElement('span');
+      cell.className = 'ga-cell';
+      const src = window.KL_ICON_SRC ? window.KL_ICON_SRC(m.iconKey) : null;
+      if (src) {
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = '';
+        cell.appendChild(img);
+      } else {
+        cell.classList.add('emoji-cell');
+        cell.style.background = m.iconBg ?? '';
+        cell.textContent = m.icon ?? '';
+      }
+      s.appendChild(cell);
+    }
+    return s;
+  }
+  function fillGroupAvatar(el, g) {
+    const tmp = groupAvatarEl(g, el.className.match(/avatar-\w+/)?.[0] ?? 'avatar-md');
+    el.className = tmp.className;
+    el.innerHTML = tmp.innerHTML;
+    el.style.background = '';
+    return el;
   }
   // プレイヤー番号バッジ（2026-11-24 おぎ）：ルーム内での参加順番号を
   // 名前の前に出す小さい四角バッジ。番号はデータ層が参加順で一意に
@@ -621,6 +652,7 @@
     updateNavBadges(convs);
     detectGiftNotifications(convs);
     rememberUsers(convs.map((c) => c.partner));
+    for (const c of convs) if (c.isGroup) rememberUsers(c.partner.members);
     const list = $('talk-list');
     list.innerHTML = '';
     $('talk-empty').classList.toggle('hidden', convs.length > 0);
@@ -636,16 +668,19 @@
       name.textContent = c.partner.name;
       const preview = document.createElement('span');
       preview.className = 'talk-preview';
-      preview.textContent = lastMessagePreview(c.last);
+      // グループは発言者名を添える（誰の発言か一覧で分かるように）
+      preview.textContent = c.isGroup && c.last && c.last.kind === 'text' && c.last.from !== state.me.id
+        ? `${state.users.get(c.last.from)?.name ?? ''}：${c.last.body ?? ''}`
+        : lastMessagePreview(c.last);
       main.append(name, preview);
-      row.append(avatarSpan(c.partner), main);
+      row.append(c.isGroup ? groupAvatarEl(c.partner) : avatarSpan(c.partner), main);
       if (c.unread > 0) {
         const badge = document.createElement('span');
         badge.className = 'unread-badge';
         badge.textContent = String(c.unread);
         row.appendChild(badge);
       }
-      row.addEventListener('click', () => openDm(c.partner));
+      row.addEventListener('click', () => (c.isGroup ? openGroupChat(c.partner) : openDm(c.partner)));
       list.appendChild(row);
     }
   }
@@ -872,14 +907,17 @@
   }
   async function openDm(user) {
     state.dmPeer = user;
+    state.dmGroup = null;
     rememberUsers([user]);
     $('dm-peer-name').textContent = user.name;
     // DM 画面はオンラインバッジを出す場所のひとつ（2026-11-25 おぎ）
+    $('dm-peer-avatar').classList.remove('group-avatar');
     fillAvatar($('dm-peer-avatar'), user, { online: true });
     // システムからのお知らせは読み取り専用（入力欄とギフトを隠す）
     const isSystem = user.id === 'system';
     $('dm-input-row').classList.toggle('hidden', isSystem);
     $('dm-gift-btn').classList.toggle('hidden', isSystem);
+    $('dm-members-btn').classList.add('hidden');
     $('dm-screen').classList.remove('hidden');
     updateCreateBar();
     try {
@@ -891,8 +929,158 @@
   }
   function closeDm() {
     state.dmPeer = null;
+    state.dmGroup = null;
     $('dm-screen').classList.add('hidden');
     updateCreateBar();
+  }
+  // ---------- グループチャット ----------
+  function groupMessageNode(m) {
+    if (m.kind === 'system') {
+      const box = document.createElement('div');
+      box.className = 'dm-system-msg';
+      box.textContent = m.body ?? '';
+      return box;
+    }
+    if (m.from === state.me.id) return messageNode(m);
+    const wrap = document.createElement('div');
+    wrap.className = 'gmsg';
+    const name = document.createElement('span');
+    name.className = 'gmsg-name';
+    name.textContent = state.users.get(m.from)?.name ?? '';
+    wrap.append(name, messageNode(m));
+    return wrap;
+  }
+  function renderGroupMessages(messages) {
+    const inner = $('dm-msgs-inner');
+    inner.innerHTML = '';
+    for (const m of messages) inner.appendChild(groupMessageNode(m));
+    $('dm-messages').scrollTop = $('dm-messages').scrollHeight;
+  }
+  async function openGroupChat(g) {
+    state.dmGroup = g;
+    state.dmPeer = null;
+    rememberUsers(g.members);
+    $('dm-peer-name').textContent = g.name;
+    fillGroupAvatar($('dm-peer-avatar'), g);
+    $('dm-input-row').classList.remove('hidden');
+    $('dm-gift-btn').classList.add('hidden');
+    $('dm-members-btn').classList.remove('hidden');
+    $('dm-screen').classList.remove('hidden');
+    updateCreateBar();
+    try {
+      renderGroupMessages(await DATA.listGroupMessages(g.id));
+      await DATA.markGroupRead(g.id);
+      renderTalkList();
+    } catch (e) { toastError(e); }
+  }
+  // ---------- グループ作成・設定 ----------
+  const groupPick = new Set();
+  const groupAddPick = new Set();
+  function pickRow(u, set) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pick-row' + (set.has(u.id) ? ' selected' : '');
+    b.append(avatarSpan(u, 'avatar-sm'));
+    const n = document.createElement('span');
+    n.textContent = u.name;
+    b.appendChild(n);
+    const check = document.createElement('span');
+    check.className = 'pick-check';
+    check.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5 L9.5 18 L20 6.5"/></svg>';
+    b.appendChild(check);
+    b.addEventListener('click', () => {
+      if (set.has(u.id)) set.delete(u.id); else set.add(u.id);
+      b.classList.toggle('selected', set.has(u.id));
+    });
+    return b;
+  }
+  async function openGroupCreate() {
+    groupPick.clear();
+    $('group-name-input').value = '';
+    const friends = await DATA.listFriends();
+    rememberUsers(friends);
+    const list = $('group-friend-list');
+    list.innerHTML = '';
+    for (const f of friends) list.appendChild(pickRow(f, groupPick));
+    openModal('modal-group-create');
+  }
+  async function doCreateGroup() {
+    try {
+      const g = await DATA.createGroup($('group-name-input').value, [...groupPick]);
+      closeModal();
+      toast('グループを作りました');
+      switchTab('friends');
+      switchSubtab('talk');
+      await renderTalkList();
+      openGroupChat(g);
+    } catch (e) { toastError(e); }
+  }
+  async function openGroupMembers() {
+    const g = state.dmGroup;
+    if (!g) return;
+    groupAddPick.clear();
+    $('group-members-title').textContent = `グループ設定（${g.memberIds.length}人）`;
+    $('group-rename-input').value = g.name;
+    const ml = $('group-member-list');
+    ml.innerHTML = '';
+    for (const m of g.members) {
+      const row = document.createElement('div');
+      row.className = 'member-row';
+      row.append(avatarSpan(m, 'avatar-sm'));
+      const n = document.createElement('span');
+      n.textContent = m.name + (m.id === state.me.id ? '（あなた）' : '');
+      row.appendChild(n);
+      ml.appendChild(row);
+    }
+    const friends = await DATA.listFriends();
+    const al = $('group-add-list');
+    al.innerHTML = '';
+    const candidates = friends.filter((f) => !g.memberIds.includes(f.id));
+    if (!candidates.length) {
+      const p = document.createElement('p');
+      p.className = 'modal-note';
+      p.textContent = '追加できるフレンドがいません';
+      al.appendChild(p);
+    }
+    for (const f of candidates) al.appendChild(pickRow(f, groupAddPick));
+    openModal('modal-group-members');
+  }
+  async function doAddGroupMembers() {
+    const g = state.dmGroup;
+    if (!g || !groupAddPick.size) return;
+    try {
+      const updated = await DATA.addGroupMembers(g.id, [...groupAddPick]);
+      state.dmGroup = updated;
+      rememberUsers(updated.members);
+      $('dm-peer-name').textContent = updated.name;
+      fillGroupAvatar($('dm-peer-avatar'), updated);
+      renderGroupMessages(await DATA.listGroupMessages(g.id));
+      renderTalkList();
+      openGroupMembers();
+    } catch (e) { toastError(e); }
+  }
+  async function doRenameGroup() {
+    const g = state.dmGroup;
+    if (!g) return;
+    try {
+      const updated = await DATA.renameGroup(g.id, $('group-rename-input').value);
+      state.dmGroup = updated;
+      $('dm-peer-name').textContent = updated.name;
+      toast('グループ名を変更しました');
+      renderTalkList();
+      backModal();
+    } catch (e) { toastError(e); }
+  }
+  async function doLeaveGroup() {
+    const g = state.dmGroup;
+    if (!g) return;
+    try {
+      await DATA.leaveGroup(g.id);
+      closeModal();
+      closeDm();
+      toast('グループを抜けました');
+      renderTalkList();
+    } catch (e) { toastError(e); }
   }
   // Realtime で届いた新着DM（実 DB モードのみ。Sim では発火しない）。
   // 開いている相手からならその場で末尾に追加して既読化し、常に
@@ -907,12 +1095,19 @@
     renderTalkList();
   }
   async function sendDm() {
-    const peer = state.dmPeer;
-    if (!peer) return;
     const input = $('dm-input');
     const body = input.value;
     if (!body.trim()) return;
     try {
+      if (state.dmGroup) {
+        await DATA.sendGroupMessage(state.dmGroup.id, body);
+        input.value = '';
+        renderGroupMessages(await DATA.listGroupMessages(state.dmGroup.id));
+        renderTalkList();
+        return;
+      }
+      const peer = state.dmPeer;
+      if (!peer) return;
       await DATA.sendMessage(peer.id, body);
       input.value = '';
       renderMessages(await DATA.listMessages(peer.id));
@@ -2098,6 +2293,12 @@
     $('dm-gift-btn').addEventListener('click', () => {
       if (state.dmPeer) openGift(state.dmPeer);
     });
+    $('btn-group-new').addEventListener('click', openGroupCreate);
+    $('btn-group-create').addEventListener('click', doCreateGroup);
+    $('dm-members-btn').addEventListener('click', openGroupMembers);
+    $('btn-group-add').addEventListener('click', doAddGroupMembers);
+    $('btn-group-rename').addEventListener('click', doRenameGroup);
+    $('btn-group-leave').addEventListener('click', doLeaveGroup);
     $('btn-gift-charge').addEventListener('click', () => openModal('modal-charge'));
     $('gc-x').addEventListener('click', closeGiftConfirm);
     $('gc-send').addEventListener('click', () => {

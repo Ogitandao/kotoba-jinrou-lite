@@ -199,6 +199,20 @@
         { id: 'dm-39', from: 'me', to: 'u-d14', kind: 'text', body: '今度まったり部屋で遊ぼう', read: true },
         { id: 'dm-40', from: 'u-d05', to: 'me', kind: 'gift', gift: { giftKey: 'flower', name: 'お花', icon: '🌸', price: 50 }, read: true },
       ],
+      // グループチャット（2026-11-25 おぎ決定：全非公開・マスターなし・
+      // 追加は全メンバー可だが本人のフレンドのみ）。ord はトーク一覧の
+      // 並び順用（DM は配列 index、グループはこの値で合流させる）
+      groups: [
+        { id: 'g-1', name: 'ワードウルフ同好会', memberIds: ['me', 'u-mika', 'u-ken', 'u-risu'] },
+      ],
+      groupMessages: [
+        { id: 'gm-1', groupId: 'g-1', from: 'u-mika', kind: 'text', body: '今夜21時から集まろ〜！', read: true, ord: 35.1 },
+        { id: 'gm-2', groupId: 'g-1', from: 'u-ken', kind: 'text', body: 'おれは22時からなら行ける', read: true, ord: 35.2 },
+        { id: 'gm-3', groupId: 'g-1', from: 'u-risu', kind: 'text', body: 'じゃあ22時に集合ね', read: true, ord: 35.3 },
+      ],
+      groupSeq: 1,
+      gmSeq: 3,
+      ordSeq: 1000,
       seq: 100,
       ticker: [
         // デモ用シード：運営告知（期限付き）の見え方確認用。本番では
@@ -211,6 +225,11 @@
       iconKey: u.iconKey ?? null,
       iconBg: u.iconBg, bio: u.bio, popularity: u.popularity, online: u.online,
       roomTitle: u.roomTitle ?? null,
+    });
+    const pubGroup = (g) => ({
+      id: g.id, name: g.name, isGroup: true,
+      memberIds: [...g.memberIds],
+      members: g.memberIds.map((id) => pub(users.get(id))).filter(Boolean),
     });
     const ok = (v) => Promise.resolve(v);
 
@@ -1106,16 +1125,90 @@
         state.dm.forEach((m, i) => {
           const partner = m.from === 'me' ? m.to : m.to === 'me' ? m.from : null;
           if (!partner) return;
-          const cur = byPartner.get(partner) ?? { partnerId: partner, last: null, unread: 0, lastIdx: -1 };
+          const cur = byPartner.get(partner) ?? { partnerId: partner, last: null, unread: 0, lastSeq: -1 };
           cur.last = m;
-          cur.lastIdx = i;
+          cur.lastSeq = i;
           if (m.to === 'me' && !m.read) cur.unread += 1;
           byPartner.set(partner, cur);
         });
-        // 実 DB と同じく「最新のやり取りがある相手が上」に並べる
-        return ok([...byPartner.values()]
-          .sort((a, b) => b.lastIdx - a.lastIdx)
-          .map(({ lastIdx, ...c }) => ({ ...c, partner: pub(users.get(c.partnerId)) })));
+        const convs = [...byPartner.values()]
+          .map((c) => ({ ...c, partner: pub(users.get(c.partnerId)) }));
+        // グループも会話として合流（最新のやり取りがある会話が上）
+        for (const g of state.groups) {
+          if (!g.memberIds.includes('me')) continue;
+          const msgs = state.groupMessages.filter((m) => m.groupId === g.id);
+          const last = msgs.length ? msgs[msgs.length - 1] : null;
+          convs.push({
+            partnerId: g.id, partner: pubGroup(g), last, isGroup: true,
+            unread: msgs.filter((m) => m.from !== 'me' && !m.read).length,
+            lastSeq: last ? last.ord : -1,
+          });
+        }
+        return ok(convs
+          .sort((a, b) => b.lastSeq - a.lastSeq)
+          .map(({ lastSeq, ...c }) => c));
+      },
+      createGroup(name, memberIds) {
+        const ids = [...new Set(memberIds)].filter((id) => id !== 'me');
+        if (!ids.length) throw fail('GROUP_NO_MEMBERS', 'メンバーを1人以上選んでください');
+        const g = {
+          id: `g-${++state.groupSeq}`,
+          name: (name ?? '').trim()
+            || [users.get('me')?.name, ...ids.map((id) => users.get(id)?.name)].filter(Boolean).join('、'),
+          memberIds: ['me', ...ids],
+        };
+        state.groups.push(g);
+        state.groupMessages.push({
+          id: `gm-${++state.gmSeq}`, groupId: g.id, from: 'system', kind: 'system',
+          body: 'グループが作成されました', read: true, ord: ++state.ordSeq,
+        });
+        return ok(pubGroup(g));
+      },
+      listGroupMessages(groupId) {
+        return ok(state.groupMessages.filter((m) => m.groupId === groupId));
+      },
+      sendGroupMessage(groupId, body) {
+        const m = {
+          id: `gm-${++state.gmSeq}`, groupId, from: 'me', kind: 'text',
+          body, read: true, ord: ++state.ordSeq,
+        };
+        state.groupMessages.push(m);
+        return ok(m);
+      },
+      markGroupRead(groupId) {
+        for (const m of state.groupMessages) {
+          if (m.groupId === groupId && m.from !== 'me') m.read = true;
+        }
+        return ok(null);
+      },
+      addGroupMembers(groupId, memberIds) {
+        const g = state.groups.find((x) => x.id === groupId);
+        if (!g) throw fail('GROUP_NOT_FOUND', 'グループが見つかりません');
+        const added = [];
+        for (const id of memberIds) {
+          if (!g.memberIds.includes(id)) { g.memberIds.push(id); added.push(id); }
+        }
+        if (added.length) {
+          state.groupMessages.push({
+            id: `gm-${++state.gmSeq}`, groupId, from: 'system', kind: 'system',
+            body: `${added.map((id) => users.get(id)?.name ?? '').filter(Boolean).join('、')}さんが参加しました`,
+            read: true, ord: ++state.ordSeq,
+          });
+        }
+        return ok(pubGroup(g));
+      },
+      leaveGroup(groupId) {
+        const g = state.groups.find((x) => x.id === groupId);
+        if (g) g.memberIds = g.memberIds.filter((id) => id !== 'me');
+        return ok(null);
+      },
+      renameGroup(groupId, name) {
+        const g = state.groups.find((x) => x.id === groupId);
+        if (!g) throw fail('GROUP_NOT_FOUND', 'グループが見つかりません');
+        const n = (name ?? '').trim();
+        if (!n) throw fail('GROUP_NAME_EMPTY', 'グループ名を入力してください');
+        g.name = n;
+        return ok(pubGroup(g));
       },
       // Sim には相手の実在がないため Realtime 購読は no-op
       subscribeDm() { return () => {}; },
@@ -1743,6 +1836,15 @@
           if (dmChannel) { getClient().removeChannel(dmChannel); dmChannel = null; }
         };
       },
+      // グループチャットは実 DB 未配線（1階は Sim で先行実装。
+      // 会話モデルのマイグレーションは次フェーズ）
+      createGroup() { throw fail('NOT_READY', 'グループチャットは準備中です'); },
+      listGroupMessages() { return []; },
+      sendGroupMessage() { throw fail('NOT_READY', 'グループチャットは準備中です'); },
+      markGroupRead() { return null; },
+      addGroupMembers() { throw fail('NOT_READY', 'グループチャットは準備中です'); },
+      leaveGroup() { return null; },
+      renameGroup() { throw fail('NOT_READY', 'グループチャットは準備中です'); },
       async myGiftSummary() {
         const rows = await rpc('kl_my_gift_summary');
         return (rows ?? []).map((r) => ({
@@ -2063,6 +2165,13 @@
     sendMessage: (id, body) => active.sendMessage(id, body),
     markRead: (id) => active.markRead(id),
     subscribeDm: (cb) => active.subscribeDm(cb),
+    createGroup: (name, ids) => active.createGroup(name, ids),
+    listGroupMessages: (gid) => active.listGroupMessages(gid),
+    sendGroupMessage: (gid, body) => active.sendGroupMessage(gid, body),
+    markGroupRead: (gid) => active.markGroupRead(gid),
+    addGroupMembers: (gid, ids) => active.addGroupMembers(gid, ids),
+    leaveGroup: (gid) => active.leaveGroup(gid),
+    renameGroup: (gid, name) => active.renameGroup(gid, name),
     giftCatalog: () => active.giftCatalog(),
     myGiftSummary: () => active.myGiftSummary(),
     userProfile: (userId) => active.userProfile(userId),

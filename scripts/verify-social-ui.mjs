@@ -99,7 +99,7 @@ check('トークタブにも未読バッジ（4）が出る',
 $('tabbtn-friends').click();
 await tick();
 const talkRows = document.querySelectorAll('#talk-list .talk-row');
-check('トーク一覧に会話が29件出る（システム＋フレンド28人）', talkRows.length === 29, `${talkRows.length}件`);
+check('トーク一覧に会話が30件出る（システム＋フレンド28人＋グループ1件）', talkRows.length === 30, `${talkRows.length}件`);
 
 // --- システム会話：ようこそDM＋チュートリアル導線 ---
 const sysRow = rowByName($('talk-list'), 'システム');
@@ -240,6 +240,56 @@ $('btn-friend-search').click();
 await tick();
 check('存在しないIDは「見つかりませんでした」',
   $('search-result').textContent.includes('見つかりませんでした'));
+
+// --- グループチャット（2026-11-25 1階） ---
+$('subtab-talk').click();
+await tick(420);
+const groupRow = () => [...document.querySelectorAll('#talk-list .talk-row')]
+  .find((r) => r.querySelector('.talk-name')?.textContent === 'ワードウルフ同好会');
+check('トーク一覧にシードのグループが出る', !!groupRow());
+groupRow().click();
+await tick();
+check('グループを開くとヘッダーと発言者名つき吹き出しが出る',
+  visible($('dm-screen')) && $('dm-peer-name').textContent === 'ワードウルフ同好会'
+  && document.querySelectorAll('#dm-msgs-inner .gmsg').length >= 2);
+$('dm-input').value = 'グループ送信テスト';
+$('dm-send').click();
+await tick();
+check('グループへ送信できる',
+  [...document.querySelectorAll('#dm-msgs-inner .dm-msg')].some((b) => b.textContent === 'グループ送信テスト'));
+$('dm-back').click();
+await tick();
+$('btn-group-new').click();
+await tick();
+check('＋ボタンでグループ作成モーダルが開き、フレンド一覧が出る',
+  visible($('modal-group-create')) && document.querySelectorAll('#group-friend-list .pick-row').length === 31,
+  `rows=${document.querySelectorAll('#group-friend-list .pick-row').length}`);
+[...document.querySelectorAll('#group-friend-list .pick-row')]
+  .find((r) => r.textContent.includes('にゃん')).click();
+$('group-name-input').value = 'テスト組';
+$('btn-group-create').click();
+await tick();
+check('グループを作成するとそのままグループチャットが開く',
+  visible($('dm-screen')) && $('dm-peer-name').textContent === 'テスト組');
+$('dm-members-btn').click();
+await tick();
+check('メンバーシートが開き、追加候補（残りのフレンド）が出る',
+  visible($('modal-group-members'))
+  && document.querySelectorAll('#group-member-list .member-row').length === 2
+  && document.querySelectorAll('#group-add-list .pick-row').length === 30);
+[...document.querySelectorAll('#group-add-list .pick-row')]
+  .find((r) => r.textContent.includes('りす')).click();
+$('btn-group-add').click();
+await tick();
+check('メンバーを追加すると3人になり、参加システムメッセージが出る',
+  document.querySelectorAll('#group-member-list .member-row').length === 3
+  && [...document.querySelectorAll('#dm-msgs-inner .dm-system-msg')].some((b) => b.textContent.includes('参加しました')));
+$('btn-group-leave').click();
+await tick();
+check('グループを抜けるとDM画面が閉じ、一覧から消える',
+  !visible($('dm-screen'))
+  && ![...document.querySelectorAll('#talk-list .talk-row')]
+    .some((r) => r.querySelector('.talk-name')?.textContent === 'テスト組'));
 
 // --- ブロック ---
 const kenRow = rowByName($('friend-list'), 'けん');
