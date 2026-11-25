@@ -800,7 +800,7 @@
         gfxAnim.destroy();
         gfxAnim = null;
       }
-    }, 2750);
+    }, 3350);
   }
 
   function gfxBigImg(gift) {
