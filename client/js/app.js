@@ -1010,8 +1010,9 @@
   // ---------- グループチャット ----------
   function groupMessageNode(m) {
     if (m.kind === 'system') {
+      // 参加・退出などの短いお知らせは、中央の小さいピルで出す（日付区切りの仲間）
       const box = document.createElement('div');
-      box.className = 'dm-system-msg';
+      box.className = 'chat-notice';
       box.textContent = m.body ?? '';
       return box;
     }

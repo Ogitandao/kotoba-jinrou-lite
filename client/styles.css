@@ -814,11 +814,11 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .dm-input-row input {
   flex: 1 1 auto; min-width: 0; height: 42px;
-  /* 「ここに入力する」が色で分かるように、枠は空色をはっきり出す */
-  border: 1.5px solid #9fd8f7; border-radius: 999px;
-  padding: 0 16px; font: inherit; background: #fff; color: var(--ink);
+  /* 「ここに入力する」が色で分かるように、欄自体を空色に染める */
+  border: 1.5px solid #7cc7f5; border-radius: 999px;
+  padding: 0 16px; font: inherit; background: #eaf6ff; color: var(--ink);
 }
-.dm-input-row input:focus { border-color: var(--sky); outline: none; }
+.dm-input-row input:focus { border-color: var(--sky); background: #fff; outline: none; }
 /* 送信ボタンは潰れない（固定幅・改行なし。2026-11-25 おぎ） */
 .dm-input-row .primary-btn {
   flex: 0 0 auto; white-space: nowrap; height: 42px;
@@ -1095,6 +1095,13 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-size: 13px; line-height: 1.6; color: var(--ink); white-space: pre-line;
   font-family: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
   font-weight: 400;
+}
+/* グループの参加・退出などの短いお知らせ（中央の小さいピル） */
+.chat-notice {
+  align-self: center; max-width: 92%; margin: 2px 0;
+  background: rgba(255, 255, 255, .8); border-radius: 999px;
+  padding: 5px 14px; box-shadow: 0 1px 4px rgba(90, 140, 190, .14);
+  font-size: 12px; font-weight: 700; color: var(--ink-soft); text-align: center;
 }
 
 /* 縦固定：横向き（スマホを横にした時）だけ全画面の案内を出す */

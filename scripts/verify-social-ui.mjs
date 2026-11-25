@@ -287,7 +287,7 @@ $('btn-group-add').click();
 await tick();
 check('メンバーを追加すると3人になり、参加システムメッセージが出る',
   document.querySelectorAll('#group-member-list .member-row').length === 3
-  && [...document.querySelectorAll('#dm-msgs-inner .dm-system-msg')].some((b) => b.textContent.includes('参加しました')));
+  && [...document.querySelectorAll('#dm-msgs-inner .chat-notice')].some((b) => b.textContent.includes('参加しました')));
 $('btn-group-leave').click();
 await tick(420);
 check('グループを抜けるとDM画面が閉じ、一覧から消える',
