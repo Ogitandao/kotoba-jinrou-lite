@@ -671,6 +671,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .radio-row { display: flex; gap: 16px; font-weight: 700; font-size: 14.5px; margin-bottom: 6px; }
 .form-error { color: var(--danger); font-weight: 700; font-size: 14px; margin: 8px 0; }
+/* ルーム名の警告は入力欄のすぐ下に寄せる（ラベルの下マージンを打ち消す） */
+#create-title-error { margin: -6px 0 8px; }
 .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
 .modal-actions > * { flex: 1 1 0; min-width: 0; }
 .modal-actions .modal-close { width: auto; margin-top: 0; }
