@@ -894,11 +894,12 @@
       category: '恋愛', messages: [], myMessageCount: 1,
       players, playerCount: players.length, votesCast: players.length,
       winner: 'wolves', winReason: 'citizen_exiled',
-      topicPair: { citizen: '趣味の相性', wolf: '食の相性' },
+      // お題は全ペア中で最長（合計18字）にして改行の出方を確認できるようにする
+      topicPair: { citizen: 'ワイヤレスイヤホン', wolf: 'モバイルバッテリー' },
       exiledId: players[1]?.id,
       reveal: players.map((p) => ({
         id: p.id, isWolf: p.id === wolfId,
-        topic: p.id === wolfId ? '食の相性' : '趣味の相性',
+        topic: p.id === wolfId ? 'モバイルバッテリー' : 'ワイヤレスイヤホン',
       })),
       setStatus: 'finished', terminatedUserIds: [],
     };
@@ -1951,6 +1952,7 @@
   // 待機室・対戦画面のスライド開閉（DMと同じ .33s のぬるっと・2026-11-25 おぎ）
   let roomCloseTimer = null;
   let gameCloseTimer = null;
+  let endReturnTimer = null; // 結果画面の自動ロビー帰還カウントダウン
   function slideInScreen(el) {
     el.classList.remove('hidden');
     if (typeof requestAnimationFrame === 'function') {
@@ -2347,6 +2349,7 @@
     pollGame();
   }
   function closeGameScreen() {
+    stopEndReturnCountdown();
     stopGamePoll();
     state.gameId = null;
     state.gameView = null;
@@ -2656,12 +2659,43 @@
     const terminated = view.setStatus === 'terminated';
     const iWasRemoved = (view.terminatedUserIds ?? []).includes(state.me.id);
     $('game-end-note').textContent = !terminated
-      ? 'おつかれさまでした！待機室に戻ると、また準備OKで次のゲームができます。'
+      ? 'おつかれさまでした！ルームに戻ると、また準備OKで次のゲームができます。'
       : iWasRemoved
         ? 'ルール違反のため強制退室となりました。'
         : 'ルール違反があったため、この対戦は終了しました。完了した勝敗は記録されています。';
     $('btn-end-towaiting').classList.toggle('hidden', iWasRemoved);
     $('game-end-actions').classList.remove('hidden');
+    startEndReturnCountdown();
+  }
+
+  // 結果画面を開きっぱなしにすると席を占有し続けるため、制限時間で
+  // 自動的にロビーへ戻す（席も空ける）。時間は調整可能な定数（2026-11-25 おぎ）
+  const END_RETURN_SEC = 60;
+  function startEndReturnCountdown() {
+    stopEndReturnCountdown();
+    let left = END_RETURN_SEC;
+    const el = $('game-end-countdown');
+    const paint = () => { el.textContent = `あと${left}秒で自動でロビーに戻ります`; };
+    el.classList.remove('hidden');
+    paint();
+    endReturnTimer = setInterval(() => {
+      left -= 1;
+      if (left <= 0) { stopEndReturnCountdown(); autoReturnToLobby(); return; }
+      paint();
+    }, 1000);
+  }
+  function stopEndReturnCountdown() {
+    if (endReturnTimer) { clearInterval(endReturnTimer); endReturnTimer = null; }
+    $('game-end-countdown')?.classList.add('hidden');
+  }
+  async function autoReturnToLobby() {
+    const roomId = state.gameView?.roomId ?? state.roomId;
+    closeGameScreen();
+    closeRoomScreen();
+    state.endShownGameId = null;
+    if (roomId) { try { await DATA.leaveRoom(roomId); } catch { /* 既に抜けている等は無視 */ } }
+    refreshRooms();
+    toast('時間になったのでロビーに戻りました');
   }
 
   async function sendGameMessage() {
@@ -3131,7 +3165,7 @@
       if (state.gameView?.gameId === 'demo-result') {
         closeGameScreen();
         state.endShownGameId = null;
-        toast('デモ表示では待機室に戻れません');
+        toast('デモ表示ではルームに戻れません');
         return;
       }
       // 待機室に戻る：最新のルーム状態を取り直して待機室を開き直す
@@ -3147,10 +3181,15 @@
       closeRoomScreen();
       refreshRooms();
     });
-    $('btn-end-tolobby').addEventListener('click', () => {
+    $('btn-end-tolobby').addEventListener('click', async () => {
+      // ロビーに戻る＝席を空けて抜ける（ルームに戻る＝席を残す、と対の意味）
+      const roomId = state.gameView?.gameId === 'demo-result'
+        ? null
+        : (state.gameView?.roomId ?? state.roomId);
       closeGameScreen();
       closeRoomScreen();
       state.endShownGameId = null;
+      if (roomId) { try { await DATA.leaveRoom(roomId); } catch { /* 画面遷移を優先 */ } }
       refreshRooms();
     });
     $('btn-result-gift').addEventListener('click', () => {

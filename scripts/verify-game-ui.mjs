@@ -611,7 +611,16 @@ $('tabbtn-lobby').click();
 await tick(30);
 KL().__simAdvanceTime(500000);
 await tick(30);
-const hostRoom = (await KL().listRooms()).find((r) => r.isHost);
+let hostRoom = (await KL().listRooms()).find((r) => r.isHost);
+if (!hostRoom) {
+  // フローDの「ロビーに戻る」が退室扱いになった（2026-11-25 仕様）ため、
+  // フローBの部屋はもう無い。このフロー用に作り直す
+  $('btn-create-room').click();
+  $('create-title').value = '退室検証部屋';
+  $('btn-create-confirm').click();
+  await tick(60);
+  hostRoom = (await KL().listRooms()).find((r) => r.isHost);
+}
 check('[9] 自分のルーム（マスター）がある',!!hostRoom);
 roomCard(hostRoom.id).click();
 await tick(30);

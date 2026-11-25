@@ -225,7 +225,7 @@
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v15"/><path d="M5.5 12.5 L12 19 l6.5-6.5"/></svg>
       </button>
       <div id="room-chat-input-row" class="dm-input-row">
-        <input id="room-chat-input" type="text" maxlength="200" placeholder="待機室で雑談しよう（200文字まで）" />
+        <input id="room-chat-input" type="text" maxlength="200" placeholder="ルームで雑談しよう（200文字まで）" />
         <button id="room-chat-send" class="primary-btn" type="button">送信</button>
       </div>
     </div>
@@ -280,9 +280,10 @@
         <div id="game-end-actions" class="hidden">
           <p id="game-end-note" class="modal-note"></p>
           <div class="modal-actions">
-            <button id="btn-end-towaiting" class="sub-btn" type="button">待機室に戻る</button>
+            <button id="btn-end-towaiting" class="sub-btn" type="button">ルームに戻る</button>
             <button id="btn-end-tolobby" class="primary-btn" type="button">ロビーに戻る</button>
           </div>
+          <p id="game-end-countdown" class="modal-note hidden"></p>
         </div>
       </div>
       <button id="game-scroll-bottom" class="scroll-bottom-btn hidden" type="button" aria-label="最新のメッセージへ">
@@ -521,7 +522,7 @@
             <img src="./img/tutorial-2.webp" alt="" />
           </div>
           <h4>遊び方</h4>
-          <p>ルームに入ったら待機室で雑談。人数がそろって全員が「準備OK！」を押したらマスターがゲームスタート。まずは15秒のごあいさつタイム</p>
+          <p>ルームに入ったら雑談タイム。人数がそろって全員が「準備OK！」を押したらマスターがゲームスタート。まずは15秒のごあいさつタイム</p>
         </section>
         <section class="tutorial-slide">
           <div class="tutorial-art">
