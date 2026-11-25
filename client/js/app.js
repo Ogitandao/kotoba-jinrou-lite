@@ -1009,13 +1009,32 @@
     updateCreateBar();
     renderGame();
     $('game-title').textContent = '逆転回答デモ';
+    // デモはポーリングが無いので、制限時間の表示だけ自前で進める。
+    // 時間切れになったら本番どおり逆転失敗（時間切れ）で確定させる
+    clearInterval(demoTickTimer);
+    demoTickTimer = setInterval(() => {
+      const v = state.gameView;
+      if (!v || v.gameId !== 'demo-reversal' || v.phase !== 'reversal') {
+        clearInterval(demoTickTimer); demoTickTimer = null; return;
+      }
+      renderGame();
+      if (v.phaseDeadlineMs && Date.now() >= v.phaseDeadlineMs) {
+        clearInterval(demoTickTimer); demoTickTimer = null;
+        demoReversalResolve(false, true);
+      }
+    }, 500);
   }
 
   // 逆転回答デモの回答処理：集計中を挟んで結果まで進める
   function demoReversalAnswer(choice) {
     const v = state.gameView;
     if (!v || v.gameId !== 'demo-reversal' || v.phase !== 'reversal') return;
-    const correct = choice === v.topicPair.citizen;
+    demoReversalResolve(choice === v.topicPair.citizen, false);
+  }
+
+  function demoReversalResolve(correct, timedOut) {
+    const v = state.gameView;
+    if (!v || v.gameId !== 'demo-reversal' || v.phase !== 'reversal') return;
     v.phase = 'result';
     v.reversalChoices = undefined;
     renderGame();
@@ -1025,7 +1044,7 @@
       v.phase = 'done';
       v.winner = correct ? 'wolves' : 'citizens';
       v.winReason = 'reversal';
-      v.reversalOutcome = { attempted: true, correct };
+      v.reversalOutcome = { attempted: !timedOut, correct, timedOut };
       v.reveal = v.players.map((p) => ({
         id: p.id, isWolf: p.id === state.me.id,
         topic: p.id === state.me.id ? v.topicPair.wolf : v.topicPair.citizen,
@@ -2081,6 +2100,7 @@
   let endReturnTimer = null; // 結果画面の自動ロビー帰還カウントダウン
   let demoCdTimer = null; // 結果デモ用カウントダウン表示（見た目だけ）
   let demoPhaseTimer = null; // 結果デモの集計中→確定の遷移タイマー
+  let demoTickTimer = null; // 逆転回答デモの制限時間表示用タイマー
   function slideInScreen(el) {
     el.classList.remove('hidden');
     if (typeof requestAnimationFrame === 'function') {
@@ -2452,7 +2472,7 @@
     intro: '🤝 挨拶タイム',
     discussion: '💬 話し合い',
     voting: '🗳️ 投票タイム',
-    reversal: '🔄 逆転回答',
+    reversal: '逆転回答',
     result: '⏳ 結果集計中',
     done: '🏁 終了',
   };
@@ -2481,6 +2501,7 @@
     stopEndReturnCountdown();
     if (demoCdTimer) { clearInterval(demoCdTimer); demoCdTimer = null; }
     if (demoPhaseTimer) { clearTimeout(demoPhaseTimer); demoPhaseTimer = null; }
+    if (demoTickTimer) { clearInterval(demoTickTimer); demoTickTimer = null; }
     stopGamePoll();
     state.gameId = null;
     state.gameView = null;
@@ -2682,7 +2703,7 @@
       choices.innerHTML = '';
       if (v.reversalChoices) {
         $('game-reversal-text').textContent =
-          '🔄 追放されたウルフはあなた！市民のお題を当てれば逆転勝ち';
+          '追放されたウルフはあなた！市民のお題を当てれば逆転勝ち';
         for (const c of v.reversalChoices) {
           const b = document.createElement('button');
           b.type = 'button';
@@ -2695,7 +2716,7 @@
       } else {
         const exiled = v.players.find((p) => p.id === v.exiledId);
         $('game-reversal-text').textContent =
-          `🔄 ${exiled ? nameWithNo(exiled) : 'ウルフ'}さんが逆転回答中…`;
+          `${exiled ? nameWithNo(exiled) : 'ウルフ'}さんが逆転回答中…`;
       }
     }
 
