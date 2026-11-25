@@ -854,6 +854,30 @@
     setTimeout(dismissGiftNotify, 2450);
   }
 
+  // ギフト到着通知のテスト発火（デモ用）：タップごとに段階を変えて本物の通知経路に流す
+  const TEST_GIFTS = [
+    { giftKey: 'heart', name: 'ハート', icon: '❤️', price: 30 },
+    { giftKey: 'crown', name: '王冠', icon: '👑', price: 3000 },
+    { giftKey: 'dragon', name: 'ドラゴン', icon: '🐉', price: 5000 },
+    { giftKey: 'diamond', name: 'ダイヤモンド', icon: '💎', price: 10000 },
+  ];
+  let giftTestIdx = 0;
+  async function fireGiftTest() {
+    const gift = TEST_GIFTS[giftTestIdx % TEST_GIFTS.length];
+    giftTestIdx += 1;
+    const next = TEST_GIFTS[giftTestIdx % TEST_GIFTS.length];
+    const label = $('gift-test-label');
+    if (label) label.textContent = `ギフト通知テスト：次は「${next.name}」`;
+    let partner = { id: 'u-ken', name: 'けん', icon: '🦉', iconKey: 'owl', iconBg: '#e8f3ff' };
+    try {
+      const friends = await DATA.listFriends();
+      const ken = (friends ?? []).find((f) => f.id === 'u-ken') ?? (friends ?? [])[0];
+      if (ken) partner = ken;
+    } catch { /* フォールバックの相手で続行 */ }
+    giftNotifyQueue.push({ partner, gift });
+    pumpGiftNotify();
+  }
+
   function dismissGiftNotify() {
     const el = $('gift-notify');
     if (!el.classList.contains('show')) return;
@@ -2701,7 +2725,15 @@
       }
     }
 
-    $('btn-settings').addEventListener('click', () => openModal('modal-settings'));
+    $('btn-settings').addEventListener('click', () => {
+      // ギフト通知テストはデモ（Sim）モード専用。本番では行ごと出さない
+      $('row-gift-test').classList.toggle('hidden', DATA.mode !== 'sim');
+      openModal('modal-settings');
+    });
+    $('btn-gift-test').addEventListener('click', () => {
+      closeModal();
+      setTimeout(fireGiftTest, 380);
+    });
     $('fm-profile').addEventListener('click', () => {
       const u = state.menuUser;
       if (u) openUserProfile(u);
