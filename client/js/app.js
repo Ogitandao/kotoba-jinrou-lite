@@ -1787,8 +1787,34 @@
       row.append(nameEl, bubble);
       inner.appendChild(row);
     }
-    $('room-chat-messages').scrollTop = $('room-chat-messages').scrollHeight;
+    settleScroll(roomFollow, $('room-chat-messages'));
   }
+
+  // ログの自動追尾（待機室・対戦画面）：過去ログを読むために上へ
+  // スクロールしている間は最新へ引き戻さず、「最新へ」ボタンを出す
+  // （個人チャットと同じ作法・2026-11-25 おぎ）
+  function makeScrollFollow(boxId, btnId) {
+    const box = $(boxId);
+    const btn = $(btnId);
+    const ctl = { follow: true };
+    const update = () => {
+      const away = box.scrollHeight - box.scrollTop - box.clientHeight > 240;
+      ctl.follow = !away;
+      btn.classList.toggle('hidden', !away);
+    };
+    box.addEventListener('scroll', update, { passive: true });
+    btn.addEventListener('click', () => {
+      box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
+    });
+    ctl.update = update;
+    return ctl;
+  }
+  function settleScroll(ctl, box) {
+    if (!ctl || ctl.follow) box.scrollTop = box.scrollHeight;
+    if (ctl) ctl.update();
+  }
+  let roomFollow = null;
+  let gameFollow = null;
 
   async function kickMember(targetId, targetName) {
     if (!state.roomDetail) return;
@@ -2005,7 +2031,7 @@
       row.append(sender, bubble);
       inner.appendChild(row);
     }
-    $('game-messages').scrollTop = $('game-messages').scrollHeight;
+    settleScroll(gameFollow, $('game-messages'));
 
     // 無発言警告：判定はサーバー時刻基準の残り秒数（phaseRemainSec）と
     // 自分の発言数（myMessageCount）で行う。ビューに無い場合は手元の
@@ -2274,6 +2300,8 @@
       window.visualViewport.addEventListener('resize', fitPhoneToViewport);
       window.visualViewport.addEventListener('scroll', fitPhoneToViewport);
     }
+    roomFollow = makeScrollFollow('room-chat-messages', 'room-scroll-bottom');
+    gameFollow = makeScrollFollow('game-messages', 'game-scroll-bottom');
     // 入力中にドキュメント側がスクロールしたら戻す（ずれの残り対策）
     window.addEventListener('scroll', () => {
       const a = document.activeElement;
