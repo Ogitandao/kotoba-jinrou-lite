@@ -485,6 +485,16 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   display: flex; gap: 8px;
   background: #fff; border-radius: 999px; padding: 5px;
   box-shadow: var(--shadow);
+  /* トーク／フレンドどちらの一覧でも上に固定（おぎ決定 2026-11-25）。
+     #scroll の上パディング(14px)分を打ち消して天井に張り付ける */
+  position: sticky; top: -14px; z-index: 30;
+}
+/* 張り付き中に一覧がバーの周囲へ透けないためのシールド（すりガラス） */
+.subtab-bar::before {
+  content: ''; position: absolute; z-index: -1;
+  left: -14px; right: -14px; top: -14px; bottom: -10px;
+  background: rgba(233, 250, 243, .88);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
 }
 .subtab {
   position: relative;
