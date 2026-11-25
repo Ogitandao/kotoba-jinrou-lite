@@ -919,10 +919,18 @@
     updateCreateBar();
     renderGame();
     $('game-title').textContent = '結果デモ';
-    // カウントダウンのピルも見た目確認用に静止表示する（デモでは減らない）
+    // カウントダウンのピルも見た目確認用に、実際に減らして表示する
+    // （0になったら20に戻る見た目だけのループ）
     const cd = $('game-end-countdown');
-    cd.textContent = '20秒後にルームに戻ります';
+    let demoLeft = 20;
+    const paintDemo = () => { cd.innerHTML = `<span class="cd-num">${demoLeft}</span>秒後にルームに戻ります`; };
+    paintDemo();
     cd.classList.remove('hidden');
+    clearInterval(demoCdTimer);
+    demoCdTimer = setInterval(() => {
+      demoLeft = demoLeft <= 1 ? 20 : demoLeft - 1;
+      paintDemo();
+    }, 1000);
     $('game-end-note').textContent = '（デモ表示中）おつかれさまでした！';
     $('btn-end-towaiting').classList.remove('hidden');
   }
@@ -1968,6 +1976,7 @@
   let roomCloseTimer = null;
   let gameCloseTimer = null;
   let endReturnTimer = null; // 結果画面の自動ロビー帰還カウントダウン
+  let demoCdTimer = null; // 結果デモ用カウントダウン表示（見た目だけ）
   function slideInScreen(el) {
     el.classList.remove('hidden');
     if (typeof requestAnimationFrame === 'function') {
@@ -2366,6 +2375,7 @@
   }
   function closeGameScreen() {
     stopEndReturnCountdown();
+    if (demoCdTimer) { clearInterval(demoCdTimer); demoCdTimer = null; }
     stopGamePoll();
     state.gameId = null;
     state.gameView = null;
@@ -2692,7 +2702,7 @@
     stopEndReturnCountdown();
     let left = END_RETURN_SEC;
     const el = $('game-end-countdown');
-    const paint = () => { el.textContent = `${left}秒後にルームに戻ります`; };
+    const paint = () => { el.innerHTML = `<span class="cd-num">${left}</span>秒後にルームに戻ります`; };
     el.classList.remove('hidden');
     paint();
     endReturnTimer = setInterval(() => {
