@@ -573,9 +573,12 @@
     art.src = `gifts/gift-${gift.giftKey}.webp`;
     art.onerror = () => { art.removeAttribute('src'); };
     el.onclick = () => {
+      // タップではDM直行せず、トーク一覧まで（おぎ決定：Liteは既読表示なし。
+      // 一覧止まりなら「見た」圧もなく、バッジから自分で開ける）
       dismissGiftNotify();
       switchTab('friends');
-      openDm(partner);
+      switchSubtab('talk');
+      renderTalkList();
     };
     el.classList.remove('bye');
     el.classList.add('show');
