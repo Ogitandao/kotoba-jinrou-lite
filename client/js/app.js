@@ -29,6 +29,7 @@
     gamePoll: null,      // 対戦画面ポーリングのタイマ
     signaledVersion: -1, // 合図（advance）を送った phaseVersion
     endShownGameId: null, // ゲーム終了パネルを表示済みの gameId
+    cutinShownGameId: null, // 逆転成功カットインを表示済みの gameId
     resultGiftTarget: null, // 結果ポップアップで選択中のギフト宛先
     resultGiftGameId: null, // ↑の選択が属する gameId
     roomTitle: null,     // 対戦画面の見出しに使うルーム名
@@ -924,7 +925,8 @@
       phaseDeadlineMs: Date.now() + 60000, phaseRemainSec: 0,
       category: '恋愛', messages: [], myMessageCount: 1,
       players, playerCount: players.length, votesCast: players.length,
-      winner: 'wolves', winReason: 'citizen_exiled',
+      winner: 'wolves', winReason: 'reversal',
+      reversalOutcome: { attempted: true, correct: true },
       // お題は全ペア中で最長（合計18字）にして改行の出方を確認できるようにする
       topicPair: { citizen: 'ワイヤレスイヤホン', wolf: 'モバイルバッテリー' },
       exiledId: players[1]?.id,
@@ -2618,7 +2620,10 @@
     // 画面で待ち、速報→確定の2段階表示にしない（2026-11-26 おぎ）
     const showResult = v.phase === 'done';
     $('game-result-panel').classList.toggle('hidden', !showResult);
-    if (showResult && v.winner) renderGameResult(v);
+    if (showResult && v.winner) {
+      renderGameResult(v);
+      if (v.winner === 'wolves' && v.winReason === 'reversal') maybeShowCutin(v);
+    }
     const showTally = v.phase === 'result'
       || (v.phase === 'reversal' && !v.reversalChoices);
     $('game-tally-panel').classList.toggle('hidden', !showTally);
@@ -2628,15 +2633,24 @@
   function renderGameResult(v) {
     const mine = (v.reveal ?? []).find((r) => r.id === state.me.id);
     const banner = $('game-result-banner');
-    banner.className = `result-banner ${mine?.won ? 'win' : 'lose'}`;
-    banner.textContent = v.winner === 'wolves'
-      ? '🐺 ウルフ陣営の勝ち！'
-      : '🎉 市民陣営の勝ち！';
+    // 逆転回答で勝ったときは専用バナー＋赤枠にする（2026-11-26 おぎ）
+    const reversalWin = v.winner === 'wolves' && v.winReason === 'reversal';
+    banner.className = `result-banner ${mine?.won ? 'win' : 'lose'}${reversalWin ? ' reversal' : ''}`;
+    banner.textContent = reversalWin
+      ? '🐺 逆転回答で勝利！'
+      : v.winner === 'wolves'
+        ? '🐺 ウルフ陣営の勝ち！'
+        : '🎉 市民陣営の勝ち！';
     // 説明文は2行に分ける（2026-11-24 おぎ）：
     // 1行目＝決着理由（逆転回答の結果を含む）、2行目＝お題開示
     const lines = [];
     let line1 = REASON_TEXT[v.winReason] ?? '';
-    if (v.reversalOutcome?.timedOut) line1 += '／逆転回答は時間切れ';
+    if (v.winReason === 'reversal' && v.reversalOutcome?.correct) {
+      // 逆転成功：誰が何を当てたかを1行目に（勝敗はバナーが担う）
+      const answererId = v.exiledId ?? (v.reveal ?? []).find((r) => r.isWolf)?.id;
+      const answerer = v.players.find((p) => p.id === answererId);
+      line1 = `${answerer?.name ?? 'ウルフ'}さんが市民のお題「${v.topicPair?.citizen ?? ''}」を当てた！`;
+    } else if (v.reversalOutcome?.timedOut) line1 += '／逆転回答は時間切れ';
     else if (v.reversalOutcome?.attempted) {
       line1 += `／逆転回答は${v.reversalOutcome.correct ? '成功！' : '失敗'}`;
     }
@@ -2700,6 +2714,22 @@
     const target = (v.reveal ?? []).find((r) => r.id === state.resultGiftTarget);
     const targetPlayer = target ? v.players.find((x) => x.id === target.id) : null;
     cta.textContent = targetPlayer ? `${targetPlayer.name}さんにギフトを送る` : 'ギフトを送る';
+  }
+
+  // 逆転成功カットイン：確定した瞬間に1回だけ、結果ポップアップの上へ
+  // 赤い帯を流す（2026-11-26 おぎ）。操作は塞がない（pointer-events: none）
+  function maybeShowCutin(v) {
+    if (state.cutinShownGameId === v.gameId) return;
+    state.cutinShownGameId = v.gameId;
+    const answererId = v.exiledId ?? (v.reveal ?? []).find((r) => r.isWolf)?.id;
+    const answerer = v.players.find((p) => p.id === answererId);
+    $('game-cutin-sub').textContent =
+      `${answerer?.name ?? 'ウルフ'}さんが「${v.topicPair?.citizen ?? ''}」を当てた！`;
+    const el = $('game-cutin');
+    el.classList.remove('hidden', 'play');
+    void el.offsetWidth; // アニメーションを最初から再生させる
+    el.classList.add('play');
+    setTimeout(() => { el.classList.add('hidden'); el.classList.remove('play'); }, 2150);
   }
 
   // ゲーム終了パネル（ゲーム単位制）：全員いったん待機室に戻る導線。

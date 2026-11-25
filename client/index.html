@@ -282,6 +282,13 @@
         <img class="tally-wolf" src="./img/wolf-mark.webp" alt="" />
         <p class="tally-text">結果集計中<span class="tally-dots"><span>・</span><span>・</span><span>・</span></span></p>
       </div>
+      <!-- 逆転成功カットイン：結果ポップアップの上に一瞬だけ重ねる帯（2026-11-26 おぎ） -->
+      <div id="game-cutin" class="cutin hidden" aria-hidden="true">
+        <div class="cutin-band">
+          <p class="cutin-main">逆転成功！</p>
+          <p class="cutin-sub" id="game-cutin-sub"></p>
+        </div>
+      </div>
       <!-- 結果発表：中央ポップアップ（勝敗→理由→アイコン並び→ギフト導線。2026-11-25 おぎ手描き） -->
       <div id="game-result-panel" class="result-overlay hidden">
         <!-- 自動帰還カウントダウン：ボックスの真上に別ピルで出す -->
