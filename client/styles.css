@@ -521,6 +521,18 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .group-avatar .ga-cell { overflow: hidden; }
 .group-avatar .ga-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .group-avatar .ga-cell.emoji-cell { display: flex; align-items: center; justify-content: center; font-size: 13px; }
+/* トーク一覧の右列（時刻＋未読バッジ）と会話内の日付・時刻 */
+.talk-side { margin-left: auto; flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.talk-time { font-size: 10.5px; color: var(--ink-soft); white-space: nowrap; font-weight: 700; }
+.msg-line { display: flex; align-items: flex-end; gap: 5px; }
+.msg-line.mine { justify-content: flex-end; }
+.msg-line.theirs { justify-content: flex-start; }
+.msg-time { font-size: 10px; color: var(--ink-soft); white-space: nowrap; padding-bottom: 3px; font-weight: 700; }
+.date-sep {
+  align-self: center; margin: 10px auto 2px;
+  background: rgba(70, 110, 140, .45); color: #fff;
+  font-size: 11px; font-weight: 700; padding: 3px 12px; border-radius: 999px;
+}
 /* グループチャットの発言者名 */
 .gmsg { display: flex; flex-direction: column; align-items: flex-start; }
 .gmsg-name { font-size: 11px; color: var(--ink-soft); margin: 0 0 2px 4px; font-weight: 700; }

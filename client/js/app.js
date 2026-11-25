@@ -674,12 +674,21 @@
         : lastMessagePreview(c.last);
       main.append(name, preview);
       row.append(c.isGroup ? groupAvatarEl(c.partner) : avatarSpan(c.partner), main);
+      const side = document.createElement('span');
+      side.className = 'talk-side';
+      if (c.last?.at) {
+        const t = document.createElement('span');
+        t.className = 'talk-time';
+        t.textContent = fmtListTime(c.last.at);
+        side.appendChild(t);
+      }
       if (c.unread > 0) {
         const badge = document.createElement('span');
         badge.className = 'unread-badge';
         badge.textContent = String(c.unread);
-        row.appendChild(badge);
+        side.appendChild(badge);
       }
+      if (side.childNodes.length) row.appendChild(side);
       row.addEventListener('click', () => (c.isGroup ? openGroupChat(c.partner) : openDm(c.partner)));
       list.appendChild(row);
     }
@@ -898,10 +907,68 @@
     bubble.textContent = m.body ?? '';
     return bubble;
   }
+  // 日付・時刻表示（LINE式：日付は区切りピル、時刻は吹き出しの横）
+  function fmtMsgTime(at) {
+    if (!at) return '';
+    const d = new Date(at);
+    const h = d.getHours();
+    const h12 = h % 12 || 12;
+    return `${h < 12 ? '午前' : '午後'}${h12}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+  function dayKeyOf(at) {
+    if (!at) return '';
+    const d = new Date(at);
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  }
+  function fmtDateSep(at) {
+    const d = new Date(at);
+    const wd = '日月火水木金土'[d.getDay()];
+    const base = `${d.getMonth() + 1}月${d.getDate()}日（${wd}）`;
+    return d.getFullYear() === new Date().getFullYear() ? base : `${d.getFullYear()}年${base}`;
+  }
+  function fmtListTime(at) {
+    if (!at) return '';
+    const d = new Date(at);
+    const now = new Date();
+    if (dayKeyOf(at) === dayKeyOf(now.getTime())) return fmtMsgTime(at);
+    if (dayKeyOf(at) === dayKeyOf(now.getTime() - 86400e3)) return '昨日';
+    if (now.getTime() - at < 6 * 86400e3) return '日月火水木金土'[d.getDay()];
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+  }
+  function dateSepNode(at) {
+    const s = document.createElement('div');
+    s.className = 'date-sep';
+    s.textContent = fmtDateSep(at);
+    return s;
+  }
+  // 吹き出し＋時刻の横並び（自分の発言は時刻が左、相手は右）
+  function timedRow(node, m) {
+    const mine = m.from === state.me.id;
+    const row = document.createElement('div');
+    row.className = `msg-line ${mine ? 'mine' : 'theirs'}`;
+    const t = document.createElement('span');
+    t.className = 'msg-time';
+    t.textContent = fmtMsgTime(m.at);
+    if (mine) row.append(t, node); else row.append(node, t);
+    return row;
+  }
+  // 日付が変わったら区切りを挟みながら1件追加する（描画・実況共通）
+  function appendDmNode(inner, node, m) {
+    const key = dayKeyOf(m.at);
+    if (key && key !== inner.dataset.lastDay) {
+      inner.appendChild(dateSepNode(m.at));
+      inner.dataset.lastDay = key;
+    }
+    inner.appendChild(node);
+  }
   function renderMessages(messages) {
     const inner = $('dm-msgs-inner');
     inner.innerHTML = '';
-    for (const m of messages) inner.appendChild(messageNode(m));
+    inner.dataset.lastDay = '';
+    for (const m of messages) {
+      const timed = m.kind !== 'system' && m.kind !== 'welcome';
+      appendDmNode(inner, timed ? timedRow(messageNode(m), m) : messageNode(m), m);
+    }
     // 本家のクランチャット様式：最新が下端に来るよう末尾へスクロール
     $('dm-messages').scrollTop = $('dm-messages').scrollHeight;
   }
@@ -941,19 +1008,20 @@
       box.textContent = m.body ?? '';
       return box;
     }
-    if (m.from === state.me.id) return messageNode(m);
+    if (m.from === state.me.id) return timedRow(messageNode(m), m);
     const wrap = document.createElement('div');
     wrap.className = 'gmsg';
     const name = document.createElement('span');
     name.className = 'gmsg-name';
     name.textContent = state.users.get(m.from)?.name ?? '';
-    wrap.append(name, messageNode(m));
+    wrap.append(name, timedRow(messageNode(m), m));
     return wrap;
   }
   function renderGroupMessages(messages) {
     const inner = $('dm-msgs-inner');
     inner.innerHTML = '';
-    for (const m of messages) inner.appendChild(groupMessageNode(m));
+    inner.dataset.lastDay = '';
+    for (const m of messages) appendDmNode(inner, groupMessageNode(m), m);
     $('dm-messages').scrollTop = $('dm-messages').scrollHeight;
   }
   async function openGroupChat(g) {
@@ -1088,7 +1156,7 @@
   async function onIncomingDm(msg) {
     if (state.dmPeer && msg.from === state.dmPeer.id
       && !$('dm-screen').classList.contains('hidden')) {
-      $('dm-msgs-inner').appendChild(messageNode(msg));
+      appendDmNode($('dm-msgs-inner'), timedRow(messageNode(msg), msg), msg);
       $('dm-messages').scrollTop = $('dm-messages').scrollHeight;
       try { await DATA.markRead(msg.from); } catch { /* 一覧更新でも追随する */ }
     }

@@ -220,6 +220,19 @@
         { id: 'notice-demo', text: '📢 運営より：新しいお題を50組追加しました！' },
       ],
     };
+    // デモ用シードに表示用の時刻を持たせる（実 DB では created_at 由来）。
+    // 主要な会話は内容に合う時刻を、残りは新しい順に少しずつずらす
+    {
+      const now = Date.now();
+      const H = 3600e3, M = 60e3, D = 24 * H;
+      const atMap = {
+        'dm-0': now - 2 * D - 3 * H, 'dm-1': now - D - 2 * H, 'dm-2': now - 5 * H,
+        'dm-3': now - D - 4 * H, 'dm-4': now - D - 3.5 * H,
+        'dm-5': now - 2 * H, 'dm-6': now - 30 * M,
+      };
+      state.dm.forEach((m, i) => { m.at = atMap[m.id] ?? (now - (state.dm.length - i) * 9 * M); });
+      state.groupMessages.forEach((m, i) => { m.at = now - (state.groupMessages.length - i) * 12 * M - 40 * M; });
+    }
     const pub = (u) => ({
       id: u.id, publicId: u.publicId, name: u.name, icon: u.icon,
       iconKey: u.iconKey ?? null,
@@ -479,7 +492,7 @@
         `ペナルティとして あと約${remainMin}分間 ルームへの参加・作成ができません（今回の制限：${penFormatMinutes(minutes)}）。`,
         'ペナルティの回数が増えると制限時間は長くなります（30日間違反がなければ段階的に軽くなります）。対戦中は最後まで参加しましょう。',
       ].join('\n');
-      state.dm.push({ id: 'dm-' + (++state.seq), from: 'system', to: userId, kind: 'system', body, read: false });
+      state.dm.push({ id: 'dm-' + (++state.seq), from: 'system', to: userId, kind: 'system', body, read: false, at: Date.now() });
       return { step, minutes, untilSec: until };
     }
     function penActiveUntil(userId) {
@@ -1160,7 +1173,7 @@
         state.groups.push(g);
         state.groupMessages.push({
           id: `gm-${++state.gmSeq}`, groupId: g.id, from: 'system', kind: 'system',
-          body: 'グループが作成されました', read: true, ord: ++state.ordSeq,
+          body: 'グループが作成されました', read: true, ord: ++state.ordSeq, at: Date.now(),
         });
         return ok(pubGroup(g));
       },
@@ -1170,7 +1183,7 @@
       sendGroupMessage(groupId, body) {
         const m = {
           id: `gm-${++state.gmSeq}`, groupId, from: 'me', kind: 'text',
-          body, read: true, ord: ++state.ordSeq,
+          body, read: true, ord: ++state.ordSeq, at: Date.now(),
         };
         state.groupMessages.push(m);
         return ok(m);
@@ -1192,7 +1205,7 @@
           state.groupMessages.push({
             id: `gm-${++state.gmSeq}`, groupId, from: 'system', kind: 'system',
             body: `${added.map((id) => users.get(id)?.name ?? '').filter(Boolean).join('、')}さんが参加しました`,
-            read: true, ord: ++state.ordSeq,
+            read: true, ord: ++state.ordSeq, at: Date.now(),
           });
         }
         return ok(pubGroup(g));
@@ -1225,7 +1238,7 @@
         if (!body) return Promise.reject(fail('EMPTY_MESSAGE', '本文が空です'));
         if (body.length > 500) return Promise.reject(fail('MESSAGE_TOO_LONG', '500文字以内で入力してください'));
         if (/https?:\/\/|www\./i.test(body)) return Promise.reject(fail('URL_NOT_ALLOWED', 'DM ではリンクを送れません'));
-        const msg = { id: 'dm-' + (++state.seq), from: 'me', to: userId, kind: 'text', body, read: true };
+        const msg = { id: 'dm-' + (++state.seq), from: 'me', to: userId, kind: 'text', body, read: true, at: Date.now() };
         state.dm.push(msg);
         return ok(msg);
       },
@@ -1271,7 +1284,7 @@
         const msg = {
           id: 'dm-' + (++state.seq), from: 'me', to: userId, kind: 'gift',
           gift: { giftKey: gift.key, name: gift.name, icon: gift.icon, price: gift.price },
-          read: true,
+          read: true, at: Date.now(),
         };
         state.dm.push(msg);
         // 最高額ギフトは全体ティッカー行き（実DBの kl_send_gift フックと同仕様）
@@ -1359,7 +1372,7 @@
             roomId: room.id, roomTitle: room.title,
             password: room.isPrivate ? room.password : null,
           },
-          read: true,
+          read: true, at: Date.now(),
         };
         state.dm.push(msg);
         return ok(msg);
@@ -1765,7 +1778,7 @@
         return data.map((m) => ({
           id: m.id,
           from: (m.kind === 'system' || m.kind === 'welcome') ? 'system' : m.sender_id,
-          to: m.recipient_id, kind: m.kind, body: m.body,
+          to: m.recipient_id, kind: m.kind, body: m.body, at: Date.parse(m.created_at),
           invite: m.invite_payload, gift: m.gift_payload
             ? { giftKey: m.gift_payload.giftKey, name: m.gift_payload.name, icon: m.gift_payload.icon, price: m.gift_payload.price }
             : null,
@@ -1786,7 +1799,7 @@
           if (!cur.last) {
             cur.last = {
               id: m.id, from: (m.kind === 'system' || m.kind === 'welcome') ? 'system' : m.sender_id,
-              to: m.recipient_id, kind: m.kind,
+              to: m.recipient_id, kind: m.kind, at: Date.parse(m.created_at),
               body: m.body, gift: m.gift_payload, invite: m.invite_payload,
             };
           }
@@ -1827,7 +1840,7 @@
               onInsert({
                 id: m.id,
                 from: (m.kind === 'system' || m.kind === 'welcome' || !m.sender_id) ? 'system' : m.sender_id,
-                to: m.recipient_id, kind: m.kind, body: m.body,
+                to: m.recipient_id, kind: m.kind, body: m.body, at: Date.parse(m.created_at),
                 gift: m.gift_payload, invite: m.invite_payload,
               });
             })

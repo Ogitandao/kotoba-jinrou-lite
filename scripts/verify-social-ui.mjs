@@ -130,10 +130,13 @@ mikaRow.click();
 await tick();
 check('DM画面が開く（相手名つき）',
   visible($('dm-screen')) && $('dm-peer-name').textContent === 'みか');
-const msgs = () => [...document.querySelectorAll('#dm-msgs-inner > *')];
+const msgs = () => [...document.querySelectorAll('#dm-msgs-inner > .msg-line')];
 check('DMの発言は下端寄せコンテナ（dm-msgs-inner）の中に時系列で並ぶ',
   msgs().length === 2 && msgs()[0].textContent.includes('昨日はありがとう')
   && msgs()[1].textContent.includes('部屋立てるから来て'));
+check('日付区切り（昨日／今日）と吹き出し横の時刻が出る',
+  document.querySelectorAll('#dm-msgs-inner > .date-sep').length === 2
+  && msgs().every((r) => r.querySelector('.msg-time')?.textContent.includes('午')));
 check('DMを開くと未読バッジが消える',
   !rowByName($('talk-list'), 'みか')?.querySelector('.unread-badge'));
 check('みかを読むとナビの未読バッジが2に減る（けんの招待＋ギフト分が残る）',
@@ -168,7 +171,7 @@ check('ギフト送信でコインピルが30減る',
   coinsBefore === '1,240' && $('coin-count').textContent === '1,210',
   `${coinsBefore} → ${$('coin-count').textContent}`);
 check('DMにギフトカードが差し込まれる',
-  msgs().length === 4 && msgs()[3].classList.contains('dm-gift-card')
+  msgs().length === 4 && !!msgs()[3].querySelector('.dm-gift-card')
   && msgs()[3].textContent.includes('ハート'));
 check('送信後もギフト選択画面は開いたまま（連続で贈れる）',
   visible($('modal-gift')) && $('gift-balance').textContent === '1,210');
