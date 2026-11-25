@@ -102,10 +102,15 @@ cssRule('.game-msg-row .dm-msg').includes('calc(15em')
 cssRule('.game-msg-row .dm-msg'));
 check('[6] チャット領域は min-height: 0 で縮められる（パネルがはみ出さない）',
 cssRule('.game-messages').includes('min-height: 0'), cssRule('.game-messages'));
-check('[6] 投票・結果パネルに高さ上限があり、内部スクロールで吸収する',
+check('[6] 結果パネルに高さ上限があり、内部スクロールで吸収する',
 cssRule('.game-panel').includes('max-height')
-&& cssRule('#game-vote-list').includes('overflow-y: auto'),
+&& cssRule('#game-reveal-list').includes('overflow-y: auto'),
 cssRule('.game-panel'));
+check('[6b] 投票は中央オーバーレイのボックスで、候補リストはスクロールなし',
+cssRule('.vote-overlay').includes('position: absolute')
+&& cssRule('.vote-overlay').includes('translate(-50%, -50%)')
+&& !cssRule('#game-vote-list').includes('overflow'),
+cssRule('.vote-overlay'));
 check('[11] 番号バッジのスタイル（小さい四角）がある',
 cssRule('.no-badge').includes('border-radius')
 && cssRule('.no-badge').includes('font-weight: 800'), cssRule('.no-badge'));

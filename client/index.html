@@ -255,13 +255,6 @@
         </div>
         <!-- 無発言警告（話し合い終盤・自分の発言0件のときだけ出す） -->
         <div id="game-afk-warning" class="afk-warning hidden"></div>
-        <!-- 投票 -->
-        <div id="game-vote-panel" class="game-panel hidden">
-          <p class="panel-head">🗳️ ウルフだと思う人に投票しよう</p>
-          <div id="game-vote-list"></div>
-          <p id="game-vote-state" class="modal-note"></p>
-          <p class="vote-warning">⚠️ 投票がない場合（スルー・時間切れ）はペナルティポイントが加算されます。発言も投票もないと即強制退室、ポイント合計1.0でも強制退室になります</p>
-        </div>
         <!-- 逆転回答 -->
         <div id="game-reversal-panel" class="game-panel hidden">
           <p id="game-reversal-text" class="panel-head"></p>
@@ -285,6 +278,13 @@
         </div>
           </div>
         </div>
+      </div>
+      <!-- 投票：チャット画面の中央に重ねるボックス（スクロールなし・2026-11-25 おぎ） -->
+      <div id="game-vote-panel" class="vote-overlay hidden">
+        <p class="panel-head">🗳️ ウルフだと思う人に投票しよう</p>
+        <div id="game-vote-list"></div>
+        <p id="game-vote-state" class="modal-note"></p>
+        <p class="vote-warning">⚠️ 投票がない場合（スルー・時間切れ）はペナルティポイントが加算されます。発言も投票もないと即強制退室、ポイント合計1.0でも強制退室になります</p>
       </div>
       <button id="game-scroll-bottom" class="scroll-bottom-btn hidden" type="button" aria-label="最新のメッセージへ">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v15"/><path d="M5.5 12.5 L12 19 l6.5-6.5"/></svg>
@@ -510,49 +510,42 @@
       <div id="tutorial-track" class="tutorial-track">
         <section class="tutorial-slide">
           <div class="tutorial-art">
-            <img src="./icons/icon-wolf.webp" alt="" />
-            <img src="./icons/icon-cat.webp" alt="" />
-            <img src="./icons/icon-dog.webp" alt="" />
+            <img src="./img/tutorial-1.webp" alt="" />
           </div>
           <h4>ようこそ！</h4>
           <p>ことば人狼へようこそ！全員にお題が配られるけど、1人だけ違うお題の人がいるよ。その人（ウルフ）を見つけるゲームです</p>
         </section>
         <section class="tutorial-slide">
           <div class="tutorial-art">
-            <img src="./icons/icon-rabbit.webp" alt="" />
-            <img src="./icons/icon-bear.webp" alt="" />
+            <img src="./img/tutorial-2.webp" alt="" />
           </div>
           <h4>遊び方</h4>
           <p>ルームに入ったら待機室で雑談。人数がそろって全員が「準備OK！」を押したらマスターがゲームスタート。まずは15秒のごあいさつタイム</p>
         </section>
         <section class="tutorial-slide">
           <div class="tutorial-art">
-            <img src="./icons/icon-owl.webp" alt="" />
-            <img src="./icons/icon-fox.webp" alt="" />
+            <img src="./img/tutorial-3.webp" alt="" />
           </div>
           <h4>話し合いの流れ</h4>
           <p>お題を確認したら話し合いスタート。お題そのものを言っちゃダメ。かみ合わない人を探して、最後に投票しよう。ウルフが追放されても「逆転回答」で一発逆転があるから最後までドキドキ</p>
         </section>
         <section class="tutorial-slide">
           <div class="tutorial-art">
-            <img src="./icons/icon-penguin.webp" alt="" />
-            <img src="./icons/icon-panda.webp" alt="" />
+            <img src="./img/tutorial-4.webp" alt="" />
           </div>
           <h4>マナーとルール</h4>
           <p>初めての人にも優しく、みんなで気持ちよく遊びましょう。暴言や煽りはNG。試合中の離脱・放置と、発言ゼロ・投票なしはペナルティになるよ</p>
         </section>
         <section class="tutorial-slide">
           <div class="tutorial-art">
-            <img src="./icons/icon-chick.webp" alt="" />
-            <img src="./icons/icon-frog.webp" alt="" />
+            <img src="./img/tutorial-5.webp" alt="" />
           </div>
           <h4>困ったときは</h4>
           <p>嫌な発言を見たら、その発言を長押しして「通報する」を押してね。相手のプロフィールからも通報できます。通報すると運営が確認して、結果はDMでお知らせします。通報したことは相手には分かりません。合わない相手はブロックもできます</p>
         </section>
         <section class="tutorial-slide">
           <div class="tutorial-art">
-            <img src="./icons/icon-tiger.webp" alt="" />
-            <img src="./icons/icon-tanuki.webp" alt="" />
+            <img src="./img/tutorial-6.webp" alt="" />
           </div>
           <h4>コインとギフト</h4>
           <p>登録ボーナスで100コインプレゼント中。気に入った相手にはギフトを贈って人気度アップ。非公開ルーム作りには100コインが必要だよ</p>

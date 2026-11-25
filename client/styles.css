@@ -1231,13 +1231,25 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   padding: 6px 12px 14px; margin-bottom: 10px;
 }
 .game-panel > * { flex: 0 0 auto; }
-#game-vote-list, #game-reveal-list, #game-reversal-choices {
+#game-reveal-list, #game-reversal-choices {
   flex: 1 1 auto; min-height: 0; overflow-y: auto;
 }
+/* 投票ボックス：対戦画面の中央に重ねて出す。候補はアイコン＋番号＋名前の
+   コンパクトな行で、全員分をスクロールなしで見せる（2026-11-25 おぎ） */
+.vote-overlay {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(88%, 340px); z-index: 30;
+  background: #fff; border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(23, 50, 74, 0.35);
+  padding: 16px 14px 12px;
+}
+.vote-overlay .panel-head { text-align: center; margin-bottom: 10px; }
+.vote-overlay .modal-note { text-align: center; margin-top: 10px; }
+#game-vote-list { display: flex; flex-direction: column; gap: 8px; }
 .vote-btn {
   display: flex; align-items: center; gap: 10px; width: 100%;
   background: #fff; border: 2px solid var(--line); border-radius: 14px;
-  padding: 8px 12px; margin-bottom: 8px; font-weight: 800; text-align: left;
+  padding: 6px 10px; font-weight: 800; text-align: left;
 }
 .vote-btn.selected { border-color: var(--sky); background: #e8f4ff; }
 .vote-btn:disabled { opacity: 0.55; }
@@ -1318,10 +1330,10 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-family: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
   font-weight: 400;
 }
-.tutorial-art { display: flex; justify-content: center; gap: 10px; }
+/* 紙芝居イラスト：スライド幅いっぱいに余白なしで貼る（2026-11-25 おぎ） */
+.tutorial-art { margin: -6px -8px 0; aspect-ratio: 4 / 3; }
 .tutorial-art img {
-  width: 84px; height: 84px; border-radius: 20px; object-fit: cover;
-  box-shadow: 0 4px 12px rgba(23, 50, 74, 0.15);
+  width: 100%; height: 100%; object-fit: cover; display: block;
 }
 .tutorial-nav {
   display: flex; align-items: center; justify-content: space-between;
