@@ -2668,19 +2668,22 @@
     startEndReturnCountdown();
   }
 
-  // 結果画面を開きっぱなしにすると席を占有し続けるため、制限時間で
-  // 自動的にロビーへ戻す（席も空ける）。時間は調整可能な定数（2026-11-25 おぎ）
-  const END_RETURN_SEC = 60;
+  // 結果画面を開きっぱなしにしないため、制限時間で自動的にルームへ
+  // 戻す（席はキープ＝「残る」概念）。ギフト選択などモーダルが開いて
+  // いる間はカウントを止める。時間は調整可能な定数（2026-11-25 おぎ）
+  const END_RETURN_SEC = 15;
   function startEndReturnCountdown() {
     stopEndReturnCountdown();
     let left = END_RETURN_SEC;
     const el = $('game-end-countdown');
-    const paint = () => { el.textContent = `あと${left}秒で自動でロビーに戻ります`; };
+    const paint = () => { el.textContent = `あと${left}秒で自動でルームに戻ります`; };
     el.classList.remove('hidden');
     paint();
     endReturnTimer = setInterval(() => {
+      if (!$('modal-backdrop').classList.contains('hidden')
+        || !$('modal-backdrop2').classList.contains('hidden')) return;
       left -= 1;
-      if (left <= 0) { stopEndReturnCountdown(); autoReturnToLobby(); return; }
+      if (left <= 0) { stopEndReturnCountdown(); autoReturnToRoom(); return; }
       paint();
     }, 1000);
   }
@@ -2688,14 +2691,16 @@
     if (endReturnTimer) { clearInterval(endReturnTimer); endReturnTimer = null; }
     $('game-end-countdown')?.classList.add('hidden');
   }
-  async function autoReturnToLobby() {
+  async function autoReturnToRoom() {
     const roomId = state.gameView?.roomId ?? state.roomId;
     closeGameScreen();
-    closeRoomScreen();
     state.endShownGameId = null;
-    if (roomId) { try { await DATA.leaveRoom(roomId); } catch { /* 既に抜けている等は無視 */ } }
+    if (roomId) {
+      try { openRoomScreen(await DATA.getRoom(roomId)); return; }
+      catch { /* メンバーでなくなっていた場合はロビーへ */ }
+    }
+    closeRoomScreen();
     refreshRooms();
-    toast('時間になったのでロビーに戻りました');
   }
 
   async function sendGameMessage() {
