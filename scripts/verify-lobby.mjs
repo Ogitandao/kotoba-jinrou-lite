@@ -200,9 +200,19 @@ check('ルームカードをタップすると入室確認が出る（即入室�
   visible($('modal-join-confirm')) && !visible($('room-screen')));
 check('入室確認にルーム名と人数が出る',
   $('jc-title').textContent.includes('はじめてさん集合') && $('jc-meta').textContent.includes('人'));
+check('入室確認に逆転回答ありが出る（デフォルトONの部屋）',
+  $('jc-meta').textContent.includes('逆転回答あり'));
 document.querySelector('#modal-join-confirm [data-close]').click();
 await tick();
 check('入室確認でキャンセルするとロビーのまま', !visible($('room-screen')));
+const r3Card = [...document.querySelectorAll('#room-list .room-card')]
+  .find((c) => c.dataset.roomId === 'r3');
+r3Card.click();
+await tick();
+check('逆転回答なしの部屋は入室確認に「逆転回答なし」が出る',
+  visible($('modal-join-confirm')) && $('jc-meta').textContent.includes('逆転回答なし'));
+document.querySelector('#modal-join-confirm [data-close]').click();
+await tick();
 r1Card2.click();
 await tick();
 $('jc-join').click();

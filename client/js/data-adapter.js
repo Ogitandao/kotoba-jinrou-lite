@@ -448,7 +448,7 @@
           password: r.isPrivate ? 'wolf777' : null,
           beginner: r.beginner, capacity: r.capacity, genre: r.genre ?? null,
           status: r.status ?? 'lobby',
-          reversalEnabled: true, hostId,
+          reversalEnabled: r.reversalEnabled !== false, hostId,
           // 一覧の並び順（新しい順）を持たせる。種ルームはダミー順を維持
           seq: 100 - i,
           members: memberIds.map((userId) => ({ userId, ready: userId !== 'me', lastHeartbeatAt: null })),
