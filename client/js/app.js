@@ -919,6 +919,10 @@
     updateCreateBar();
     renderGame();
     $('game-title').textContent = '結果デモ';
+    // カウントダウンのピルも見た目確認用に静止表示する（デモでは減らない）
+    const cd = $('game-end-countdown');
+    cd.textContent = '20秒後にルームに戻ります';
+    cd.classList.remove('hidden');
     $('game-end-note').textContent = '（デモ表示中）おつかれさまでした！';
     $('btn-end-towaiting').classList.remove('hidden');
   }
@@ -2688,7 +2692,7 @@
     stopEndReturnCountdown();
     let left = END_RETURN_SEC;
     const el = $('game-end-countdown');
-    const paint = () => { el.textContent = `あと${left}秒で自動でルームに戻ります`; };
+    const paint = () => { el.textContent = `${left}秒後にルームに戻ります`; };
     el.classList.remove('hidden');
     paint();
     endReturnTimer = setInterval(() => {
