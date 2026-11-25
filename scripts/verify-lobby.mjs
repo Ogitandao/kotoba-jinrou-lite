@@ -280,8 +280,9 @@ check('名前を変更するとロビーに反映される', await (async () => 
     && $('modal-name').classList.contains('hidden');
 })());
 check('縦固定：横向き案内オーバーレイがある', !!$('rotate-notice'));
-check('縦固定：横向きメディアクエリで表示する CSS がある',
-  readFileSync(new URL('styles.css', base), 'utf8').includes('(orientation: landscape)'));
+check('縦固定：横向き案内は .show で表示する CSS がある（メディアクエリは誤判定するため不使用）',
+  readFileSync(new URL('styles.css', base), 'utf8').includes('.rotate-notice.show')
+  && !readFileSync(new URL('styles.css', base), 'utf8').includes('@media (orientation: landscape)'));
 
 const failed = results.filter((r) => !r.ok);
 console.log(`\n=== ${results.length - failed.length}/${results.length} PASS ===`);

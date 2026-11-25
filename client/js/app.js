@@ -1074,6 +1074,9 @@
     }
     // 本家のクランチャット様式：最新が下端に来るよう末尾へスクロール
     $('dm-messages').scrollTop = $('dm-messages').scrollHeight;
+    dmFollow.follow = true;
+    dmFollow._lastTop = $('dm-messages').scrollTop;
+    updateScrollBottomBtn();
   }
   // チャット画面のスライド開閉（右からぬるっと。2026-11-25 おぎ）
   let dmCloseTimer = null;
@@ -1183,6 +1186,9 @@
     inner.dataset.lastDay = '';
     for (const m of messages) appendDmNode(inner, groupMessageNode(m), m);
     $('dm-messages').scrollTop = $('dm-messages').scrollHeight;
+    dmFollow.follow = true;
+    dmFollow._lastTop = $('dm-messages').scrollTop;
+    updateScrollBottomBtn();
   }
   async function openGroupChat(g) {
     state.dmGroup = g;
@@ -1369,11 +1375,16 @@
   // Realtime で届いた新着DM（実 DB モードのみ。Sim では発火しない）。
   // 開いている相手からならその場で末尾に追加して既読化し、常に
   // トーク一覧を更新する（並び替え・バッジ・ギフト通知が即時になる）
-  // 「最新へ」ボタン：下端から離れている時だけ出す
+  // 「最新へ」ボタン：追尾を切って上にいる時だけ出す（待機室・対戦と
+  // 同じ追尾モデル。FOLLOW_LIMIT と awayFromBottom は後方で定義）
+  const dmFollow = { follow: true, _lastTop: 0 };
   function updateScrollBottomBtn() {
     const box = $('dm-messages');
-    const away = box.scrollHeight - box.scrollTop - box.clientHeight > 240;
-    $('dm-scroll-bottom').classList.toggle('hidden', !away);
+    const away = awayFromBottom(box);
+    if (away <= FOLLOW_LIMIT) dmFollow.follow = true;
+    else if (box.scrollTop < dmFollow._lastTop - 1) dmFollow.follow = false;
+    dmFollow._lastTop = box.scrollTop;
+    $('dm-scroll-bottom').classList.toggle('hidden', !(away > FOLLOW_LIMIT && !dmFollow.follow));
   }
   function scrollDmToBottom(smooth = false) {
     const box = $('dm-messages');
@@ -1382,11 +1393,9 @@
   async function onIncomingDm(msg) {
     if (state.dmPeer && msg.from === state.dmPeer.id
       && !$('dm-screen').classList.contains('hidden')) {
-      const box = $('dm-messages');
-      const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight <= 240;
       appendDmNode($('dm-msgs-inner'), timedRow(messageNode(msg), msg), msg);
       // 履歴を読んでいる途中なら勝手に飛ばさず、「最新へ」ボタンで知らせる
-      if (wasNearBottom) scrollDmToBottom();
+      if (dmFollow.follow) scrollDmToBottom();
       updateScrollBottomBtn();
       try { await DATA.markRead(msg.from); } catch { /* 一覧更新でも追随する */ }
     }
@@ -1771,7 +1780,7 @@
   // 待機室チャットの描画（本編と同じLINE式：他者は左・自分は右、
   // 名前の左にプレイヤー番号バッジ）
   function renderRoomChat(d) {
-    const awayBefore = awayFromBottom($('room-chat-messages'));
+    const scrollBefore = captureScroll($('room-chat-messages'));
     const inner = $('room-chat-msgs-inner');
     inner.innerHTML = '';
     const msgs = d.roomMessages ?? [];
@@ -1807,36 +1816,45 @@
       row.append(nameEl, bubble);
       inner.appendChild(row);
     }
-    settleScroll(roomFollow, $('room-chat-messages'), awayBefore);
+    settleScroll(roomFollow, $('room-chat-messages'), scrollBefore);
   }
 
-  // ログの自動追尾（待機室・対戦画面）：過去ログを読むために上へ
-  // スクロールしている間は最新へ引き戻さず、「最新へ」ボタンを出す
-  // （個人チャットと同じ作法・2026-11-25 おぎ）
+  // ログの自動追尾（待機室・対戦画面・DM共通の考え方）：
+  // 「下端から60px以内＝追尾中」。上へスクロールしたら（scrollTopが
+  // 減ったら）追尾を切り、再描画でも同じ位置を保つ。小さいスクロール
+  // でも引き戻さない（2026-11-25 おぎ実機指摘）。キーボードで枠が
+  // 縮んだだけでは scrollTop は減らないので追尾は切れず、resize時に
+  // 下端へ戻す（fitPhoneToViewport 参照）
+  const FOLLOW_LIMIT = 60;
+  const scrollFollowers = [];
   function makeScrollFollow(boxId, btnId) {
     const box = $(boxId);
     const btn = $(btnId);
-    const ctl = { follow: true };
+    const ctl = { follow: true, box, _lastTop: box.scrollTop };
     const update = () => {
-      const away = box.scrollHeight - box.scrollTop - box.clientHeight > 240;
-      ctl.follow = !away;
-      btn.classList.toggle('hidden', !away);
+      const away = awayFromBottom(box);
+      if (away <= FOLLOW_LIMIT) ctl.follow = true;
+      else if (box.scrollTop < ctl._lastTop - 1) ctl.follow = false;
+      ctl._lastTop = box.scrollTop;
+      btn.classList.toggle('hidden', !(away > FOLLOW_LIMIT && !ctl.follow));
     };
     box.addEventListener('scroll', update, { passive: true });
     btn.addEventListener('click', () => {
+      ctl.follow = true;
       box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
     });
     ctl.update = update;
+    scrollFollowers.push(ctl);
     return ctl;
   }
-  // awayBefore = 再描画前に測った「最下部からの距離」。再描画で中身を
-  // 作り直すと一瞬スクロール位置が 0 に潰れて「下にいる」と誤判定する
-  // ため、描画前の距離を保ったまま同じ分だけ離して復元する
-  function settleScroll(ctl, box, awayBefore) {
-    if (awayBefore != null && awayBefore > 240) {
-      box.scrollTop = Math.max(0, box.scrollHeight - box.clientHeight - awayBefore);
+  // 再描画（ポーリング）後の位置決め：描画前に上を読んでいた人は
+  // 同じ scrollTop に戻し、追尾中の人だけ最下部へ
+  function settleScroll(ctl, box, before) {
+    if (before && before.away > FOLLOW_LIMIT) {
+      box.scrollTop = Math.min(before.top, Math.max(0, box.scrollHeight - box.clientHeight));
       if (ctl) {
         ctl.follow = false;
+        ctl._lastTop = box.scrollTop;
         ctl.update();
       }
       return;
@@ -1846,6 +1864,9 @@
   }
   function awayFromBottom(box) {
     return box.scrollHeight - box.scrollTop - box.clientHeight;
+  }
+  function captureScroll(box) {
+    return { top: box.scrollTop, away: awayFromBottom(box) };
   }
   let roomFollow = null;
   let gameFollow = null;
@@ -2046,7 +2067,7 @@
     });
 
     // 発言（下端寄せ）
-    const gameAwayBefore = awayFromBottom($('game-messages'));
+    const gameScrollBefore = captureScroll($('game-messages'));
     const inner = $('game-msgs-inner');
     inner.innerHTML = '';
     const nameOf = (id) => v.players.find((p) => p.id === id)?.name ?? 'プレイヤー';
@@ -2073,7 +2094,7 @@
       row.append(sender, bubble);
       inner.appendChild(row);
     }
-    settleScroll(gameFollow, $('game-messages'), gameAwayBefore);
+    settleScroll(gameFollow, $('game-messages'), gameScrollBefore);
 
     // 無発言警告：判定はサーバー時刻基準の残り秒数（phaseRemainSec）と
     // 自分の発言数（myMessageCount）で行う。ビューに無い場合は手元の
@@ -2331,6 +2352,38 @@
       phone.style.height = '';
       phone.style.top = '';
     }
+    // 枠が縮む・伸びる（キーボード開閉）でチャット欄の高さが変わる。
+    // 追尾中の欄は下端に貼り直し、「最新へ」ボタンの誤表示を防ぐ
+    requestAnimationFrame(() => {
+      for (const ctl of scrollFollowers) {
+        if (ctl.follow) ctl.box.scrollTop = ctl.box.scrollHeight;
+        ctl.update();
+      }
+      if (dmFollow.follow) {
+        const b = $('dm-messages');
+        if (b) b.scrollTop = b.scrollHeight;
+      }
+      updateScrollBottomBtn();
+    });
+  }
+
+  // 横向き案内は screen.orientation で判定する。CSSメディアクエリだと
+  // キーボード表示でビューポートが横長判定になり、入力のたびに案内が
+  // チラつく（2026-11-25 おぎ実機指摘）。判定できない環境では
+  // 「入力中は出さない」フォールバックにする
+  function checkOrientation() {
+    const el = $('rotate-notice');
+    if (!el) return;
+    const t = window.screen?.orientation?.type || '';
+    let land;
+    if (t) {
+      land = t.startsWith('landscape');
+    } else {
+      const a = document.activeElement;
+      const kb = a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA');
+      land = !kb && window.innerWidth > window.innerHeight;
+    }
+    el.classList.toggle('show', land);
   }
 
   async function init() {
@@ -2342,6 +2395,13 @@
       window.visualViewport.addEventListener('resize', fitPhoneToViewport);
       window.visualViewport.addEventListener('scroll', fitPhoneToViewport);
     }
+    if (window.screen?.orientation?.addEventListener) {
+      window.screen.orientation.addEventListener('change', checkOrientation);
+    }
+    window.addEventListener('resize', checkOrientation);
+    document.addEventListener('focusin', checkOrientation);
+    document.addEventListener('focusout', checkOrientation);
+    checkOrientation();
     roomFollow = makeScrollFollow('room-chat-messages', 'room-scroll-bottom');
     gameFollow = makeScrollFollow('game-messages', 'game-scroll-bottom');
     // 入力中にドキュメント側がスクロールしたら戻す（ずれの残り対策）
@@ -2635,7 +2695,10 @@
     });
     $('dm-back').addEventListener('click', closeDm);
     $('dm-messages').addEventListener('scroll', updateScrollBottomBtn, { passive: true });
-    $('dm-scroll-bottom').addEventListener('click', () => scrollDmToBottom(true));
+    $('dm-scroll-bottom').addEventListener('click', () => {
+      dmFollow.follow = true;
+      scrollDmToBottom(true);
+    });
     $('dm-send').addEventListener('click', sendDm);
     $('dm-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') sendDm();
