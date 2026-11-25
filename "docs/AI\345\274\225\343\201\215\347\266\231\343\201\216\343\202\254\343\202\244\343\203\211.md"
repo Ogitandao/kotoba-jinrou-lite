@@ -102,3 +102,15 @@ select public.kl__ticker_notice(
 - `wordwolf-db-design.md` — DB設計
 - `supabase-apply-runbook.md` / `deploy-runbook.md` / `oauth-setup-runbook.md` — 手順書
 - リポジトリ内の `supabase/migrations/`（0001〜0029）がDBの実態の正本
+
+---
+
+## 追補（2026-11-25 夜時点）
+
+- **マイグレーションは 0035 まで全適用済み**。追加分：0031 パスワード廃止（非公開ルームは招待DMのみ）、0032 ルーム名必須、0033 ギフト正式カタログ11種、0034 処分基盤（moderation_cases／reporter_stats／ng_words／stall_events／kl__ng_check／kl__detect_stalls）、0035 処分パイプライン Phase A（kl_report RPC、kl__moderation_sweep、hidden_at）。
+- **画面は全画面一次完成**（ロビー／フレンド／DM・グループ／待機室・対戦画面すべておぎ確認済み）。残る横断確認はギフト到着ポップアップの総チェック（設定内にデモ専用「ギフト通知テスト」ボタンを設置済み。タップごとに ハート→王冠→ドラゴン→ダイヤ の順で本物の通知が流れる）。
+- **ギフト演出の確定形**：〜500なし／1,000〜3,000は通知ポップアップにキラキラ／5,000〜は全画面（ダイヤ＝Lottie回転＋グロー、ドラゴン＝回転ストライプ＋頭だけ絵がふわふわ浮く）。一覧でもダイヤは回転、ドラゴンは頭だけ絵＋浮遊。Sparkle紙吹雪は試して同日撤去（素材 zip はデータ側に保管）。デモページ fx-demo.html／fx-demo-lot.html／fx-demo-dragon.html は演出確定後に撤去する一時ファイル。
+- **処分まわり**：U1〜U10 は全決定済み（enforcement-design.md 末尾の決定記録）。Phase A（受付RPC・重みによる仮非表示・マスター放置の自動確定）は本番稼働中。Phase B（OpenAI Moderation のスコア判定＝Edge Function moderation-run）はおぎの API キー待ち。キーは platform.openai.com で発行し、Supabase 側の秘密置き場へおぎ本人が貼る（チャットや本書に値を書かない）。
+- **通報UI**：プロフィール→通報フォームは実装済み。メッセージ単位の導線は置き場所が未決定（長押しメニューが有力）。
+- **同期スクリプトの修正**：github_sync.py は削除エントリにも mode が必要（2026-11-25 夜に修正済み）。初回同期時の記述より現在のスクリプトが正。
+- **過疎対策**：コールドスタート計画ドラフトは goal ワークスペース（~/workspace/goals/night-lite/files/cold-start-plan-draft.md）。決定待ち5件（ゴールデンタイム、ベータ日程、集客チャネル、ボット可否、Liteの位置づけ）。
