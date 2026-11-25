@@ -311,6 +311,7 @@
       list.appendChild(card);
     }
     state.knownRoomIds = next;
+    renderTicker();
   }
 
   // ---------- ライブティッカー ----------
@@ -324,11 +325,21 @@
   function renderTicker() {
     const track = $('ticker-track');
     if (!track) return;
+    // 対戦中のルームは「今この瞬間の情報」として、対戦が続く間ずっと
+    // ローテーションに入れておく（終わったら自動で消える）
+    const liveItems = (state.rooms ?? [])
+      .filter((r) => r.status === 'playing')
+      .map((r) => `🔥 ルーム『${r.title}』が対戦中です`);
     const items = [
       ...(state.feedEvents ?? []).map((e) => e.text),
+      ...liveItems,
       ...(state.tickerEvents ?? []),
       ...TICKER_BASE,
     ];
+    // 中身が変わっていないときは作り直さない（アニメーションが巻き戻るため）
+    const key = items.join('\u0001');
+    if (key === state.tickerKey) return;
+    state.tickerKey = key;
     const setHtml = items
       .map((t) => `<span class="ticker-item">${t}</span>`)
       .join('');
