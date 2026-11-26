@@ -623,6 +623,106 @@
     requestAnimationFrame(step);
   }
 
+  // ---------- Web Push（0059） ----------
+  // 対象は DM とルーム招待のみ＋運営告知＋呼び戻し（2026-11-26 おぎ）。
+  // ロック画面に本文・名前は出さない（文言はサーバー側で固定）。
+  // 設定は歯車の中に全体＋カテゴリ別のON/OFF。実DBモード専用
+  const VAPID_PUBLIC = 'BMEGE6tYZMGP4cAb_XWHMqS3WanzIdG8Y9mRturssgggrFyeqEeRILjb_VVKIneJhhAGEnCcNqNIOrKkAY2-jj8';
+  const PUSH_CATS = ['dm', 'invite', 'announce', 'comeback'];
+  function pushSupported() {
+    return DATA.mode !== 'sim'
+      && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  }
+  function urlB64ToUint8(b64) {
+    const pad = '='.repeat((4 - (b64.length % 4)) % 4);
+    const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+  }
+  async function ensurePushSubscription() {
+    if (!pushSupported()) return false;
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return false;
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlB64ToUint8(VAPID_PUBLIC),
+      });
+    }
+    const j = sub.toJSON();
+    if (j.endpoint && j.keys?.p256dh && j.keys?.auth) {
+      await DATA.savePushSubscription({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth });
+    }
+    return true;
+  }
+  async function loadPushSettings() {
+    const supported = pushSupported();
+    for (const id of ['row-push-master', 'row-push-dm', 'row-push-invite', 'row-push-announce', 'row-push-comeback']) {
+      $(id).classList.toggle('hidden', !supported);
+    }
+    if (!supported) return;
+    try {
+      const p = await DATA.getPushPrefs();
+      $('push-master').checked = !!p.master;
+      for (const c of PUSH_CATS) $(`push-${c}`).checked = !!p[c];
+    } catch { /* 読めない時は既定表示のまま */ }
+  }
+  async function onPushToggle() {
+    const prefs = {
+      master: $('push-master').checked,
+      dm: $('push-dm').checked,
+      invite: $('push-invite').checked,
+      announce: $('push-announce').checked,
+      comeback: $('push-comeback').checked,
+    };
+    try {
+      await DATA.savePushPrefs(prefs);
+      if (prefs.master && (prefs.dm || prefs.invite || prefs.announce || prefs.comeback)) {
+        const okSub = await ensurePushSubscription();
+        if (!okSub) {
+          toast('通知が許可されませんでした。ブラウザの設定を確認してください');
+          $('push-master').checked = false;
+          await DATA.savePushPrefs({ ...prefs, master: false });
+        }
+      }
+    } catch (e) { toastError(e); }
+  }
+  // 初めてDMを送れたタイミングで1回だけ、文脈に沿って許可を聞く
+  function maybeAskPush() {
+    if (!pushSupported()) return;
+    if (Notification.permission !== 'default') return;
+    try {
+      if (localStorage.getItem('kl_push_asked')) return;
+      localStorage.setItem('kl_push_asked', '1');
+    } catch { return; }
+    openConfirm('メッセージが届いたら通知しますか？', '通知を受け取る', async () => {
+      try {
+        await DATA.savePushPrefs({ master: true, dm: true, invite: true, announce: true, comeback: true });
+        await ensurePushSubscription();
+      } catch (e) { toastError(e); }
+    });
+  }
+  // 通知タップからの遷移（SW の postMessage と、コールドスタート時の # ハッシュ）
+  async function routePushTarget(rawUrl) {
+    const m = /#dm\/([^\s]+)/.exec(rawUrl || '');
+    if (!m) return;
+    const id = decodeURIComponent(m[1]);
+    switchTab('friends');
+    switchSubtab('talk');
+    await renderTalkList();
+    const user = state.users.get(id);
+    if (user) openDm(user);
+  }
+  let lastTouchSeen = 0;
+  function touchSeenThrottled() {
+    if (DATA.mode === 'sim') return;
+    const now = Date.now();
+    if (now - lastTouchSeen < 30 * 60 * 1000) return;
+    lastTouchSeen = now;
+    DATA.touchSeen().catch(() => {});
+  }
+
   // ルーム作成バーは「ロビー表示中」だけ出す。ルーム／対戦／DM など
   // ロビーから一歩でも出たら消す（2026-11-25 おぎ：入室しても付いてくる不具合）
   function updateCreateBar() {
@@ -693,6 +793,12 @@
     paint('badge-tab-friends', dmUnreadTotal + incomingReqCount);
     paint('badge-subtab-talk', dmUnreadTotal);
     paint('badge-subtab-friend', incomingReqCount);
+    // ホーム画面アイコンのバッジ（アプリ内バッジと同じ数字）
+    if ('setAppBadge' in navigator) {
+      const n = dmUnreadTotal + incomingReqCount;
+      if (n > 0) navigator.setAppBadge(n).catch(() => {});
+      else if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
+    }
   }
   function updateNavBadges(convs) {
     dmUnreadTotal = (convs ?? []).reduce((s, c) => s + (c.unread ?? 0), 0);
@@ -2159,6 +2265,7 @@
       input.value = '';
       renderMessages(await DATA.listMessages(peer.id));
       renderTalkList();
+      maybeAskPush();
     } catch (e) { toastError(e); }
   }
 
@@ -3507,6 +3614,23 @@
     DATA.subscribeDm(onIncomingDm);
     DATA.subscribeFriends(onFriendsChanged);
     DATA.listAnnouncements().then((list) => { tickerAnnouncements = list; }).catch(() => {});
+    // Web Push（0059）：最終アクセスの記録・購読の自動更新・通知タップ遷移
+    touchSeenThrottled();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') touchSeenThrottled();
+    });
+    if (pushSupported() && Notification.permission === 'granted') {
+      ensurePushSubscription().catch(() => {});
+    }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (e) => {
+        if (e.data?.type === 'kl-push-open') routePushTarget(e.data.url);
+      });
+    }
+    if (location.hash.startsWith('#dm/')) routePushTarget(location.hash);
+    for (const id of ['push-master', 'push-dm', 'push-invite', 'push-announce', 'push-comeback']) {
+      $(id).addEventListener('change', onPushToggle);
+    }
     // サブタブのトラック高さをアクティブ側に追随させる
     syncSubtabHeight();
     if (typeof ResizeObserver !== 'undefined') {
@@ -3546,7 +3670,8 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 17:56 / ticker6';
+      $('build-stamp').textContent = 'build 2026-11-26 18:14 / push1';
+      loadPushSettings();
       openModal('modal-settings');
     });
     $('btn-gift-test').addEventListener('click', () => {

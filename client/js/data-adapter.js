@@ -1369,6 +1369,11 @@
       subscribeFriends() { return () => {}; },
       subscribeTicker() { return () => {}; },
       listAnnouncements() { return ok([]); },
+      getPushPrefs() { return ok({ master: true, dm: true, invite: true, announce: true, comeback: true }); },
+      savePushPrefs() { return ok(true); },
+      savePushSubscription() { return ok(true); },
+      removePushSubscription() { return ok(true); },
+      touchSeen() { return ok(true); },
       listMessages(userId) {
         return ok(state.dm.filter(
           (m) => !m.hiddenForMe
@@ -2290,6 +2295,48 @@
         if (error) throw error;
         return (data ?? []).map((r) => r.text);
       },
+      // Web Push（0059）：購読と通知設定は本人の行だけ（RLS）
+      async getPushPrefs() {
+        const { data: u } = await getClient().auth.getUser();
+        if (!u?.user) return { master: true, dm: true, invite: true, announce: true, comeback: true };
+        const { data } = await getClient()
+          .from('kl_push_prefs').select('master, dm, invite, announce, comeback')
+          .eq('user_id', u.user.id).maybeSingle();
+        return data ?? { master: true, dm: true, invite: true, announce: true, comeback: true };
+      },
+      async savePushPrefs(prefs) {
+        const { data: u } = await getClient().auth.getUser();
+        if (!u?.user) return false;
+        const { error } = await getClient()
+          .from('kl_push_prefs')
+          .upsert({ user_id: u.user.id, ...prefs, updated_at: new Date().toISOString() });
+        if (error) throw error;
+        return true;
+      },
+      async savePushSubscription(sub) {
+        const { data: u } = await getClient().auth.getUser();
+        if (!u?.user) return false;
+        const { error } = await getClient()
+          .from('kl_push_subscriptions')
+          .upsert({
+            user_id: u.user.id, endpoint: sub.endpoint,
+            p256dh: sub.p256dh, auth: sub.auth,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'endpoint' });
+        if (error) throw error;
+        return true;
+      },
+      async removePushSubscription(endpoint) {
+        const { error } = await getClient()
+          .from('kl_push_subscriptions').delete().eq('endpoint', endpoint);
+        if (error) throw error;
+        return true;
+      },
+      async touchSeen() {
+        const { error } = await getClient().rpc('kl_touch_seen');
+        if (error) throw error;
+        return true;
+      },
       // グループチャット（0036 で実 DB 配線。書き込みは RPC 経由のみ）
       // RPC の { id, name, memberIds } に profiles を合わせて Sim の
       // pubGroup と同じ形に組み立てる
@@ -2762,6 +2809,11 @@
     subscribeFriends: (cb) => active.subscribeFriends(cb),
     subscribeTicker: (cb) => active.subscribeTicker(cb),
     listAnnouncements: () => active.listAnnouncements(),
+    getPushPrefs: () => active.getPushPrefs(),
+    savePushPrefs: (p) => active.savePushPrefs(p),
+    savePushSubscription: (s) => active.savePushSubscription(s),
+    removePushSubscription: (e) => active.removePushSubscription(e),
+    touchSeen: () => active.touchSeen(),
     createGroup: (name, ids) => active.createGroup(name, ids),
     listGroupMessages: (gid) => active.listGroupMessages(gid),
     sendGroupMessage: (gid, body) => active.sendGroupMessage(gid, body),

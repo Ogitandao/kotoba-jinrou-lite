@@ -1345,3 +1345,11 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
 - ticker3 で使った JS 駆動の連続スクロールを復活（実ブラウザ再現で健全性確認済みの実装）。項目は全てループ専用で差し込みなし。項目の並びが変わった時だけ（運営お知らせ到着時）組み直す（dataset.sig 比較）。
 - HTML/CSS は #ticker-track／.ticker-item に復帰。検証：lobby 75/75／social-ui 90/90／game-ui 123/123。
 - ビルド表示は「build 2026-11-26 17:56 / ticker6」。
+
+## 追補86（2026-11-26）Web Push 実装（0059＋EF push-send＋push1）
+- おぎ決定の確定形：対象は DM とルーム招待のみ（ギフト・フレンド申請は対象外）。システムDM は DM としてプッシュ。イベント告知はプッシュのみ（システムDM に入れない）。ロック画面は本文・名前なし：DM=「メッセージが届きました」／招待=「招待が届きました」／システムDM=「システムよりお知らせ」／告知=告知文そのまま。呼び戻しは入れる（3日以上不在・週1回まで）。設定は歯車内に全体＋カテゴリ別（メッセージ／ルーム招待／運営からのお知らせ／おひさしぶり通知）。
+- DB（0059）：kl_push_subscriptions／kl_push_prefs（RLS 本人行＋明示 grant）／profiles.last_seen_at＋kl_touch_seen／dm_messages への AFTER INSERT トリガー→ pg_net で EF 呼び出し／kl__comeback_run＋cron「kl-comeback-push」（毎日 10:00 UTC = 19:00 JST、対象をスタンプしてから送信）。
+- EF push-send（verify_jwt=false、x-cron-secret = kl_config 'push_secret'、VAPID 鍵も kl_config から service role 読み。npm:web-push 使用）。モード dm／announce／comeback。失効購読（404/410）は自動削除。運営告知の発射は SQL から net.http_post で mode:'announce', text を送る（管理 UI なし）。
+- ハマりどころ：dm_messages は生 SQL 作成のため service_role の grant が無く EF から読めなかった（0054 の教訓の再演）。0059 末尾に grant select（dm_messages／kl_push_prefs）と select,delete（kl_push_subscriptions）を追記して解決。
+- クライアント（build 2026-11-26 18:14 / push1）：sw.js に push／notificationclick を追加（タップ→既存ウィンドウへ postMessage で #dm/<id> 遷移、無ければ openWindow）。設定モーダルに通知トグル5行（実DBモードのみ表示）。ON にすると許可リクエスト＋購読を保存。初めて DM を送れた時に1回だけ文脈許可ポップアップ（localStorage kl_push_asked）。起動時・復帰時に kl_touch_seen（30分スロットル）と購読の自動更新。ホーム画面バッジは setAppBadge（DM未読＋申請数、アプリ内バッジと同数）。
+- 検証：verify-push-db 14/14（実 DB：トリガー→EF→設定ゲート→404 購読掃除→呼び戻し選定まで確認）。lobby 75/75／social-ui 90/90／game-ui 123/123／supabase-mode 8/8／fresh 9/9。端末への実配信は VM から検証不可 → おぎ実機で確認（設定で ON → 相手端末から DM）。
