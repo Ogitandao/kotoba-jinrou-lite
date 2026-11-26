@@ -1448,7 +1448,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .tutorial-slide h4 { font-size: 17px; font-weight: 800; margin: 10px 0 8px; }
 .tutorial-slide p {
   font-size: 13.5px; line-height: 1.65; color: var(--ink); text-align: left;
-  font-family: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
   font-weight: 400;
 }
 /* 紙芝居イラスト：スライド幅いっぱいに余白なしで貼る（2026-11-25 おぎ） */
