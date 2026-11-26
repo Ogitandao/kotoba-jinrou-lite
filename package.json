@@ -22,7 +22,9 @@
     "verify:game-ui": "node scripts/verify-game-ui.mjs",
     "verify:supabase-mode": "node scripts/verify-supabase-mode.mjs",
     "verify:e2e-session": "node scripts/verify-e2e-session.mjs",
-    "verify:fresh": "node scripts/verify-fresh.mjs"
+    "verify:fresh": "node scripts/verify-fresh.mjs",
+    "verify:gameflows-db": "node scripts/verify-gameflows-db.mjs",
+    "verify:ng-db": "node scripts/verify-ng-db.mjs"
   },
   "type": "module",
   "version": "0.1.0"
