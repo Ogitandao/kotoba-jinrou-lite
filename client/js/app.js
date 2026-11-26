@@ -3641,6 +3641,27 @@
     }
     state.openNameSetup = () => openNameModal(true);
     $('my-name-btn').addEventListener('click', () => openNameModal(false));
+    // ID のワンタップコピー（自分のカード／相手のプロフィール共通）
+    const copyIdText = async (text) => {
+      if (!text) return;
+      let ok = false;
+      try { await navigator.clipboard.writeText(text); ok = true; } catch {}
+      if (!ok) {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          ok = document.execCommand('copy');
+          ta.remove();
+        } catch {}
+      }
+      toast(ok ? 'IDをコピーしました' : 'コピーできませんでした');
+    };
+    $('my-id-row').addEventListener('click', () => copyIdText($('my-id').textContent.trim()));
+    $('up-id-row').addEventListener('click', () => copyIdText($('up-id').textContent.trim()));
     $('name-input').addEventListener('input', () => {
       $('name-count').textContent = [...$('name-input').value].length;
     });
