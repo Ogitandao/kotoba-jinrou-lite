@@ -1102,15 +1102,15 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   display: flex; gap: 8px; padding: 8px 12px; align-items: center;
   background: rgba(255, 255, 255, 0.9);
   border-top: 1px solid var(--line);
-  /* キーボードは被せる方式（レイアウト全体は縮めない）。
-     入力バーだけをキーボードの上へ持ち上げる（2026-11-26 おぎ） */
-  position: relative;
-  z-index: 5;
-  transform: translateY(calc(-1 * var(--kb, 0px)));
 }
-/* キーボードが開いている間、最終行がキーボード裏に隠れないよう
-   メッセージ側の末尾にキーボード分の余白を足す */
-.dm-msgs-inner { padding-bottom: var(--kb, 0px); }
+/* キーボード表示中（html.kb-open）は、待機室・対戦画面の上部ブロックを
+   畳んでチャット領域を広く保つ。おぎの端末では被せる方式
+   （overlays-content）だとキーボード検知が一切効かなかったため、
+   縮む方式（resizes-content）＋この畳み込みで対応する（2026-11-26） */
+html.kb-open #room-screen-tags,
+html.kb-open #room-members,
+html.kb-open .room-actions,
+html.kb-open #game-slots { display: none; }
 .dm-input-row input {
   flex: 1 1 auto; min-width: 0; height: 42px;
   /* 「ここに入力する」が色で分かるように、欄自体を空色に染める */
