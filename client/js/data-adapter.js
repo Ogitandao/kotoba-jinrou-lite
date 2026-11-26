@@ -83,6 +83,13 @@
   // =====================================================================
   function createSimBackend() {
     const D = window.KL_DUMMY;
+    // まっさら体験（デモ用・2026-11-26 おぎ希望）：URL に ?fresh=1 が
+    // 付いているときだけ、新規登録直後の状態（フレンド0・ルーム0・
+    // コイン100・人気度0・名前未決定・チュートリアル未同意）で起動する。
+    // リリース直後の「何もないロビー」の見え方確認用。本番には無い
+    const FRESH = (() => {
+      try { return new URLSearchParams(window.location.search).has('fresh'); } catch { return false; }
+    })();
     // もらったギフトの集計（カタログ引き＋価格順ソート）。自分用・他人用で共用
     const giftSummaryOf = (list) => {
       const lookup = [...GIFT_CATALOG, ...(D.extraGifts ?? [])];
@@ -603,6 +610,31 @@
       });
     }
     wwSeedRooms();
+
+    // まっさら体験（?fresh=1）の上書き：シードを新規登録直後の状態にする。
+    // ダミーユーザー自体は検索・ボット用に残すが、フレンド関係と履歴を切る
+    if (FRESH) {
+      const me = users.get('me');
+      me.name = 'ななし';
+      me.nameDecidedAt = null;
+      me.bio = '';
+      me.popularity = 0;
+      me.wordwolfWins = 0;
+      state.coins = 100;
+      state.bonusClaimed = false;
+      state.starterDays = 0;
+      state.friends = new Set();
+      state.incoming = new Set();
+      state.outgoing = new Set();
+      // ようこそDM（dm-0）だけは本番でも登録直後に届くので残す
+      state.dm = state.dm.filter((m) => m.id === 'dm-0');
+      state.groups = [];
+      state.groupMessages = [];
+      state.ticker = [];
+      friendGiftsLedger = {};
+      rulesAgreed = false;
+      wwState.rooms.clear();
+    }
 
     function wwRoomSummary(room) {
       const host = users.get(room.hostId);
@@ -1132,13 +1164,14 @@
       },
       agreeRules() {
         rulesAgreed = true;
-        try { localStorage.setItem('kl_rules_agreed', '1'); } catch { /* メモリのみ */ }
+        // まっさら体験中は通常デモの保存状態を汚さない
+        if (!FRESH) { try { localStorage.setItem('kl_rules_agreed', '1'); } catch { /* メモリのみ */ } }
         return ok(true);
       },
       // デモ用：同意状態を未同意に戻す（初回チュートリアルの確認用）
       resetRulesConsent() {
         rulesAgreed = false;
-        try { localStorage.removeItem('kl_rules_agreed'); } catch { /* メモリのみ */ }
+        if (!FRESH) { try { localStorage.removeItem('kl_rules_agreed'); } catch { /* メモリのみ */ } }
         return ok(true);
       },
       heartbeat(roomId) {
@@ -1160,7 +1193,7 @@
           state.starterDays += 1;
           starterDay = state.starterDays;
           state.coins += starterAmount;
-          try { localStorage.setItem('kl_starter_days', String(state.starterDays)); } catch { /* メモリのみ */ }
+          if (!FRESH) { try { localStorage.setItem('kl_starter_days', String(state.starterDays)); } catch { /* メモリのみ */ } }
         }
         return ok({ claimed: true, amount: 10, starterAmount, starterDay, starterDaysClaimed: state.starterDays, coins: state.coins });
       },
@@ -1348,7 +1381,8 @@
         return ok(GIFT_CATALOG.slice());
       },
       myGiftSummary() {
-        return ok(giftSummaryOf(D.myGifts ?? []));
+        // まっさら体験ではもらったギフトも無し
+        return ok(giftSummaryOf(FRESH ? [] : (D.myGifts ?? [])));
       },
       userProfile(userId) {
         const u = users.get(userId);

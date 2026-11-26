@@ -3175,6 +3175,10 @@
   // 実 OAuth の配線は認証フェーズ。現状はセッションなし（Sim で起動した）
   // ときだけ表示し、タップでそのまま入るデモ導線にする。Supabase で
   // 起動できた＝ログイン済みなので出さない
+  // まっさら体験（?fresh=1）かどうか。設定の出入りボタンの出し分け用
+  const IS_FRESH = (() => {
+    try { return new URLSearchParams(location.search).has('fresh'); } catch { return false; }
+  })();
   let loginBusy = false;
   function showLoginScreen() {
     loginBusy = false;
@@ -3298,6 +3302,8 @@
       $('row-terminated-test').classList.toggle('hidden', DATA.mode !== 'sim');
       $('row-penalty-test').classList.toggle('hidden', DATA.mode !== 'sim');
       $('row-result-room-test').classList.toggle('hidden', DATA.mode !== 'sim');
+      $('row-fresh-enter').classList.toggle('hidden', DATA.mode !== 'sim' || IS_FRESH);
+      $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       openModal('modal-settings');
     });
     $('btn-gift-test').addEventListener('click', () => {
@@ -3442,6 +3448,8 @@
       openModal('modal-blocklist');
     });
     $('btn-account').addEventListener('click', () => toast('アカウント設定は認証接続フェーズで実装します'));
+    $('btn-fresh-enter').addEventListener('click', () => { location.href = `${location.pathname}?fresh=1`; });
+    $('btn-fresh-exit').addEventListener('click', () => { location.href = location.pathname; });
     $('btn-logout').addEventListener('click', () => {
       // デモ（Sim）時はログイン画面に戻る。本番のログアウトは認証フェーズ
       if (DATA.mode === 'sim') { closeModal(); showLoginScreen(); }
