@@ -2124,6 +2124,14 @@
       // 履歴を読んでいる途中なら勝手に飛ばさず、「最新へ」ボタンで知らせる
       if (dmFollow.follow && !dmFollow.animating) scrollDmToBottom();
       updateScrollBottomBtn();
+      // 高額ギフト（全画面演出つき）は、DMを開いていても演出だけは
+      // 出す。ポップアップは出さない（カードは会話に出ているため。
+      // 2026-11-26 おぎ）
+      if (msg.kind === 'gift' && msg.gift) {
+        await ensureGiftPrices();
+        const price = msg.gift.price ?? giftPriceMap?.get(msg.gift.giftKey) ?? 0;
+        if (price >= 5000) playGiftFxFull(state.dmPeer, msg.gift);
+      }
       try { await DATA.markRead(msg.from); } catch { /* 一覧更新でも追随する */ }
     }
     renderTalkList();
