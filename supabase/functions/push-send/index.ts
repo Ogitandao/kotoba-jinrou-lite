@@ -136,10 +136,12 @@ Deno.serve(async (req) => {
     const userIds = Array.isArray(body.userIds) ? body.userIds.map(String) : [];
     let sent = 0;
     for (const uid of userIds) {
+      // 呼び戻しは「運営からのお知らせ」と同じ扱い（2026-11-26 おぎ）：
+      // プッシュ通知OFF／お知らせOFFの人には送らない
       sent += await sendToUser(
         uid,
         { title: APP_NAME, body: "おひさしぶりです！ことば人狼で遊びませんか？", tag: "comeback", url: "/" },
-        "comeback",
+        "announce",
       );
     }
     return json({ sent, users: userIds.length });

@@ -628,7 +628,7 @@
   // ロック画面に本文・名前は出さない（文言はサーバー側で固定）。
   // 設定は歯車の中に全体＋カテゴリ別のON/OFF。実DBモード専用
   const VAPID_PUBLIC = 'BMEGE6tYZMGP4cAb_XWHMqS3WanzIdG8Y9mRturssgggrFyeqEeRILjb_VVKIneJhhAGEnCcNqNIOrKkAY2-jj8';
-  const PUSH_CATS = ['dm', 'invite', 'announce', 'comeback'];
+  const PUSH_CATS = ['dm', 'invite', 'announce'];
   function pushSupported() {
     return DATA.mode !== 'sim'
       && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
@@ -659,7 +659,7 @@
   // カテゴリの選択は保持しておき、大元のプッシュ通知を切ると
   // 表示だけ一斉に外れて無効化、入れ直すと元の選択に戻る
   // （2026-11-26 おぎ）。サーバー側も master=false で全停止する
-  let pushCatState = { dm: true, invite: true, announce: true, comeback: true };
+  let pushCatState = { dm: true, invite: true, announce: true };
   function renderPushChecks(master) {
     $('push-master').checked = !!master;
     for (const c of PUSH_CATS) {
@@ -677,7 +677,7 @@
       const p = await DATA.getPushPrefs();
       pushCatState = {
         dm: !!p.dm, invite: !!p.invite,
-        announce: !!p.announce, comeback: !!p.comeback,
+        announce: !!p.announce,
       };
       renderPushChecks(!!p.master);
     } catch { /* 読めない時は既定表示のまま */ }
@@ -691,7 +691,7 @@
     const prefs = { master, ...pushCatState };
     try {
       await DATA.savePushPrefs(prefs);
-      if (prefs.master && (prefs.dm || prefs.invite || prefs.announce || prefs.comeback)) {
+      if (prefs.master && (prefs.dm || prefs.invite || prefs.announce)) {
         const okSub = await ensurePushSubscription();
         if (!okSub) {
           toast('通知が許可されませんでした。ブラウザの設定を確認してください');
@@ -711,7 +711,7 @@
     } catch { return; }
     openConfirm('メッセージが届いたら通知しますか？', '通知を受け取る', async () => {
       try {
-        await DATA.savePushPrefs({ master: true, dm: true, invite: true, announce: true, comeback: true });
+        await DATA.savePushPrefs({ master: true, dm: true, invite: true, announce: true });
         await ensurePushSubscription();
       } catch (e) { toastError(e); }
     });
@@ -3695,7 +3695,7 @@
       });
     }
     if (location.hash.startsWith('#dm/')) routePushTarget(location.hash);
-    for (const id of ['push-master', 'push-dm', 'push-invite', 'push-announce', 'push-comeback']) {
+    for (const id of ['push-master', 'push-dm', 'push-invite', 'push-announce']) {
       $(id).addEventListener('change', onPushToggle);
     }
     // サブタブのトラック高さをアクティブ側に追随させる
@@ -3737,7 +3737,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 18:24 / kb1+pushset2';
+      $('build-stamp').textContent = 'build 2026-11-26 18:33 / pushset3';
       loadPushSettings();
       openModal('modal-settings');
     });
