@@ -3824,7 +3824,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 19:36 / sw2';
+      $('build-stamp').textContent = 'build 2026-11-26 21:57 / biofix1';
       loadPushSettings();
       openModal('modal-settings');
     });
@@ -3925,7 +3925,7 @@
         b.classList.toggle('selected', b === btn);
       }
     });
-    $('report-submit').addEventListener('click', submitReport);
+    onActionTap($('report-submit'), submitReport);
     $('mm-report').addEventListener('click', () => {
       const t = msgMenuTarget;
       closeModal();
@@ -4052,7 +4052,23 @@
     $('name-input').addEventListener('input', () => {
       $('name-count').textContent = [...$('name-input').value].length;
     });
-    $('name-save').addEventListener('click', async () => {
+    // 入力欄つきモーダルの決定ボタンは pointerdown で先に受ける。
+    // click だけだと、タップでキーボードが閉じて画面が組み直される間に
+    // ボタンが指の下から逃げて、保存が永遠に押せないことがある
+    // （2026-11-26 おぎ実機：自己紹介の保存で発生）
+    function onActionTap(el, fn) {
+      let lastPointer = 0;
+      el.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        lastPointer = Date.now();
+        fn(e);
+      });
+      el.addEventListener('click', (e) => {
+        if (Date.now() - lastPointer < 700) return;
+        fn(e);
+      });
+    }
+    onActionTap($('name-save'), async () => {
       const birthVisible = !$('name-birth-row').classList.contains('hidden');
       const birthVal = birthVisible ? $('birthdate-input').value : '';
       if (birthVisible && !birthVal) { toast('生年月日を入力してください'); return; }
@@ -4086,7 +4102,7 @@
     $('bio-input').addEventListener('input', () => {
       $('bio-count').textContent = [...$('bio-input').value].length;
     });
-    $('bio-save').addEventListener('click', async () => {
+    onActionTap($('bio-save'), async () => {
       try {
         const r = await DATA.updateBio($('bio-input').value.trim());
         state.me.bio = r.bio;
@@ -4229,7 +4245,7 @@
     for (const radio of document.querySelectorAll('input[name="create-visibility"]')) {
       radio.addEventListener('change', refreshCreateError);
     }
-    $('btn-create-confirm').addEventListener('click', confirmCreate);
+    onActionTap($('btn-create-confirm'), confirmCreate);
     $('create-title').addEventListener('input', () =>
       $('create-title-error').classList.add('hidden'));
     $('btn-create-cancel').addEventListener('click', closeModal);
@@ -4255,7 +4271,7 @@
     $('appeal-reason').addEventListener('input', () => {
       $('appeal-count').textContent = [...$('appeal-reason').value].length;
     });
-    $('appeal-send').addEventListener('click', () => {
+    onActionTap($('appeal-send'), () => {
       const t = state.appealTarget;
       const reason = $('appeal-reason').value.trim();
       if (!t) return;
@@ -4364,10 +4380,10 @@
       if (state.dmPeer) openGift(state.dmPeer);
     });
     $('btn-group-new').addEventListener('click', openGroupCreate);
-    $('btn-group-create').addEventListener('click', askCreateGroup);
+    onActionTap($('btn-group-create'), askCreateGroup);
     $('dm-members-btn').addEventListener('click', openGroupMembers);
     $('btn-group-add').addEventListener('click', askAddGroupMembers);
-    $('btn-group-rename').addEventListener('click', doRenameGroup);
+    onActionTap($('btn-group-rename'), doRenameGroup);
     $('btn-group-leave').addEventListener('click', askLeaveGroup);
     $('confirm-x').addEventListener('click', () => {
       const fn = confirmCancelAction;
