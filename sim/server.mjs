@@ -44,9 +44,9 @@ export const WW_WOLF_COUNT = Object.freeze({
   4: 1, 5: 1, 6: 1, 7: 1, 8: 2,
 });
 
-/** 話し合い時間（秒）。4〜6人=300 / 7〜8人=480（本家と同一） */
+/** 話し合い時間（秒）。4〜6人=300 / 7〜8人=360（2026-11-26 おぎ決定で短縮） */
 export function discussionSecondsFor(playerCount) {
-  return playerCount <= 6 ? 300 : 480;
+  return playerCount <= 6 ? 300 : 360;
 }
 
 export const REVERSAL_CHOICE_COUNT = 6;

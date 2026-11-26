@@ -742,7 +742,7 @@
         phase: 'intro', phaseVersion: 0,
         phaseDeadlineAt: wwNow() + WW_CFG.introSeconds,
         playerIds: [...set.playerIds],
-        discussionSeconds: set.playerIds.length <= 6 ? 300 : 480,
+        discussionSeconds: set.playerIds.length <= 6 ? 300 : 360,
         voteRound: 1, extended: false, votesCast: 0,
         exiledId: null, winner: null, winReason: null,
         reversalChoices: null, reversalOutcome: null,

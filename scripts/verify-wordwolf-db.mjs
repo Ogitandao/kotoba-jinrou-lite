@@ -388,7 +388,7 @@ console.log('\n[8] 秘匿');
 }
 
 // ============================================================
-// 9. 人数帯の設定値（8人：ウルフ2人・話し合い480秒）
+// 9. 人数帯の設定値（8人：ウルフ2人・話し合い360秒）
 // ============================================================
 console.log('\n[9] 人数帯の設定値');
 {
@@ -396,7 +396,7 @@ console.log('\n[9] 人数帯の設定値');
   const secret = server._secretOf(game.id);
   check('8人ではウルフ2人', secret.wolfIds.length === 2);
   advancePhase(db, server, game);
-  check('8人の話し合いは480秒', game.phaseDeadlineAt - db.now() === 480,
+  check('8人の話し合いは360秒', game.phaseDeadlineAt - db.now() === 360,
     `実際 ${game.phaseDeadlineAt - db.now()}`);
   const w5 = makeWorld(5, { seed: 98 });
   advancePhase(w5.db, w5.server, w5.game);
