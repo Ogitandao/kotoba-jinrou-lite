@@ -2219,6 +2219,11 @@
       // 後ろに相手のプロフが開いていたら、そちらの数字もその場で最新化する
       if (state.profileUser?.id === target.id) refreshUserProfileData(state.profileUser);
       toast(`${target.name}さんに${gift.name}を送りました`);
+      // 高額ギフトは送った側にも全画面演出を出す（贈った本人が
+      // 大型演出を見られないのは残念、と 2026-11-26 おぎ）
+      if ((gift.price ?? 0) >= 5000) {
+        playGiftFxFull(target, { giftKey: gift.key, name: gift.name, price: gift.price });
+      }
       if (state.dmPeer?.id === target.id) {
         renderMessages(await DATA.listMessages(target.id));
       }
