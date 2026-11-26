@@ -3886,15 +3886,17 @@
       if (!s.classList.contains('hidden') && s.classList.contains('open')) closeDm();
     });
     $('dm-messages').addEventListener('scroll', updateScrollBottomBtn, { passive: true });
-    // メッセージ領域をタップしたらキーボードを閉じる（iPad のブラウザ
-    // では入力欄の外をタップしてもフォーカスが外れず、キーボードが
-    // しまえなくなるため、明示的に blur する。ルーム／対戦の発言欄も同型）
+    // メッセージ領域に触れたらキーボードを閉じる（iPad のブラウザでは
+    // 入力欄の外をタップしてもフォーカスが外れず、キーボードがしまえ
+    // なくなるため、明示的に blur する。click はスクロール可能な領域で
+    // 発火しないことがあるので touchstart でも拾う。ルーム／対戦も同型）
     const blurActiveInput = () => {
       const a = document.activeElement;
       if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) a.blur();
     };
     for (const id of ['dm-messages', 'room-chat-messages', 'game-messages']) {
       $(id).addEventListener('click', blurActiveInput);
+      $(id).addEventListener('touchstart', blurActiveInput, { passive: true });
     }
     $('dm-scroll-bottom').addEventListener('click', () => {
       dmFollow.follow = true;
