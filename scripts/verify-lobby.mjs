@@ -167,13 +167,12 @@ check('公開ルームを作成すると一覧の先頭に増える',
 
 check('新しく作ったルームはスライドイン用クラスが付く',
   document.querySelector('#room-list .room-card')?.classList.contains('enter') === true);
-// 切り替え式ティッカーは次の表示で出すため、最大6秒まで待つ
-// （このスイートの tick() は引数を無視して10ms固定なので実時間で待つ）
-for (let i = 0; i < 24 && !$('ticker-text').textContent.includes('作りました'); i++) {
-  await new Promise((r) => setTimeout(r, 250));
-}
-check('ルームを作るとティッカーに実イベントが流れる',
-  $('ticker-text').textContent.includes('検証用ルーム') && $('ticker-text').textContent.includes('作りました'));
+// ティッカーは固定＋運営のお知らせのみ（プレイヤー行動は流さない。
+// 2026-11-26 おぎ判断でライブ表示を廃止）
+await new Promise((r) => setTimeout(r, 1200));
+check('ルームを作ってもティッカーに実イベントは流れない（固定＋運営のみ）',
+  !$('ticker-text').textContent.includes('作りました') &&
+  ['ことば人狼へようこそ', '試合のあとは', 'はじめての人は'].some((t) => $('ticker-text').textContent.includes(t)));
 // --- ルーム作成（非公開：100コイン消費） ---
 $('btn-create-room').click();
 document.querySelector('input[name="create-visibility"][value="private"]').click();

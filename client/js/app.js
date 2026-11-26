@@ -541,7 +541,6 @@
     return b;
   }
   function renderRooms() {
-    detectRoomEvents(state.rooms);
     const list = $('room-list');
     list.innerHTML = '';
     // 新しく現れたルームだけふわっとスライドインさせる（初回表示は対象外）
@@ -558,87 +557,39 @@
     renderTicker();
   }
 
-  // ---------- ライブティッカー ----------
-  // ロビーに「今起きていること」を流す帯。お知らせ（固定）＋ルーム一覧の
-  // 変化から拾う実イベント（作成／対戦開始）を流す（2026-11-25 おぎ）
+  // ---------- ティッカー（お知らせ帯） ----------
+  // 固定のお知らせ＋運営のお知らせ（kl_announcements）だけを回す。
+  // プレイヤーの行動（ギフト・ルーム作成など）のライブ表示は
+  // 2026-11-26 におぎ判断で廃止（実機で表示の乱れが直らなかったため、
+  // 固定＋運営に寄せて無難にする）。0057 の Broadcast 送信側と
+  // アダプタの subscribeTicker は未使用のまま残置
   const TICKER_BASE = [
     '📣 ことば人狼へようこそ！マナーを守って楽しく遊ぼう',
     '🎁 試合のあとは、活躍した人にギフトを贈ってみよう',
     '🔰 はじめての人は「初心者歓迎」のルームがおすすめ',
   ];
-  // ティッカーは「1件ずつ切り替え」方式（2026-11-26 方式変更）。
-  // 流れるマーキー方式（CSS→JSスクロール）は、実機で「流れている
-  // 文がイベント文に上書きされる」表示が直らなかった（両端末・
-  // 最新版で再現）。表示中の文を絶対に触らない構造に変える：
-  // ・固定文は順番に1件ずつ表示し、数秒ごとにフェードで切り替える
-  // ・ライブイベントはキューの先頭に入り、次の切り替えで1回だけ表示
-  // ・イベントが来ても固定文の表示順・周期はリセットされない
+  let tickerAnnouncements = [];
+  const tickerItems = () => [...TICKER_BASE, ...tickerAnnouncements];
+  // 「1件ずつ切り替え」方式：表示中の文はフェード完了まで触らない
   const TICKER_BASE_MS = 4200;
-  const TICKER_EVENT_MS = 2800;
-  const tickerState = { baseIdx: 0, queue: [], timer: null, swapDueAt: 0 };
+  const tickerState = { idx: 0, timer: null };
   function tickerArm(ms) {
     clearTimeout(tickerState.timer);
-    tickerState.swapDueAt = Date.now() + ms;
     tickerState.timer = setTimeout(showTickerSlot, ms);
   }
   function showTickerSlot() {
     const el = $('ticker-text');
     if (!el) return;
-    const fromQueue = tickerState.queue.length > 0;
-    const text = fromQueue ? tickerState.queue.shift()
-      : TICKER_BASE[tickerState.baseIdx++ % TICKER_BASE.length];
+    const items = tickerItems();
+    const text = items[tickerState.idx++ % items.length];
     el.classList.toggle('long', [...text].length > 29);
     el.classList.add('swap');
     setTimeout(() => { el.textContent = text; el.classList.remove('swap'); }, 200);
-    tickerArm(tickerState.queue.length || fromQueue ? TICKER_EVENT_MS : TICKER_BASE_MS);
+    tickerArm(TICKER_BASE_MS);
   }
   function renderTicker() {
     if (tickerState.timer) return;
     if ($('ticker-text')) showTickerSlot();
-  }
-  // ライブイベントの受け口（0057）：最高額ギフトと100勝の節目は
-  // サーバーが Broadcast で流す。ロビーを見ている時だけ取り込み、
-  // その場にいない人には流さない（貯めない・遡らない）
-  let lastTickerEvent = { text: '', at: 0 };
-  function onTickerEvent(payload) {
-    const text = payload?.text;
-    if (!text) return;
-    // 同一イベントの二重配送（再接続時のリプレイ等）は1回に抑える
-    const now = Date.now();
-    if (text === lastTickerEvent.text && now - lastTickerEvent.at < 2000) return;
-    lastTickerEvent = { text, at: now };
-    if (state.tab !== 'lobby') return;
-    if (!$('dm-screen').classList.contains('hidden')) return;
-    if (!$('room-screen').classList.contains('hidden')) return;
-    if (!$('game-screen').classList.contains('hidden')) return;
-    pushTickerEvent(text);
-  }
-  function pushTickerEvent(text) {
-    tickerState.queue.push(text);
-    if (!tickerState.timer) { renderTicker(); return; }
-    // 次の切り替えが遠い（固定文の表示中）なら、フェードを挟んで
-    // イベントを次の表示に回す。近い（イベント表示の合間）なら
-    // そのまま順番を待つ
-    if (tickerState.swapDueAt - Date.now() > 700) tickerArm(550);
-  }
-  function detectRoomEvents(rooms) {
-    const prev = state.prevRooms;
-    const next = new Map(rooms.map((r) => [r.id, { players: r.players, status: r.status }]));
-    state.prevRooms = next;
-    if (!prev) return; // 初回は種まきだけ（既存ルームをイベント化しない）
-    for (const r of rooms) {
-      const p = prev.get(r.id);
-      if (!p) {
-        // 作成直後の仮ルーム（pending-）は本物のIDに差し替わった時に
-        // 1回だけ流す（仮→本物の二重発火を防ぐ。実ブラウザ再現で確認）
-        if (String(r.id).startsWith('pending-')) continue;
-        if (r.hostName) pushTickerEvent(`🏠 ${r.hostName}さんがルーム『${r.title}』を作りました`);
-      } else if (p.status !== 'playing' && r.status === 'playing') {
-        // 対戦が始まったタイミングで1回だけ流す。同じルームでも
-        // 対戦が始まるたびに流れる（2026-11-25 おぎ）
-        pushTickerEvent(`🔥 ルーム『${r.title}』が対戦中です！`);
-      }
-    }
   }
 
   // ルーム作成バーは「ロビー表示中」だけ出す。ルーム／対戦／DM など
@@ -3524,7 +3475,7 @@
     refreshSocial();
     DATA.subscribeDm(onIncomingDm);
     DATA.subscribeFriends(onFriendsChanged);
-    DATA.subscribeTicker(onTickerEvent);
+    DATA.listAnnouncements().then((list) => { tickerAnnouncements = list; }).catch(() => {});
     // サブタブのトラック高さをアクティブ側に追随させる
     syncSubtabHeight();
     if (typeof ResizeObserver !== 'undefined') {
@@ -3564,7 +3515,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 17:33 / ticker4';
+      $('build-stamp').textContent = 'build 2026-11-26 17:47 / ticker5';
       openModal('modal-settings');
     });
     $('btn-gift-test').addEventListener('click', () => {

@@ -1331,3 +1331,11 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
 - Puppeteer（実Chrome）で旧スクロール方式を再現検証した結果：①既存ノードの文字が書き換わることは皆無（characterData変更0件）。おぎの見た「上書き」の正体は、イベントが先頭の次に差し込まれた瞬間、表示中だった固定文が画面外へ押し出され、その位置にイベント文が現れる「差し込みによる置き換わり」だった。②本物のバグ発見：ルーム作成イベントが2回流れていた。confirmCreate の仮ルーム（pending- ID）で detectRoomEvents が発火し、本物IDへの差し替えでもう1回発火していた。
 - 修正：detectRoomEvents で pending- IDのルームをスキップ（本物IDで1回だけ流れる）。
 - 切り替え方式（ticker4）では①も構造的に起きない（表示中の文はフェード完了まで不変）。
+
+## 追補84（2026-11-26）ティッカーからプレイヤー情報を廃止（ticker5）— 固定＋運営のみ
+- おぎ判断：ティッカーにプレイヤー情報（ギフト・ルーム作成・対戦開始・100勝）を含めるのをやめ、固定文＋運営のお知らせだけを回す形に寄せる（実機の表示の乱れが直らず、無難な形を優先）。
+- クライアント：onTickerEvent／pushTickerEvent／detectRoomEvents を撤去。ティッカーは TICKER_BASE 3件＋運営お知らせの回転のみ（切り替え式のまま）。
+- 運営お知らせの受け皿：migration 0058 で kl_announcements（text／active／created_at）を作成（RLS：active な行を authenticated が SELECT 可、grant 済み）。アダプタに listAnnouncements（両バックエンド＋facade）を追加し、起動時に取得して回転に混ぜる。出し入れは SQL で運用（管理画面なし）。
+- 残置：0057 の Broadcast 送信側（kl_send_gift／ww__finish 内の realtime.send）とアダプタ subscribeTicker は未使用のまま（害なし、将来の再利用候補）。
+- 検証：lobby 75/75（ティッカーチェックを「実イベントは流れない」に差し替え）／social-ui 90/90／game-ui 123/123／supabase-mode 8/8。
+- ビルド表示は「build 2026-11-26 17:47 / ticker5」。

@@ -1368,6 +1368,7 @@
       subscribeDm() { return () => {}; },
       subscribeFriends() { return () => {}; },
       subscribeTicker() { return () => {}; },
+      listAnnouncements() { return ok([]); },
       listMessages(userId) {
         return ok(state.dm.filter(
           (m) => !m.hiddenForMe
@@ -2281,6 +2282,14 @@
           if (tickerChannel) { getClient().removeChannel(tickerChannel); tickerChannel = null; }
         };
       },
+      // 運営のお知らせ（0058）：ティッカーの固定枠に混ぜて回す
+      async listAnnouncements() {
+        const { data, error } = await getClient()
+          .from('kl_announcements').select('text')
+          .eq('active', true).order('created_at', { ascending: true });
+        if (error) throw error;
+        return (data ?? []).map((r) => r.text);
+      },
       // グループチャット（0036 で実 DB 配線。書き込みは RPC 経由のみ）
       // RPC の { id, name, memberIds } に profiles を合わせて Sim の
       // pubGroup と同じ形に組み立てる
@@ -2752,6 +2761,7 @@
     subscribeDm: (cb) => active.subscribeDm(cb),
     subscribeFriends: (cb) => active.subscribeFriends(cb),
     subscribeTicker: (cb) => active.subscribeTicker(cb),
+    listAnnouncements: () => active.listAnnouncements(),
     createGroup: (name, ids) => active.createGroup(name, ids),
     listGroupMessages: (gid) => active.listGroupMessages(gid),
     sendGroupMessage: (gid, body) => active.sendGroupMessage(gid, body),
