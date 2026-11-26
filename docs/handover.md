@@ -1326,3 +1326,8 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
 - 実装：index.htmlは #ticker-track を廃し #ticker-text（span）1個に。CSSは .ticker-text（中央寄せ・ellipsis・29文字超は .long で11px）。app.jsは tickerState（baseIdx/queue/timer/swapDueAt）+ showTickerSlot/tickerArm に置換。onTickerEvent の二重配信ガード・subscribeTicker のチャンネルガードは存続。
 - 検証：lobby 75/75（ティッカーチェックを回転式に適応。注意：同スイートの tick() は引数無視の10ms固定）／social-ui 90/90／game-ui 123/123／supabase-mode 8/8。
 - ビルド表示は「build 2026-11-26 17:24 / ticker4」。
+
+## 追補83（2026-11-26）実ブラウザ再現の結果＋ルーム作成イベントの二重発火を修正
+- Puppeteer（実Chrome）で旧スクロール方式を再現検証した結果：①既存ノードの文字が書き換わることは皆無（characterData変更0件）。おぎの見た「上書き」の正体は、イベントが先頭の次に差し込まれた瞬間、表示中だった固定文が画面外へ押し出され、その位置にイベント文が現れる「差し込みによる置き換わり」だった。②本物のバグ発見：ルーム作成イベントが2回流れていた。confirmCreate の仮ルーム（pending- ID）で detectRoomEvents が発火し、本物IDへの差し替えでもう1回発火していた。
+- 修正：detectRoomEvents で pending- IDのルームをスキップ（本物IDで1回だけ流れる）。
+- 切り替え方式（ticker4）では①も構造的に起きない（表示中の文はフェード完了まで不変）。

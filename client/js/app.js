@@ -629,6 +629,9 @@
     for (const r of rooms) {
       const p = prev.get(r.id);
       if (!p) {
+        // 作成直後の仮ルーム（pending-）は本物のIDに差し替わった時に
+        // 1回だけ流す（仮→本物の二重発火を防ぐ。実ブラウザ再現で確認）
+        if (String(r.id).startsWith('pending-')) continue;
         if (r.hostName) pushTickerEvent(`🏠 ${r.hostName}さんがルーム『${r.title}』を作りました`);
       } else if (p.status !== 'playing' && r.status === 'playing') {
         // 対戦が始まったタイミングで1回だけ流す。同じルームでも
@@ -3561,7 +3564,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 17:24 / ticker4';
+      $('build-stamp').textContent = 'build 2026-11-26 17:33 / ticker4';
       openModal('modal-settings');
     });
     $('btn-gift-test').addEventListener('click', () => {
