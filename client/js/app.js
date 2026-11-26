@@ -3753,9 +3753,14 @@
         + 'font-family:monospace;white-space:pre';
       document.body.appendChild(dbg);
       const paintDbg = (kb) => {
+        let css = '-';
+        if (kb > 0) {
+          const rm = document.getElementById('room-members');
+          if (rm) css = getComputedStyle(rm).display;
+        }
         dbg.textContent = `kb=${Math.round(kb)} vv=${Math.round(vv.height)} `
           + `ih=${window.innerHeight} ch=${document.documentElement.clientHeight} `
-          + `base=${Math.round(baseH)} off=${Math.round(vv.offsetTop)}`;
+          + `base=${Math.round(baseH)} off=${Math.round(vv.offsetTop)} css=${css}`;
       };
       const syncKb = () => {
         baseH = Math.max(baseH, document.documentElement.clientHeight,
@@ -3838,7 +3843,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 19:12 / kb3';
+      $('build-stamp').textContent = 'build 2026-11-26 19:18 / kb4';
       loadPushSettings();
       openModal('modal-settings');
     });
