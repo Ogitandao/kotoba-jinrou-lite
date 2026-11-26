@@ -8,6 +8,8 @@
   'use strict';
   const DATA = window.KL_DATA;
   const state = {
+    // アプリを開いた時刻。ギフト通知の「その場にいたか」の判定に使う
+    sessionStartMs: Date.now(),
     me: null,
     coins: 0,
     popularity: 0,
@@ -746,6 +748,12 @@
       const last = c.last;
       if (!last || last.kind !== 'gift' || !last.gift) continue;
       if (last.from !== c.partnerId || c.partnerId === 'system') continue;
+      // アプリを開いている間に届いたギフトだけ通知する（ポップアップ
+      // ＆大型演出）。閉じている間に溜まった分まで開いた瞬間に流すと、
+      // 人気がある人ほど開幕で連射されてうざい（2026-11-26 おぎ）。
+      // 溜まった分は DM のカードと未読バッジで分かる形に留める。
+      // 30秒の余裕は端末とサーバーの時計のずれ吸収用
+      if ((last.at ?? 0) < state.sessionStartMs - 30000) continue;
       if ((c.unread ?? 0) <= 0) continue;
       if (seenGiftNotifs.has(last.id)) continue;
       seenGiftNotifs.add(last.id);
