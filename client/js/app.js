@@ -3898,6 +3898,12 @@
       $(id).addEventListener('click', blurActiveInput);
       $(id).addEventListener('touchstart', blurActiveInput, { passive: true });
     }
+    // iPad ではアプリ画面（中央の列）の外側が広く、そこをタップして
+    // 閉じようとするのが自然なので、外側のタップでも閉じられるように
+    // する（画面内のタップは各エリアの処理に任せる）
+    document.addEventListener('touchstart', (e) => {
+      if (!e.target.closest('.phone')) blurActiveInput();
+    }, { passive: true });
     $('dm-scroll-bottom').addEventListener('click', () => {
       dmFollow.follow = true;
       animateToBottom($('dm-messages'), dmFollow, updateScrollBottomBtn);
