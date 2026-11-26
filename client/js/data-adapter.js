@@ -1908,6 +1908,14 @@
         if (error) throw fail('AUTH_PROBE_ERROR', error.message);
         return data?.session ? 'signed-in' : 'signed-out';
       },
+      // 保存済みセッションがサーバー側でも生きているかを検証する。
+      // アカウントが削除された場合、端末に残ったセッションだけでは
+      // getSession が成功してしまうため、Facade の復旧判定に使う
+      async sessionAlive() {
+        const { data, error } = await getClient().auth.getUser();
+        if (error) return false;
+        return Boolean(data?.user);
+      },
       // Google ログイン（OAuth）。成功時は Google の画面へ遷移する
       async signInWithGoogle() {
         const { error } = await getClient().auth.signInWithOAuth({
@@ -2593,6 +2601,18 @@
             return result;
           } catch (e) {
             active = sim; // セッションはあったが初期化に失敗 → デモで動かす
+            // ただしアカウント削除等でセッションだけが残っている場合は、
+            // 死んだセッションを破棄して「未ログイン確定」に倒す（デモに
+            // 落ちたままだと実ログインへ二度と進めなくなる）。サーバーで
+            // セッションが生きていれば（一時的な初期化失敗）従来どおり
+            const alive = sb.sessionAlive
+              ? await sb.sessionAlive().catch(() => true)
+              : true;
+            if (!alive) {
+              try { await sb.signOut(); } catch {}
+              authState = 'signed-out';
+              signedOut = true;
+            }
           }
         } else if (probe === 'signed-out') {
           // 未ログインが確定：データはデモに落とすが、画面側はログイン
