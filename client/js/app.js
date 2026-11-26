@@ -3304,6 +3304,7 @@
       $('row-result-room-test').classList.toggle('hidden', DATA.mode !== 'sim');
       $('row-fresh-enter').classList.toggle('hidden', DATA.mode !== 'sim' || IS_FRESH);
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
+      $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       openModal('modal-settings');
     });
     $('btn-gift-test').addEventListener('click', () => {
@@ -3450,6 +3451,18 @@
     $('btn-account').addEventListener('click', () => toast('アカウント設定は認証接続フェーズで実装します'));
     $('btn-fresh-enter').addEventListener('click', () => { location.href = `${location.pathname}?fresh=1`; });
     $('btn-fresh-exit').addEventListener('click', () => { location.href = location.pathname; });
+    // デモのリセット：端末に残る記録（スターターの日数・チュートリアル
+    // 同意）だけがデモの「続き」なので、それを消して読み直せば最初から
+    $('btn-demo-reset').addEventListener('click', () => {
+      closeModal();
+      openConfirm('デモの記録（スターターの日数・チュートリアル同意）を消して、最初からにしますか？', 'リセットする', () => {
+        try {
+          localStorage.removeItem('kl_starter_days');
+          localStorage.removeItem('kl_rules_agreed');
+        } catch { /* 保存できない環境では記録自体が残っていない */ }
+        location.reload();
+      });
+    });
     $('btn-logout').addEventListener('click', () => {
       // デモ（Sim）時はログイン画面に戻る。本番のログアウトは認証フェーズ
       if (DATA.mode === 'sim') { closeModal(); showLoginScreen(); }

@@ -300,6 +300,19 @@ check('Googleログインボタンを押すとログイン画面が閉じる', a
   return $('login-screen').classList.contains('hidden');
 })());
 check('縦固定：横向き案内オーバーレイがある', !!$('rotate-notice'));
+check('デモをリセット：設定に行があり、確認ポップアップが開いて閉じる', await (async () => {
+  // ※jsdom（file://）では localStorage 自体が使えないため、記録の
+  // 消去そのものは実機側の動作として、ここでは導線だけを確認する
+  $('btn-settings').click();
+  const rowShown = !$('row-demo-reset').classList.contains('hidden');
+  $('btn-demo-reset').click();
+  await new Promise((r) => setTimeout(r, 30));
+  const confirmShown = !$('modal-confirm').classList.contains('hidden')
+    && $('confirm-text').textContent.includes('デモの記録');
+  $('confirm-yes').click();
+  await new Promise((r) => setTimeout(r, 30));
+  return rowShown && confirmShown && $('modal-confirm').classList.contains('hidden');
+})());
 check('縦固定：横向き案内は .show で表示する CSS がある（メディアクエリは誤判定するため不使用）',
   readFileSync(new URL('styles.css', base), 'utf8').includes('.rotate-notice.show')
   && !readFileSync(new URL('styles.css', base), 'utf8').includes('@media (orientation: landscape)'));
