@@ -1530,13 +1530,16 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-size: 12px; font-weight: 700; max-width: 92%;
 }
 
-/* DMのシステムメッセージ（ペナルティ通知など。長文なので従来フォント） */
+/* DMのシステムメッセージ（ようこそ・ペナルティ通知など）。
+   以前は「長文だから」と従来フォント＋全幅カードにしていたが、通常の
+   吹き出しと並ぶと初期デザインのまま浮いて見えるため、吹き出しの
+   形（白系＋影＋角丸16px）とアプリ標準フォントに統一した
+   （2026-11-26 おぎ指摘）。水色地で「システムからの知らせ」とは分かる */
 .dm-system-msg {
-  align-self: stretch; background: #eef4ff; border: 1px solid var(--line);
-  border-radius: 14px; padding: 10px 12px; margin: 4px 0;
-  font-size: 13px; line-height: 1.6; color: var(--ink); white-space: pre-line;
-  font-family: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
-  font-weight: 400;
+  align-self: flex-start; max-width: 94%;
+  background: #eaf6ff; border-radius: 16px; box-shadow: var(--shadow);
+  padding: 10px 13px; margin: 4px 0;
+  font-size: 14px; line-height: 1.6; color: var(--ink); white-space: pre-line;
 }
 /* グループの参加・退出などの短いお知らせ（中央の小さいピル） */
 .chat-notice {
