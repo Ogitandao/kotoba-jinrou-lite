@@ -1353,3 +1353,7 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
 - ハマりどころ：dm_messages は生 SQL 作成のため service_role の grant が無く EF から読めなかった（0054 の教訓の再演）。0059 末尾に grant select（dm_messages／kl_push_prefs）と select,delete（kl_push_subscriptions）を追記して解決。
 - クライアント（build 2026-11-26 18:14 / push1）：sw.js に push／notificationclick を追加（タップ→既存ウィンドウへ postMessage で #dm/<id> 遷移、無ければ openWindow）。設定モーダルに通知トグル5行（実DBモードのみ表示）。ON にすると許可リクエスト＋購読を保存。初めて DM を送れた時に1回だけ文脈許可ポップアップ（localStorage kl_push_asked）。起動時・復帰時に kl_touch_seen（30分スロットル）と購読の自動更新。ホーム画面バッジは setAppBadge（DM未読＋申請数、アプリ内バッジと同数）。
 - 検証：verify-push-db 14/14（実 DB：トリガー→EF→設定ゲート→404 購読掃除→呼び戻し選定まで確認）。lobby 75/75／social-ui 90/90／game-ui 123/123／supabase-mode 8/8／fresh 9/9。端末への実配信は VM から検証不可 → おぎ実機で確認（設定で ON → 相手端末から DM）。
+
+## 追補87（2026-11-26）通知バッジ（狼マーク）と実機配信確認
+- ステータスバーの小アイコン用に badge を追加：トップバーから廃止された狼マーク（wolf-mark.webp）を単色化して client/icons/badge-96.png にし、sw.js の showNotification に badge を指定（URL は SW スコープ基準の絶対URL）。
+- おぎ実機（Android）で配信＋バッジ表示を確認。ただし表示が切り替わったのはホーム画面アプリの再インストール後（古いインストールではベルのままだった。再インストールで登録が作り直されたためとみられる）。
