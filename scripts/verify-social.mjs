@@ -48,6 +48,14 @@ check('却下すると申請が消える',
   sim.respondFriendRequest('bob', 'alice', false) === 'rejected'
   && sim.incomingRequests('bob').length === 0
   && !sim.areFriends('alice', 'bob'));
+// --- 申請の取り消し（0056） ---
+sim.sendFriendRequest('dave', 'carol');
+sim.cancelFriendRequest('dave', 'carol');
+check('申請を取り消すと相手側からも消える',
+  sim.incomingRequests('carol').length === 0
+  && sim.searchUser('dave', 'CAROL003')?.relation === 'none');
+expectCode('無い申請の取り消しは REQUEST_NOT_FOUND',
+  () => sim.cancelFriendRequest('dave', 'carol'), 'REQUEST_NOT_FOUND');
 sim.sendFriendRequest('alice', 'bob');
 check('承認するとフレンド成立',
   sim.respondFriendRequest('bob', 'alice', true) === 'accepted'

@@ -314,6 +314,30 @@ check('申請すると「申請中」表示になり、申請中リストにも�
   rowByName($('search-result'), 'もち')?.textContent.includes('申請中')
   && visible($('outgoing-section'))
   && !!rowByName($('outgoing-list'), 'もち'));
+// --- 申請の取り消し（申請中タップ→確認） ---
+[...rowByName($('search-result'), 'もち').querySelectorAll('button')]
+  .find((b) => b.textContent === '申請中').click();
+await tick();
+check('検索結果の申請中タップで取り消し確認が出る',
+  visible($('modal-confirm')) && $('confirm-text').textContent === '申請を取り消しますか？');
+$('confirm-yes').click();
+await tick();
+check('取り消すと検索結果が「申請する」に戻り、申請中リストからも消える',
+  rowByName($('search-result'), 'もち')?.textContent.includes('申請する')
+  && !visible($('outgoing-section')));
+// 再度申請して、申請中リスト側のタップでも取り消せることを確認
+[...rowByName($('search-result'), 'もち').querySelectorAll('button')]
+  .find((b) => b.textContent === '申請する').click();
+await tick();
+[...rowByName($('outgoing-list'), 'もち').querySelectorAll('button')]
+  .find((b) => b.textContent === '申請中').click();
+await tick();
+check('申請中リストの申請中タップでも取り消し確認が出る',
+  visible($('modal-confirm')) && $('confirm-text').textContent === '申請を取り消しますか？');
+$('confirm-yes').click();
+await tick();
+check('リスト側からも取り消せる',
+  !visible($('outgoing-section')));
 $('friend-search-input').value = 'zzzz9999';
 $('btn-friend-search').click();
 await tick();

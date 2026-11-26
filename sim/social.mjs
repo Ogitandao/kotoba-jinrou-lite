@@ -150,6 +150,12 @@ export class SocialSim {
     return 'requested';
   }
 
+  // 0056：申請の取り消し（申請した側だけ）
+  cancelFriendRequest(meId, toId) {
+    if (!this._hasRequest(meId, toId)) fail('REQUEST_NOT_FOUND', '申請が存在しません');
+    this._dropRequest(meId, toId);
+  }
+
   respondFriendRequest(meId, fromId, accept) {
     if (!this._hasRequest(fromId, meId)) fail('REQUEST_NOT_FOUND', '申請が存在しません');
     this._dropRequest(fromId, meId);

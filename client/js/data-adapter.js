@@ -1245,6 +1245,11 @@
         if (accept) state.friends.add(userId);
         return ok(accept ? 'accepted' : 'rejected');
       },
+      cancelFriendRequest(userId) {
+        if (!state.outgoing.has(userId)) return Promise.reject(fail('REQUEST_NOT_FOUND', '申請が存在しません'));
+        state.outgoing.delete(userId);
+        return ok(null);
+      },
       removeFriend(userId) {
         state.friends.delete(userId);
         return ok(null);
@@ -1361,6 +1366,7 @@
       },
       // Sim には相手の実在がないため Realtime 購読は no-op
       subscribeDm() { return () => {}; },
+      subscribeFriends() { return () => {}; },
       listMessages(userId) {
         return ok(state.dm.filter(
           (m) => !m.hiddenForMe
@@ -1869,6 +1875,7 @@
     let client = null;
     let meId = null;
     let dmChannel = null;
+    let friendsChannel = null;
     function getClient() {
       if (!cfg.supabaseUrl || !cfg.supabaseKey || !window.supabase?.createClient) {
         throw fail('NOT_CONFIGURED', 'Supabase が未設定です');
@@ -2052,6 +2059,7 @@
         };
       },
       sendFriendRequest(userId) { return rpc('kl_send_friend_request', { p_to: userId }); },
+      cancelFriendRequest(userId) { return rpc('kl_cancel_friend_request', { p_to: userId }); },
       respondFriendRequest(userId, accept) {
         return rpc('kl_respond_friend_request', { p_from: userId, p_accept: accept });
       },
@@ -2221,6 +2229,26 @@
           .subscribe();
         return () => {
           if (dmChannel) { getClient().removeChannel(dmChannel); dmChannel = null; }
+        };
+      },
+      // フレンド関係の即時反映（0055）：申請の到着・取り消し・承認を
+      // 購読し、変化のたびに呼び出し元へ知らせる（中身の再取得は
+      // 呼び出し元が正本で行う）。RLS により自分が関係する行しか届かない
+      subscribeFriends(onChange) {
+        if (!meId || friendsChannel) return () => {};
+        friendsChannel = getClient().channel('kl-friends-watch')
+          .on('postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'friend_requests' },
+            () => onChange())
+          .on('postgres_changes',
+            { event: 'DELETE', schema: 'public', table: 'friend_requests' },
+            () => onChange())
+          .on('postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'friendships' },
+            () => onChange())
+          .subscribe();
+        return () => {
+          if (friendsChannel) { getClient().removeChannel(friendsChannel); friendsChannel = null; }
         };
       },
       // グループチャット（0036 で実 DB 配線。書き込みは RPC 経由のみ）
@@ -2678,6 +2706,7 @@
     listOutgoingRequests: () => active.listOutgoingRequests(),
     searchUser: (id) => active.searchUser(id),
     sendFriendRequest: (id) => active.sendFriendRequest(id),
+    cancelFriendRequest: (id) => active.cancelFriendRequest(id),
     respondFriendRequest: (id, accept) => active.respondFriendRequest(id, accept),
     removeFriend: (id) => active.removeFriend(id),
     blockUser: (id) => active.blockUser(id),
@@ -2690,6 +2719,7 @@
     clearConversation: (key) => active.clearConversation(key),
     markRead: (id) => active.markRead(id),
     subscribeDm: (cb) => active.subscribeDm(cb),
+    subscribeFriends: (cb) => active.subscribeFriends(cb),
     createGroup: (name, ids) => active.createGroup(name, ids),
     listGroupMessages: (gid) => active.listGroupMessages(gid),
     sendGroupMessage: (gid, body) => active.sendGroupMessage(gid, body),

@@ -1296,9 +1296,12 @@
     outList.innerHTML = '';
     $('outgoing-section').classList.toggle('hidden', outgoing.length === 0);
     for (const u of outgoing) {
-      const label = document.createElement('span');
-      label.className = 'pending-label';
+      // 「申請中」はタップで取り消せる（2026-11-26 おぎ要望）
+      const label = document.createElement('button');
+      label.type = 'button';
+      label.className = 'pending-label pending-btn';
       label.textContent = '申請中';
+      label.addEventListener('click', () => confirmCancelRequest(u, false));
       outList.appendChild(userRow(u, [label]));
     }
 
@@ -1386,8 +1389,7 @@
         action = smallBtn('フレンドです', 'mini-btn', () => {});
         action.disabled = true;
       } else if (u.relation === 'requested_out') {
-        action = smallBtn('申請中', 'mini-btn', () => {});
-        action.disabled = true;
+        action = smallBtn('申請中', 'mini-btn', () => confirmCancelRequest(u, true));
       } else if (u.relation === 'requested_in') {
         action = smallBtn('承認する', 'mini-btn primary', () => {
           openConfirm(`${u.name}さんのフレンド申請を\n承認しますか？`, '承認する', async () => {
@@ -1990,6 +1992,30 @@
       renderTalkList();
     } catch (e) { toastError(e); }
   }
+  // フレンド申請の取り消し確認（申請中リスト／検索結果の両方から使う）
+  function confirmCancelRequest(u, fromSearch) {
+    openConfirm('申請を取り消しますか？', '取り消す', async () => {
+      try {
+        await DATA.cancelFriendRequest(u.id);
+        toast('申請を取り消しました');
+        await refreshSocial();
+        if (fromSearch) doSearch();
+      } catch (e) { toastError(e); }
+    });
+  }
+
+  // Realtime で届いたフレンド関係の変化（申請の到着・取り消し・承認）。
+  // 画面遷移なしでバッジを付け替え、フレンドパネルを開いていれば
+  // その場で描き直す（実 DB モードのみ。Sim では発火しない）
+  async function onFriendsChanged() {
+    try {
+      const incoming = await DATA.listIncomingRequests();
+      incomingReqCount = incoming.length;
+      paintNavBadges();
+      if (state.tab === 'friends' && state.subtab === 'friend') renderFriendPanel();
+    } catch { /* 次の画面遷移時の取得で回復する */ }
+  }
+
   // Realtime で届いた新着DM（実 DB モードのみ。Sim では発火しない）。
   // 開いている相手からならその場で末尾に追加して既読化し、常に
   // トーク一覧を更新する（並び替え・バッジ・ギフト通知が即時になる）
@@ -3381,6 +3407,7 @@
     renderTicker();
     refreshSocial();
     DATA.subscribeDm(onIncomingDm);
+    DATA.subscribeFriends(onFriendsChanged);
     // サブタブのトラック高さをアクティブ側に追随させる
     syncSubtabHeight();
     if (typeof ResizeObserver !== 'undefined') {
