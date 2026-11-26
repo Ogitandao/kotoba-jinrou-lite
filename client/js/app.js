@@ -3673,6 +3673,35 @@
       if (e.key === 'Enter') doSearch();
     });
     $('dm-back').addEventListener('click', closeDm);
+    // スワイプで戻る（2026-11-26 おぎ）：画面の左端から右へ引く動きで
+    // 「戻る」と同じ動作をする。対象は戻り先のある画面（DM→トーク一覧）
+    // だけ。ルーム／対戦画面では一切発動しない：入室も退出もボタン操作
+    // だけが正道で、ロビー側に「前の画面」は存在しないため、退出後に
+    // スワイプでルームへ戻ることも構造的に起こらない
+    {
+      let swipeTrack = null;
+      document.addEventListener('touchstart', (e) => {
+        swipeTrack = null;
+        if (e.touches.length !== 1) return;
+        const t = e.touches[0];
+        if (t.clientX > 28) return; // 左端で掴んだスワイプだけ
+        if (modalStack.length > 0) return; // モーダル表示中は無効
+        if (!$('modal-backdrop2').classList.contains('hidden')) return; // 確認・通報レイヤー表示中は無効
+        if (!$('room-screen').classList.contains('hidden')) return; // ルーム内は一切無効
+        if (!$('game-screen').classList.contains('hidden')) return; // 対戦中は一切無効
+        const s = $('dm-screen');
+        if (s.classList.contains('hidden') || !s.classList.contains('open')) return;
+        swipeTrack = { x: t.clientX, y: t.clientY };
+      }, { passive: true });
+      document.addEventListener('touchend', (e) => {
+        if (!swipeTrack) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - swipeTrack.x;
+        const dy = Math.abs(t.clientY - swipeTrack.y);
+        swipeTrack = null;
+        if (dx >= 64 && dy < 60) closeDm();
+      }, { passive: true });
+    }
     $('dm-messages').addEventListener('scroll', updateScrollBottomBtn, { passive: true });
     $('dm-scroll-bottom').addEventListener('click', () => {
       dmFollow.follow = true;

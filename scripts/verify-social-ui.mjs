@@ -382,6 +382,39 @@ await tick();
 check('ブロックリストにけんが出る（解除ボタンつき）',
   visible($('modal-blocklist')) && !!rowByName($('blocklist-items'), 'けん'));
 
+// --- スワイプで戻る（左端→右） ---
+function swipeBack() {
+  const ts = new dom.window.Event('touchstart', { bubbles: true });
+  ts.touches = [{ clientX: 6, clientY: 200 }];
+  document.dispatchEvent(ts);
+  const te = new dom.window.Event('touchend', { bubbles: true });
+  te.changedTouches = [{ clientX: 130, clientY: 206 }];
+  document.dispatchEvent(te);
+}
+for (let i = 0; i < 4; i++) {
+  const c = [...document.querySelectorAll('.modal:not(.hidden) .modal-close')].pop();
+  if (!c) break;
+  c.click();
+  await tick();
+}
+$('tabbtn-friends').click();
+await tick();
+rowByName($('talk-list'), 'みか').click();
+await tick(90);
+check('スワイプ検証：DMが開いている', $('dm-screen').classList.contains('open'));
+swipeBack();
+await tick(60);
+check('左端スワイプでDMからトーク一覧へ戻れる', !$('dm-screen').classList.contains('open'));
+rowByName($('talk-list'), 'みか').click();
+await tick(90);
+$('room-screen').classList.remove('hidden'); // ルーム表示中を擬似再現
+swipeBack();
+await tick(60);
+check('ルーム表示中はスワイプで戻れない（DMが開いたまま）', $('dm-screen').classList.contains('open'));
+$('room-screen').classList.add('hidden');
+$('dm-back').click();
+await tick();
+
 const failed = results.filter((r) => !r.ok);
 console.log(`\n=== ${results.length - failed.length}/${results.length} PASS ===`);
 process.exit(failed.length ? 1 : 0);
