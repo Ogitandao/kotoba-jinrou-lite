@@ -656,31 +656,46 @@
     }
     return true;
   }
+  // カテゴリの選択は保持しておき、大元のプッシュ通知を切ると
+  // 表示だけ一斉に外れて無効化、入れ直すと元の選択に戻る
+  // （2026-11-26 おぎ）。サーバー側も master=false で全停止する
+  let pushCatState = { dm: true, invite: true, announce: true, comeback: true };
+  function renderPushChecks(master) {
+    $('push-master').checked = !!master;
+    for (const c of PUSH_CATS) {
+      const box = $(`push-${c}`);
+      box.checked = master ? !!pushCatState[c] : false;
+      box.disabled = !master;
+      box.closest('li').style.opacity = master ? '' : '0.45';
+    }
+  }
   async function loadPushSettings() {
     const supported = pushSupported();
     $('row-push').classList.toggle('hidden', !supported);
     if (!supported) return;
     try {
       const p = await DATA.getPushPrefs();
-      $('push-master').checked = !!p.master;
-      for (const c of PUSH_CATS) $(`push-${c}`).checked = !!p[c];
+      pushCatState = {
+        dm: !!p.dm, invite: !!p.invite,
+        announce: !!p.announce, comeback: !!p.comeback,
+      };
+      renderPushChecks(!!p.master);
     } catch { /* 読めない時は既定表示のまま */ }
   }
   async function onPushToggle() {
-    const prefs = {
-      master: $('push-master').checked,
-      dm: $('push-dm').checked,
-      invite: $('push-invite').checked,
-      announce: $('push-announce').checked,
-      comeback: $('push-comeback').checked,
-    };
+    const master = $('push-master').checked;
+    for (const c of PUSH_CATS) {
+      if (!$('push-' + c).disabled) pushCatState[c] = $(`push-${c}`).checked;
+    }
+    renderPushChecks(master);
+    const prefs = { master, ...pushCatState };
     try {
       await DATA.savePushPrefs(prefs);
       if (prefs.master && (prefs.dm || prefs.invite || prefs.announce || prefs.comeback)) {
         const okSub = await ensurePushSubscription();
         if (!okSub) {
           toast('通知が許可されませんでした。ブラウザの設定を確認してください');
-          $('push-master').checked = false;
+          renderPushChecks(false);
           await DATA.savePushPrefs({ ...prefs, master: false });
         }
       }
@@ -3654,6 +3669,18 @@
     DATA.subscribeDm(onIncomingDm);
     DATA.subscribeFriends(onFriendsChanged);
     DATA.listAnnouncements().then((list) => { tickerAnnouncements = list; }).catch(() => {});
+    // キーボードの重なり量（--kb）を VisualViewport から同期する。
+    // レイアウトは縮めず、入力バーだけを持ち上げる方式（CSS 側）
+    const vv = window.visualViewport;
+    if (vv) {
+      const syncKb = () => {
+        const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        document.documentElement.style.setProperty('--kb', `${Math.round(kb)}px`);
+      };
+      vv.addEventListener('resize', syncKb);
+      vv.addEventListener('scroll', syncKb);
+      syncKb();
+    }
     // Web Push（0059）：最終アクセスの記録・購読の自動更新・通知タップ遷移
     touchSeenThrottled();
     document.addEventListener('visibilitychange', () => {
@@ -3710,7 +3737,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 18:16 / pushset1';
+      $('build-stamp').textContent = 'build 2026-11-26 18:24 / kb1+pushset2';
       loadPushSettings();
       openModal('modal-settings');
     });
