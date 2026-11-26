@@ -246,6 +246,46 @@
   }
 
   // ---------- プロフィール ----------
+  // 前回表示した自分のプロフィールを端末に覚えておき、次回起動時は
+  // 通信を待たずにまずそれを描く（引っ張って更新したときに一瞬だけ
+  // 初期値や「ななし」が見えるのを防ぐ。実データが届けば上書きされる）
+  const ME_CACHE_KEY = 'kl_me_cache';
+  function saveMeCache() {
+    if (DATA.mode !== 'supabase' || !state.me) return;
+    try {
+      localStorage.setItem(ME_CACHE_KEY, JSON.stringify({
+        name: state.me.name, publicId: state.me.publicId, bio: state.me.bio,
+        iconKey: state.me.iconKey, iconEmoji: state.me.iconEmoji,
+        iconBg: state.me.iconBg,
+        coins: state.coins, popularity: state.popularity,
+      }));
+    } catch {}
+  }
+  function paintCachedMe() {
+    let c = null;
+    try { c = JSON.parse(localStorage.getItem(ME_CACHE_KEY) ?? 'null'); } catch {}
+    if (!c?.name) return;
+    fillAvatar($('my-avatar'), { id: 'me', ...c });
+    $('my-name').textContent = c.name;
+    $('my-name').classList.toggle('long', [...c.name].length >= 7);
+    $('my-id').textContent = c.publicId ?? '';
+    const bioEl = $('my-bio');
+    if (c.bio) {
+      bioEl.textContent = c.bio;
+      bioEl.classList.remove('empty');
+    } else {
+      bioEl.textContent = '自己紹介（タップで編集）';
+      bioEl.classList.add('empty');
+    }
+    if (typeof c.coins === 'number') $('coin-count').textContent = fmt(c.coins);
+    if (typeof c.popularity === 'number') {
+      $('popularity-count').textContent = fmt(c.popularity);
+    }
+  }
+  function clearMeCache() {
+    try { localStorage.removeItem(ME_CACHE_KEY); } catch {}
+  }
+
   function renderProfile() {
     const me = state.me;
     if (!me) return;
@@ -266,6 +306,7 @@
     $('avatar-modal-name').textContent = me.name;
     fillAvatar($('avatar-modal-preview'), me);
     renderGiftStrip();
+    saveMeCache();
   }
 
   // もらったギフト帯：単品価格が高い順に1行、入りきらない分は
@@ -419,9 +460,11 @@
   function renderCoins() {
     $('coin-count').textContent = fmt(state.coins);
     $('charge-balance').textContent = fmt(state.coins);
+    saveMeCache();
   }
   function renderPopularity() {
     $('popularity-count').textContent = fmt(state.popularity);
+    saveMeCache();
   }
   function renderBonus() {
     $('bonus-banner').classList.toggle('claimed', state.bonusClaimed);
@@ -3354,6 +3397,8 @@
       const a = document.activeElement;
       if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) window.scrollTo(0, 0);
     }, { passive: true });
+    // 通信が返る前に、前回の自分のプロフィールを先に描いておく
+    paintCachedMe();
     const boot = await DATA.bootstrap();
     state.me = { id: 'me', ...boot.me };
     // アダプタ内部の自ID（sim では 'me'、実 DB では auth uid）に合わせる
@@ -3391,8 +3436,13 @@
     $('btn-terms').addEventListener('click', () => window.open('terms.html', '_blank', 'noopener'));
     $('btn-privacy').addEventListener('click', () => window.open('privacy.html', '_blank', 'noopener'));
     if (DATA.mode === 'sim') showLoginScreen();
-    // 未ログイン確定時は、ログインボタンの前に年齢確認ゲートを出す
-    if (DATA.authState === 'signed-out') showAgeGate();
+    // 未ログイン確定時は、ログインボタンの前に年齢確認ゲートを出す。
+    // 前回ユーザーのプロフィールキャッシュもここで捨てる（アカウント
+    // 削除・切替後に別人の名前が一瞬見えるのを防ぐ）
+    if (DATA.authState === 'signed-out') {
+      clearMeCache();
+      showAgeGate();
+    }
 
     renderProfile();
     renderCoins();
@@ -3613,6 +3663,7 @@
       if (DATA.mode === 'supabase') {
         // 実セッションを破棄して再読み込みし、未ログイン状態で起動し直す
         closeModal();
+        clearMeCache();
         try { await DATA.signOut(); } catch { /* 失敗しても再読み込みで状態を正す */ }
         location.reload();
         return;
