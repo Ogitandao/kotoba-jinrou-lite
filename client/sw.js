@@ -14,7 +14,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(d.title || 'ことば人狼', {
     body: d.body || '',
     icon: 'icons/pwa-icon-192.png',
-    badge: 'icons/badge-96.png',
+    badge: new URL('icons/badge-96.png', self.registration.scope).href,
     tag: d.tag || undefined,
     data: { url: d.url || './' },
   }));
