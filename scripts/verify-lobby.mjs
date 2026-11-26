@@ -294,9 +294,8 @@ check('トップバーにオオカミシルエットは無い（ロゴEに一本
   !document.querySelector('.topbar-wolf'));
 check('ログイン画面が起動時に表示される（Sim）＋Google/Appleボタンがある',
   visible($('login-screen')) && !!$('btn-login-google') && !!$('btn-login-apple'));
-check('年齢確認ゲートの要素があり、Sim（デモ）では出ない', !!$('age-gate')
-  && !!$('age-birthdate') && !!$('age-confirm')
-  && $('age-gate').classList.contains('hidden'));
+check('ログイン前ゲートは無い（年齢確認はログイン後の初回セットアップ）',
+  !$('age-gate'));
 check('ID行（自分／相手プロフ）にコピー導線がある', !!$('my-id-row') && !!$('up-id-row'));
 check('Googleログインボタンを押すとログイン画面が閉じる', await (async () => {
   $('btn-login-google').click();

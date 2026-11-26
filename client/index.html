@@ -70,20 +70,6 @@
     </div>
   </section>
 
-  <!-- 年齢確認ゲート（2026-11-26）：未ログイン確定時にログイン画面の上へ
-       ポップアップで出す。入力値は端末内でのみ判定し、13歳未満なら
-       その場で破棄して先へ進ませない（アカウント自体を作らない）。
-       13歳以上なら端末に保持し、ログイン直後にそのまま登録する -->
-  <section id="age-gate" class="age-gate hidden" aria-hidden="true">
-    <div class="age-card">
-      <h2 class="age-title">年齢確認</h2>
-      <p class="age-text">生年月日を入力してください</p>
-      <input id="age-birthdate" class="age-input" type="date" />
-      <p id="age-error" class="age-error hidden"></p>
-      <p class="age-note">13歳未満の方は登録できません<br />登録後に変更はできません</p>
-      <button id="age-confirm" class="primary-btn age-btn" type="button">確認する</button>
-    </div>
-  </section>
 
   <main id="scroll" class="scroll">
     <!-- ============ タブ1：ロビー ============ -->
