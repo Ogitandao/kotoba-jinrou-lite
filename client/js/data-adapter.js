@@ -2236,16 +2236,19 @@
       // 呼び出し元が正本で行う）。RLS により自分が関係する行しか届かない
       subscribeFriends(onChange) {
         if (!meId || friendsChannel) return () => {};
+        const notify = (table) => (payload) => onChange({
+          table, event: payload.eventType, newRow: payload.new, oldRow: payload.old,
+        });
         friendsChannel = getClient().channel('kl-friends-watch')
           .on('postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'friend_requests' },
-            () => onChange())
+            notify('friend_requests'))
           .on('postgres_changes',
             { event: 'DELETE', schema: 'public', table: 'friend_requests' },
-            () => onChange())
+            notify('friend_requests'))
           .on('postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'friendships' },
-            () => onChange())
+            notify('friendships'))
           .subscribe();
         return () => {
           if (friendsChannel) { getClient().removeChannel(friendsChannel); friendsChannel = null; }

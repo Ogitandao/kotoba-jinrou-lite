@@ -1251,7 +1251,26 @@
     return b;
   }
 
+  // 再描画の直列化：更新が重なると（自分の操作＋Realtime＋検索の
+  // 再描画）リストを作り直す処理同士が競合して帯がチラつくため、
+  // 実行中はキューに積んで1回だけ後追いする
+  let friendPanelRendering = false;
+  let friendPanelRenderQueued = false;
   async function renderFriendPanel() {
+    if (friendPanelRendering) { friendPanelRenderQueued = true; return; }
+    friendPanelRendering = true;
+    try {
+      await renderFriendPanelInner();
+    } finally {
+      friendPanelRendering = false;
+      if (friendPanelRenderQueued) {
+        friendPanelRenderQueued = false;
+        renderFriendPanel();
+      }
+    }
+  }
+
+  async function renderFriendPanelInner() {
     const [friends, incoming, outgoing] = await Promise.all([
       DATA.listFriends(), DATA.listIncomingRequests(), DATA.listOutgoingRequests(),
     ]);
@@ -2010,13 +2029,27 @@
   // Realtime で届いたフレンド関係の変化（申請の到着・取り消し・承認）。
   // 画面遷移なしでバッジを付け替え、フレンドパネルを開いていれば
   // その場で描き直す（実 DB モードのみ。Sim では発火しない）
-  async function onFriendsChanged() {
-    try {
-      const incoming = await DATA.listIncomingRequests();
-      incomingReqCount = incoming.length;
-      paintNavBadges();
-      if (state.tab === 'friends' && state.subtab === 'friend') renderFriendPanel();
-    } catch { /* 次の画面遷移時の取得で回復する */ }
+  let friendsRefreshTimer = null;
+  function onFriendsChanged(info) {
+    // 自分が送った／取り消した申請の変化は、操作側のフローで既に
+    // 画面へ反映済み。Realtime のエコーで二重に再描画すると帯が
+    // チラつくので、自分発の申請変化は無視する
+    if (info?.table === 'friend_requests') {
+      const mine = state.me?.id;
+      if (info.event === 'INSERT' && info.newRow?.from_id === mine) return;
+      if (info.event === 'DELETE' && info.oldRow?.from_id === mine) return;
+    }
+    // 連続イベントは1回にまとめる
+    if (friendsRefreshTimer) clearTimeout(friendsRefreshTimer);
+    friendsRefreshTimer = setTimeout(async () => {
+      friendsRefreshTimer = null;
+      try {
+        const incoming = await DATA.listIncomingRequests();
+        incomingReqCount = incoming.length;
+        paintNavBadges();
+        if (state.tab === 'friends' && state.subtab === 'friend') renderFriendPanel();
+      } catch { /* 次の画面遷移時の取得で回復する */ }
+    }, 250);
   }
 
   // Realtime で届いた新着DM（実 DB モードのみ。Sim では発火しない）。
