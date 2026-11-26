@@ -1149,6 +1149,12 @@
     detectGiftNotifications(convs);
     rememberUsers(convs.map((c) => c.partner));
     for (const c of convs) if (c.isGroup) rememberUsers(c.partner.members);
+    // 内容が前回と全く同じなら DOM を作り直さない（再描画が重なると
+    // 帯がチカチカして見えるため。2026-11-26 おぎ実機指摘）
+    const sig = convs.map((c) =>
+      `${c.partnerId}:${c.partner.name}:${c.last?.id ?? ''}:${c.last?.at ?? 0}:${c.unread}`).join('|');
+    if (sig === renderTalkList.lastSig) return;
+    renderTalkList.lastSig = sig;
     const list = $('talk-list');
     list.innerHTML = '';
     $('talk-empty').classList.toggle('hidden', convs.length > 0);
@@ -1277,7 +1283,17 @@
     incomingReqCount = incoming.length;
     paintNavBadges();
     rememberUsers([...friends, ...incoming, ...outgoing]);
+    // セクション単位で、内容が前回と同じなら作り直さない（チラつき
+    // 防止。申請の瞬間に変わるのは申請中セクションだけなので、
+    // フレンド一覧など無関係な部分は触らない）
+    const uSig = (u) => `${u.id}:${u.name}:${u.icon}:${u.publicId}:${u.online ? 1 : 0}:${u.lastActiveMin ?? ''}`;
+    const sigs = renderFriendPanelInner.sigs ??= {};
+    const reqSig = incoming.map(uSig).join(',');
+    const outSig = outgoing.map(uSig).join(',');
+    const friendSig = friends.map(uSig).join(',');
 
+    if (reqSig !== sigs.req) {
+    sigs.req = reqSig;
     const reqList = $('request-list');
     reqList.innerHTML = '';
     $('request-section').classList.toggle('hidden', incoming.length === 0);
@@ -1310,7 +1326,10 @@
       }
       reqList.appendChild(reqRow);
     }
+    }
 
+    if (outSig !== sigs.out) {
+    sigs.out = outSig;
     const outList = $('outgoing-list');
     outList.innerHTML = '';
     $('outgoing-section').classList.toggle('hidden', outgoing.length === 0);
@@ -1323,7 +1342,10 @@
       label.addEventListener('click', () => confirmCancelRequest(u));
       outList.appendChild(userRow(u, [label]));
     }
+    }
 
+    if (friendSig !== sigs.friend) {
+    sigs.friend = friendSig;
     const list = $('friend-list');
     list.innerHTML = '';
     $('friend-empty').classList.toggle('hidden', friends.length > 0);
@@ -1332,6 +1354,7 @@
       ((b.online ? 1 : 0) - (a.online ? 1 : 0))
       || ((a.lastActiveMin ?? Infinity) - (b.lastActiveMin ?? Infinity)));
     for (const u of sorted) list.appendChild(friendCard(u));
+    }
   }
 
   function lastActiveText(u) {
@@ -1390,14 +1413,15 @@
   async function doSearch() {
     const q = $('friend-search-input').value.trim();
     const box = $('search-result');
-    box.innerHTML = '';
-    if (!q) return;
+    if (!q) { box.innerHTML = ''; return; }
     try {
       const u = await DATA.searchUser(q);
       // 検索のついでに申請まわりも最新化する。相手が拒否／承認すると
       // サーバー側の申請は消えるが、画面の「申請中」が古いまま残って
       // 検索結果と食い違うため（2026-11-26 おぎ実機指摘）
       renderFriendPanel();
+      // 結果が返ってから入れ替える（先に消すと帯が一瞬消えて見える）
+      box.innerHTML = '';
       if (!u) {
         box.innerHTML = '<p class="modal-note">その公開IDのユーザーは見つかりませんでした</p>';
         return;
