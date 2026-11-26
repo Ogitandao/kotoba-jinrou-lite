@@ -3882,6 +3882,16 @@
       if (!s.classList.contains('hidden') && s.classList.contains('open')) closeDm();
     });
     $('dm-messages').addEventListener('scroll', updateScrollBottomBtn, { passive: true });
+    // メッセージ領域をタップしたらキーボードを閉じる（iPad のブラウザ
+    // では入力欄の外をタップしてもフォーカスが外れず、キーボードが
+    // しまえなくなるため、明示的に blur する。ルーム／対戦の発言欄も同型）
+    const blurActiveInput = () => {
+      const a = document.activeElement;
+      if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) a.blur();
+    };
+    for (const id of ['dm-messages', 'room-chat-messages', 'game-messages']) {
+      $(id).addEventListener('click', blurActiveInput);
+    }
     $('dm-scroll-bottom').addEventListener('click', () => {
       dmFollow.follow = true;
       animateToBottom($('dm-messages'), dmFollow, updateScrollBottomBtn);
