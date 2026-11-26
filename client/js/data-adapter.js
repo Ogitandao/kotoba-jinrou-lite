@@ -290,6 +290,9 @@
       iconBg: u.iconBg, bio: u.bio, popularity: u.popularity, online: u.online,
       lastActiveMin: u.lastActiveMin ?? null,
       roomTitle: u.roomTitle ?? null,
+      // 名前決定済みフラグを通さないと、画面側が毎回「新規登録直後」と
+      // 誤認して名前セットアップを起動時に出してしまう（2026-11-26 修正）
+      nameDecidedAt: u.nameDecidedAt ?? null,
     });
     const pubGroup = (g) => ({
       id: g.id, name: g.name, isGroup: true,

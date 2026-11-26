@@ -288,6 +288,8 @@ check('名前を変更するとロビーに反映される', await (async () => 
   return $('my-name').textContent === 'あたらしいなまえ'
     && $('modal-name').classList.contains('hidden');
 })());
+check('起動時に名前セットアップは出ない（デモユーザーは名前決定済み）',
+  $('modal-name').classList.contains('hidden'));
 check('トップバーにオオカミシルエットは無い（ロゴEに一本化）',
   !document.querySelector('.topbar-wolf'));
 check('ログイン画面が起動時に表示される（Sim）＋Google/Appleボタンがある',

@@ -3198,6 +3198,11 @@
         scr.classList.remove('login-bye');
         loginBusy = false;
         pumpGiftNotify(); // ログイン中に保留したギフト通知を流す
+        // ログイン前に出さずに後回しした名前セットアップをここで出す
+        if (state.pendingNameSetup) {
+          state.pendingNameSetup = false;
+          state.openNameSetup?.();
+        }
       }, 380);
     }, 650);
   }
@@ -3691,8 +3696,13 @@
         && $('name-x').classList.contains('hidden')) return;
       backModal();
     });
-    // 新規登録後、名前が未決定なら最初に決めてもらう（1回だけ）
-    if (state.me && !state.me.nameDecidedAt) openNameModal(true);
+    // 新規登録後、名前が未決定なら最初に決めてもらう（1回だけ）。
+    // ログイン画面が出ている間は後回しにする（本番の流れは
+    // ログイン→名前セットアップの順。ログイン前に出さない）
+    if (state.me && !state.me.nameDecidedAt) {
+      if ($('login-screen').classList.contains('hidden')) openNameModal(true);
+      else state.pendingNameSetup = true;
+    }
   }
 
   document.addEventListener('DOMContentLoaded', init);
