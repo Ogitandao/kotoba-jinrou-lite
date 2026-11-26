@@ -902,27 +902,64 @@
     const price = gift.price ?? giftPriceMap?.get(gift.giftKey) ?? 0;
     const el = $('gift-notify');
     el.querySelectorAll('.gn-spark').forEach((n) => n.remove());
-    el.classList.remove('fx-glow');
-    if (price >= 5000) {
-      playGiftFxFull(partner, gift);
-      return;
-    }
+    el.classList.remove('fx-glow', 'fx-luxe', 'fx-luxe-diamond');
+    // 全画面の大型演出はこの経路（スライド通知）では出さない
+    // （2026-11-26 おぎ）：ロビー等で文脈なく出ると驚かしになる。
+    // 大型演出は ①DMをリアルタイムで開いている時 ②後からDMを
+    // 開いた時の未再生の最新1件だけ、に限定する。その代わり
+    // 高額（5,000+）のポップアップ自体は中額より豪華にする
     if (price < 1000) return;
     void el.offsetWidth;
-    el.classList.add('fx-glow');
-    for (let i = 0; i < 14; i++) {
+    const luxe = price >= 5000;
+    el.classList.add(luxe ? 'fx-luxe' : 'fx-glow');
+    if (luxe && gift.giftKey === 'diamond') el.classList.add('fx-luxe-diamond');
+    const palette = luxe
+      ? (gift.giftKey === 'diamond'
+        ? ['#ffffff', '#bfe3ff', '#7cc7f5']
+        : ['#ffd34d', '#ffb03a', '#ff7847'])
+      : ['#ffc93c', '#ff9d5c', '#7cc7f5'];
+    const count = luxe ? 22 : 14;
+    for (let i = 0; i < count; i++) {
       const sp = document.createElement('i');
       sp.className = 'gn-spark';
-      const ang = (i / 14) * Math.PI * 2 + Math.random() * 0.5;
-      const dist = 62 * (0.6 + Math.random() * 0.7);
+      const ang = (i / count) * Math.PI * 2 + Math.random() * 0.5;
+      const dist = (luxe ? 80 : 62) * (0.6 + Math.random() * 0.7);
       sp.style.setProperty('--dx', `${Math.cos(ang) * dist}px`);
       sp.style.setProperty('--dy', `${Math.sin(ang) * dist}px`);
       sp.style.left = `${15 + Math.random() * 70}%`;
       sp.style.top = `${10 + Math.random() * 70}%`;
       sp.style.animationDelay = `${Math.random() * 0.25}s`;
-      sp.style.background = ['#ffc93c', '#ff9d5c', '#7cc7f5'][i % 3];
+      sp.style.background = palette[i % 3];
       el.appendChild(sp);
     }
+  }
+
+  // 大型演出（5,000+）を再生済みのギフトDMの記録。後からDMを
+  // 開いた時の再生を「未再生の最新1件だけ・1回だけ」に絞る
+  const giftFxPlayed = new Set((() => {
+    try { return JSON.parse(localStorage.getItem('kl_gift_fx_played') ?? '[]'); } catch { return []; }
+  })());
+  function markGiftFxPlayed(id) {
+    if (!id || giftFxPlayed.has(id)) return;
+    giftFxPlayed.add(id);
+    try {
+      localStorage.setItem('kl_gift_fx_played', JSON.stringify([...giftFxPlayed].slice(-200)));
+    } catch { /* 保存できなくても致命ではない */ }
+  }
+  // 後からDMを開いた時：未再生の高額ギフトがあれば最新1件だけ
+  // 再生する。古い分は全部再生済みにして、二度と流れないように
+  // する（何件溜まっていても開くたびの連発にはならない）
+  async function replayGiftFxOnOpen(user, messages) {
+    if (!user || user.id === 'system') return;
+    await ensureGiftPrices();
+    const big = (messages ?? []).filter((m) =>
+      m.kind === 'gift' && m.gift && m.from === user.id
+      && (m.gift.price ?? giftPriceMap?.get(m.gift.giftKey) ?? 0) >= 5000);
+    const unplayed = big.filter((m) => !giftFxPlayed.has(m.id));
+    if (unplayed.length === 0) return;
+    for (const m of big) markGiftFxPlayed(m.id);
+    const newest = unplayed[unplayed.length - 1];
+    setTimeout(() => playGiftFxFull(user, newest.gift), 400);
   }
 
   function playGiftFxFull(partner, gift) {
@@ -1786,6 +1823,8 @@
     try {
       const messages = await DATA.listMessages(user.id);
       renderMessages(messages);
+      // 見逃した高額ギフトの大型演出は、ここで最新1件だけ再生
+      replayGiftFxOnOpen(user, messages).catch(() => {});
       await DATA.markRead(user.id);
       renderTalkList();
     } catch (e) { toastError(e); }
@@ -2241,7 +2280,10 @@
       if (msg.kind === 'gift' && msg.gift) {
         await ensureGiftPrices();
         const price = msg.gift.price ?? giftPriceMap?.get(msg.gift.giftKey) ?? 0;
-        if (price >= 5000) playGiftFxFull(state.dmPeer, msg.gift);
+        if (price >= 5000) {
+          playGiftFxFull(state.dmPeer, msg.gift);
+          markGiftFxPlayed(msg.id);
+        }
       }
       try { await DATA.markRead(msg.from); } catch { /* 一覧更新でも追随する */ }
     }
@@ -3670,7 +3712,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 18:14 / push1';
+      $('build-stamp').textContent = 'build 2026-11-26 18:12 / giftfx1';
       loadPushSettings();
       openModal('modal-settings');
     });

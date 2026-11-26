@@ -718,6 +718,22 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   25% { box-shadow: 0 0 0 6px rgba(255, 201, 60, .45), 0 8px 24px rgba(23, 50, 74, .22); }
   100% { box-shadow: 0 0 0 0 rgba(255, 201, 60, 0), 0 8px 24px rgba(23, 50, 74, .22); }
 }
+/* 高額ギフト（5,000+）の通知ポップアップは中額より豪華に：
+   金の縁＋強い発光。全画面演出の代わりの格付け（2026-11-26） */
+.gift-notify.fx-luxe { border: 2px solid #f0b429; animation: gn-luxe 2.2s ease-out; }
+@keyframes gn-luxe {
+  0% { box-shadow: 0 0 0 0 rgba(255, 195, 60, 0), 0 8px 24px rgba(23, 50, 74, .22); }
+  20% { box-shadow: 0 0 0 7px rgba(255, 195, 60, .55), 0 0 34px rgba(255, 180, 60, .55), 0 8px 24px rgba(23, 50, 74, .22); }
+  55% { box-shadow: 0 0 0 3px rgba(255, 195, 60, .35), 0 0 22px rgba(255, 180, 60, .4), 0 8px 24px rgba(23, 50, 74, .22); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 195, 60, 0), 0 8px 24px rgba(23, 50, 74, .22); }
+}
+.gift-notify.fx-luxe-diamond { border-color: #9fd4ff; animation-name: gn-luxe-diamond; }
+@keyframes gn-luxe-diamond {
+  0% { box-shadow: 0 0 0 0 rgba(140, 200, 255, 0), 0 8px 24px rgba(23, 50, 74, .22); }
+  20% { box-shadow: 0 0 0 7px rgba(140, 200, 255, .55), 0 0 34px rgba(140, 200, 255, .5), 0 8px 24px rgba(23, 50, 74, .22); }
+  55% { box-shadow: 0 0 0 3px rgba(140, 200, 255, .35), 0 0 22px rgba(140, 200, 255, .38), 0 8px 24px rgba(23, 50, 74, .22); }
+  100% { box-shadow: 0 0 0 0 rgba(140, 200, 255, 0), 0 8px 24px rgba(23, 50, 74, .22); }
+}
 .gn-spark {
   position: absolute; width: 15px; height: 15px; pointer-events: none; z-index: 2;
   clip-path: polygon(50% 0, 63% 37%, 100% 50%, 63% 63%, 50% 100%, 37% 63%, 0 50%, 37% 37%);
