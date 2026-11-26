@@ -858,7 +858,9 @@
     // まだ対戦中扱いで保留する（2026-11-26）
     const inMatch = !$('game-screen').classList.contains('hidden')
       && !(state.gameView && state.gameView.phase === 'done');
-    if (inMatch) {
+    // ログイン画面が出ている間も保留する（ログイン前に通知が流れるのは変）
+    const loginVisible = !$('login-screen').classList.contains('hidden');
+    if (inMatch || loginVisible) {
       if (!giftNotifyRetry) {
         giftNotifyRetry = setTimeout(() => { giftNotifyRetry = null; pumpGiftNotify(); }, 3000);
       }
@@ -3169,6 +3171,37 @@
     el.classList.toggle('show', land);
   }
 
+  // --- ログイン画面（2026-11-26） ---
+  // 実 OAuth の配線は認証フェーズ。現状はセッションなし（Sim で起動した）
+  // ときだけ表示し、タップでそのまま入るデモ導線にする。Supabase で
+  // 起動できた＝ログイン済みなので出さない
+  let loginBusy = false;
+  function showLoginScreen() {
+    loginBusy = false;
+    $('btn-login-google').disabled = false;
+    $('btn-login-apple').disabled = false;
+    $('btn-login-google').querySelector('span').textContent = 'Googleでログイン';
+    $('btn-login-apple').querySelector('span').textContent = 'Appleでログイン';
+    $('login-screen').classList.remove('hidden', 'login-bye');
+  }
+  function doLogin(btn) {
+    if (loginBusy) return;
+    loginBusy = true;
+    $('btn-login-google').disabled = true;
+    $('btn-login-apple').disabled = true;
+    btn.querySelector('span').textContent = 'ログイン中…';
+    setTimeout(() => {
+      const scr = $('login-screen');
+      scr.classList.add('login-bye');
+      setTimeout(() => {
+        scr.classList.add('hidden');
+        scr.classList.remove('login-bye');
+        loginBusy = false;
+        pumpGiftNotify(); // ログイン中に保留したギフト通知を流す
+      }, 380);
+    }, 650);
+  }
+
   async function init() {
     // 二重初期化ガード（リスナーが二重登録されると、同意後の処理が
     // 2回目の closeModal で打ち消される等の事故になる）
@@ -3205,6 +3238,15 @@
     state.penaltyUntilMs = boot.me.penaltyUntilMs ?? null;
     state.rooms = boot.rooms ?? [];
     rememberUsers([state.me]);
+
+    // ログイン画面：配線は常に張り、表示は Sim（未ログイン）時のみ。
+    // refreshSocial より前に出して、ギフト通知をログイン完了まで
+    // 保留できるようにする（pumpGiftNotify 側でも判定）
+    $('btn-login-google').addEventListener('click', (e) => doLogin(e.currentTarget));
+    $('btn-login-apple').addEventListener('click', (e) => doLogin(e.currentTarget));
+    $('link-terms').addEventListener('click', (e) => { e.preventDefault(); toast('利用規約は準備中です'); });
+    $('link-privacy').addEventListener('click', (e) => { e.preventDefault(); toast('プライバシーポリシーは準備中です'); });
+    if (DATA.mode === 'sim') showLoginScreen();
 
     renderProfile();
     renderCoins();
@@ -3395,7 +3437,11 @@
       openModal('modal-blocklist');
     });
     $('btn-account').addEventListener('click', () => toast('アカウント設定は認証接続フェーズで実装します'));
-    $('btn-logout').addEventListener('click', () => toast('ログアウトは認証接続フェーズで実装します'));
+    $('btn-logout').addEventListener('click', () => {
+      // デモ（Sim）時はログイン画面に戻る。本番のログアウトは認証フェーズ
+      if (DATA.mode === 'sim') { closeModal(); showLoginScreen(); }
+      else toast('ログアウトは認証接続フェーズで実装します');
+    });
     $('my-avatar').addEventListener('click', openIconModal);
     // 名前編集（タップで編集）。新規登録直後は「名前を決める」ポップアップ
     // として出し、決めるまで閉じられない（2026-11-25 おぎ）

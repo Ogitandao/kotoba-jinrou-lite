@@ -288,6 +288,15 @@ check('名前を変更するとロビーに反映される', await (async () => 
   return $('my-name').textContent === 'あたらしいなまえ'
     && $('modal-name').classList.contains('hidden');
 })());
+check('トップバーにオオカミシルエットは無い（ロゴEに一本化）',
+  !document.querySelector('.topbar-wolf'));
+check('ログイン画面が起動時に表示される（Sim）＋Google/Appleボタンがある',
+  visible($('login-screen')) && !!$('btn-login-google') && !!$('btn-login-apple'));
+check('Googleログインボタンを押すとログイン画面が閉じる', await (async () => {
+  $('btn-login-google').click();
+  await new Promise((r) => setTimeout(r, 1250));
+  return $('login-screen').classList.contains('hidden');
+})());
 check('縦固定：横向き案内オーバーレイがある', !!$('rotate-notice'));
 check('縦固定：横向き案内は .show で表示する CSS がある（メディアクエリは誤判定するため不使用）',
   readFileSync(new URL('styles.css', base), 'utf8').includes('.rotate-notice.show')

@@ -35,8 +35,11 @@ const rowByName = (container, name) =>
   [...container.querySelectorAll('.user-row, .talk-row')]
     .find((r) => r.textContent.includes(name));
 
-// --- ギフト到着スライド通知（起動直後、未読ギフトDMを検出して出る） ---
-await tick(400);
+// --- ギフト到着スライド通知（ログイン後、未読ギフトDMを検出して出る） ---
+// ログイン画面が出ている間は通知を保留する仕様（2026-11-26）のため、
+// 先にログインを済ませてから届くことを確認する
+$('btn-login-google').click();
+await tick(1500);
 check('ギフトが届くとスライド通知が出る（送り主とギフト名）',
   $('gift-notify').classList.contains('show')
   && $('gn-title').textContent.includes('けん')
