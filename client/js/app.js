@@ -580,14 +580,12 @@
   function renderTicker() {
     const track = $('ticker-track');
     if (!track) return;
-    const rawItems = [
-      ...(state.feedEvents ?? []).map((e) => e.text),
+    // 流すのは「ライブイベント（1回だけ）＋固定のお知らせ」だけ。
+    // サーバーに貯めた履歴は読み直さない（0057 で Realtime 化）
+    const items = [
       ...(state.tickerEvents ?? []),
       ...TICKER_BASE,
     ];
-    // 同じ文面が連続すると連投に見えるため、連続重複は1つに潰す
-    // （最高額ギフトの連投で同じ告知が何度も流れた 2026-11-26 実機）
-    const items = rawItems.filter((t, i) => i === 0 || t !== rawItems[i - 1]);
     // 中身が変わっていないときは作り直さない（アニメーションが巻き戻るため）
     const key = items.join('\u0001');
     if (key === state.tickerKey) return;
@@ -604,19 +602,30 @@
         tickerRo.observe(box);
       }
     }
+    // ライブイベントは1周流れたら消す（ループに残し続けない）
+    if (!track.dataset.iterBound) {
+      track.dataset.iterBound = '1';
+      track.addEventListener('animationiteration', () => {
+        if (state.tickerEvents?.length) {
+          state.tickerEvents = [];
+          state.tickerKey = null;
+          renderTicker();
+        }
+      });
+    }
     requestAnimationFrame(fitTickerDuration);
   }
-  // サーバー側フィード（100勝の節目／最高額ギフト）を取り込む
-  async function refreshTickerFeed() {
-    try {
-      const evts = await DATA.tickerFeed();
-      const key = evts.map((e) => e.id).join(',');
-      if (key !== (state.feedKey ?? '')) {
-        state.feedKey = key;
-        state.feedEvents = evts;
-        renderTicker();
-      }
-    } catch { /* フィード取得の失敗時は表示を維持 */ }
+  // ライブイベントの受け口（0057）：最高額ギフトと100勝の節目は
+  // サーバーが Broadcast で流す。ロビーを見ている時だけ取り込み、
+  // その場にいない人には流さない（貯めない・遡らない）
+  function onTickerEvent(payload) {
+    const text = payload?.text;
+    if (!text) return;
+    if (state.tab !== 'lobby') return;
+    if (!$('dm-screen').classList.contains('hidden')) return;
+    if (!$('room-screen').classList.contains('hidden')) return;
+    if (!$('game-screen').classList.contains('hidden')) return;
+    pushTickerEvent(text);
   }
   function pushTickerEvent(text) {
     state.tickerEvents = state.tickerEvents ?? [];
@@ -2245,7 +2254,6 @@
         renderMessages(await DATA.listMessages(target.id));
       }
       renderTalkList();
-      refreshTickerFeed();
     } catch (e) {
       if (e.code === 'INSUFFICIENT_COINS') {
         $('gift-error').classList.remove('hidden');
@@ -2282,7 +2290,6 @@
       renderRooms();
     } catch { /* 一覧取得の失敗時は表示を維持 */ }
     refreshPenalty();
-    refreshTickerFeed();
   }
 
   // チュートリアル（旧「初回ルール同意ポップアップ」を一本化）。
@@ -3520,6 +3527,7 @@
     refreshSocial();
     DATA.subscribeDm(onIncomingDm);
     DATA.subscribeFriends(onFriendsChanged);
+    DATA.subscribeTicker(onTickerEvent);
     // サブタブのトラック高さをアクティブ側に追随させる
     syncSubtabHeight();
     if (typeof ResizeObserver !== 'undefined') {

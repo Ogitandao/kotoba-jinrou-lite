@@ -1367,6 +1367,7 @@
       // Sim には相手の実在がないため Realtime 購読は no-op
       subscribeDm() { return () => {}; },
       subscribeFriends() { return () => {}; },
+      subscribeTicker() { return () => {}; },
       listMessages(userId) {
         return ok(state.dm.filter(
           (m) => !m.hiddenForMe
@@ -2266,6 +2267,16 @@
           if (friendsChannel) { getClient().removeChannel(friendsChannel); friendsChannel = null; }
         };
       },
+      // ティッカーのライブイベント（0057）：サーバー側の関数が
+      // realtime.send で流す Broadcast を受ける。貯めない・その場限り
+      subscribeTicker(onEvent) {
+        const ch = getClient().channel('kl-ticker')
+          .on('broadcast', { event: 'event' }, (msg) => {
+            try { onEvent(msg.payload); } catch { /* 表示側の失敗は無視 */ }
+          })
+          .subscribe();
+        return () => { getClient().removeChannel(ch); };
+      },
       // グループチャット（0036 で実 DB 配線。書き込みは RPC 経由のみ）
       // RPC の { id, name, memberIds } に profiles を合わせて Sim の
       // pubGroup と同じ形に組み立てる
@@ -2736,6 +2747,7 @@
     markRead: (id) => active.markRead(id),
     subscribeDm: (cb) => active.subscribeDm(cb),
     subscribeFriends: (cb) => active.subscribeFriends(cb),
+    subscribeTicker: (cb) => active.subscribeTicker(cb),
     createGroup: (name, ids) => active.createGroup(name, ids),
     listGroupMessages: (gid) => active.listGroupMessages(gid),
     sendGroupMessage: (gid, body) => active.sendGroupMessage(gid, body),
