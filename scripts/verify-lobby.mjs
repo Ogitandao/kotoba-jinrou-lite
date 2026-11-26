@@ -158,16 +158,22 @@ check('同意するとフレンドタブのグレーアウトが解除される'
   !$('tabbtn-friends').classList.contains('locked'));
 $('create-title').value = '検証用ルーム';
 $('btn-create-confirm').click();
-check('ティッカーにお知らせが流れている', $('ticker-track').textContent.includes('ことば人狼へようこそ'));
-check('対戦中ルームは常時表示ではなく開始時に流れる（初期表示では流れない）', !$('ticker-track').textContent.includes('が対戦中です'));
+check('ティッカーにお知らせが流れている',
+  ['ことば人狼へようこそ', '試合のあとは', 'はじめての人は'].some((t) => $('ticker-text').textContent.includes(t)));
+check('対戦中ルームは常時表示ではなく開始時に流れる（初期表示では流れない）', !$('ticker-text').textContent.includes('が対戦中です'));
 check('公開ルームを作成すると一覧の先頭に増える',
   document.querySelectorAll('#room-list .room-card').length === 9 &&
   document.querySelector('#room-list .room-card').textContent.includes('検証用ルーム'));
 
 check('新しく作ったルームはスライドイン用クラスが付く',
   document.querySelector('#room-list .room-card')?.classList.contains('enter') === true);
+// 切り替え式ティッカーは次の表示で出すため、最大6秒まで待つ
+// （このスイートの tick() は引数を無視して10ms固定なので実時間で待つ）
+for (let i = 0; i < 24 && !$('ticker-text').textContent.includes('作りました'); i++) {
+  await new Promise((r) => setTimeout(r, 250));
+}
 check('ルームを作るとティッカーに実イベントが流れる',
-  $('ticker-track').textContent.includes('検証用ルーム') && $('ticker-track').textContent.includes('作りました'));
+  $('ticker-text').textContent.includes('検証用ルーム') && $('ticker-text').textContent.includes('作りました'));
 // --- ルーム作成（非公開：100コイン消費） ---
 $('btn-create-room').click();
 document.querySelector('input[name="create-visibility"][value="private"]').click();

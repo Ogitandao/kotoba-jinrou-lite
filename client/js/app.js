@@ -566,54 +566,35 @@
     '🎁 試合のあとは、活躍した人にギフトを贈ってみよう',
     '🔰 はじめての人は「初心者歓迎」のルームがおすすめ',
   ];
-  // ティッカーは JS 駆動の連続スクロール（2026-11-26 方式ごと作り替え）。
-  // CSS ループアニメーションは「イベントを1回だけ流す」と周期管理が
-  // 衝突し、高速化・途中で消える・同じ文が溜まる、を繰り返したため：
-  // ・固定のお知らせは左端を抜けたら最後尾へ回してループし続ける
-  // ・ライブイベントは流れの次点に差し込み、左端を抜けたら消す
-  // ・差し込みや削除で流れは止まらない・巻き戻らない。速さは常に一定
-  const TICKER_SPEED = 45; // px/秒
-  const tickerScroll = { offset: 0, lastTs: 0, running: false };
-  function tickerItemEl(text, loop) {
-    const s = document.createElement('span');
-    s.className = 'ticker-item';
-    s.textContent = text;
-    if (loop) s.dataset.loop = '1';
-    return s;
+  // ティッカーは「1件ずつ切り替え」方式（2026-11-26 方式変更）。
+  // 流れるマーキー方式（CSS→JSスクロール）は、実機で「流れている
+  // 文がイベント文に上書きされる」表示が直らなかった（両端末・
+  // 最新版で再現）。表示中の文を絶対に触らない構造に変える：
+  // ・固定文は順番に1件ずつ表示し、数秒ごとにフェードで切り替える
+  // ・ライブイベントはキューの先頭に入り、次の切り替えで1回だけ表示
+  // ・イベントが来ても固定文の表示順・周期はリセットされない
+  const TICKER_BASE_MS = 4200;
+  const TICKER_EVENT_MS = 2800;
+  const tickerState = { baseIdx: 0, queue: [], timer: null, swapDueAt: 0 };
+  function tickerArm(ms) {
+    clearTimeout(tickerState.timer);
+    tickerState.swapDueAt = Date.now() + ms;
+    tickerState.timer = setTimeout(showTickerSlot, ms);
+  }
+  function showTickerSlot() {
+    const el = $('ticker-text');
+    if (!el) return;
+    const fromQueue = tickerState.queue.length > 0;
+    const text = fromQueue ? tickerState.queue.shift()
+      : TICKER_BASE[tickerState.baseIdx++ % TICKER_BASE.length];
+    el.classList.toggle('long', [...text].length > 29);
+    el.classList.add('swap');
+    setTimeout(() => { el.textContent = text; el.classList.remove('swap'); }, 200);
+    tickerArm(tickerState.queue.length || fromQueue ? TICKER_EVENT_MS : TICKER_BASE_MS);
   }
   function renderTicker() {
-    const track = $('ticker-track');
-    if (!track) return;
-    if (!track.children.length) {
-      for (const t of TICKER_BASE) track.appendChild(tickerItemEl(t, true));
-    }
-    startTickerScroll();
-  }
-  function startTickerScroll() {
-    if (tickerScroll.running) return;
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    tickerScroll.running = true;
-    const step = (ts) => {
-      if (!tickerScroll.running) return;
-      requestAnimationFrame(step);
-      const track = $('ticker-track');
-      if (!track) return;
-      // 非表示の間は進めない（幅0＝ロビーを見ていない）
-      if (!track.getBoundingClientRect().width) { tickerScroll.lastTs = ts; return; }
-      if (!tickerScroll.lastTs) tickerScroll.lastTs = ts;
-      const dt = Math.min(0.1, (ts - tickerScroll.lastTs) / 1000);
-      tickerScroll.lastTs = ts;
-      tickerScroll.offset += TICKER_SPEED * dt;
-      let first = track.firstElementChild;
-      while (first && first.offsetWidth > 0 && tickerScroll.offset >= first.offsetWidth) {
-        tickerScroll.offset -= first.offsetWidth;
-        if (first.dataset.loop) track.appendChild(first);
-        else first.remove();
-        first = track.firstElementChild;
-      }
-      track.style.transform = `translateX(${-tickerScroll.offset}px)`;
-    };
-    requestAnimationFrame(step);
+    if (tickerState.timer) return;
+    if ($('ticker-text')) showTickerSlot();
   }
   // ライブイベントの受け口（0057）：最高額ギフトと100勝の節目は
   // サーバーが Broadcast で流す。ロビーを見ている時だけ取り込み、
@@ -633,19 +614,12 @@
     pushTickerEvent(text);
   }
   function pushTickerEvent(text) {
-    const track = $('ticker-track');
-    if (!track) return;
-    renderTicker();
-    // いま流れ出ている先頭の次に差し込む（すぐ次に流れる位置。
-    // 先頭に割り込むと表示中の文が途中で飛ぶため）。すでに差し込み
-    // 済みのイベントがある場合は、その最後尾に続ける（届いた順を保つ）
-    const el = tickerItemEl(text, false);
-    let anchor = track.firstElementChild;
-    while (anchor?.nextElementSibling && !anchor.nextElementSibling.dataset.loop) {
-      anchor = anchor.nextElementSibling;
-    }
-    if (anchor?.nextSibling) track.insertBefore(el, anchor.nextSibling);
-    else track.appendChild(el);
+    tickerState.queue.push(text);
+    if (!tickerState.timer) { renderTicker(); return; }
+    // 次の切り替えが遠い（固定文の表示中）なら、フェードを挟んで
+    // イベントを次の表示に回す。近い（イベント表示の合間）なら
+    // そのまま順番を待つ
+    if (tickerState.swapDueAt - Date.now() > 700) tickerArm(550);
   }
   function detectRoomEvents(rooms) {
     const prev = state.prevRooms;
@@ -3587,7 +3561,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 17:12 / ticker3';
+      $('build-stamp').textContent = 'build 2026-11-26 17:24 / ticker4';
       openModal('modal-settings');
     });
     $('btn-gift-test').addEventListener('click', () => {

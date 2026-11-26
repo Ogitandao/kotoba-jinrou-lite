@@ -146,16 +146,16 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   margin-bottom: 8px;
   box-shadow: inset 0 0 0 1px rgba(43, 157, 244, 0.15);
 }
-.ticker-track {
-  display: inline-flex;
-  gap: 0;
-  white-space: nowrap;
-  will-change: transform;
-}
-.ticker-item {
+.ticker-text {
+  display: block;
+  text-align: center;
   font-size: 12.5px; font-weight: 700; color: #33536d;
-  padding: 0 22px;
+  padding: 0 14px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: opacity 0.2s ease;
 }
+.ticker-text.swap { opacity: 0; }
+.ticker-text.long { font-size: 11px; }
 .profile-card {
   display: flex;
   gap: 14px;
