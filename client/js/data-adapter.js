@@ -1878,6 +1878,7 @@
     let meId = null;
     let dmChannel = null;
     let friendsChannel = null;
+    let tickerChannel = null;
     function getClient() {
       if (!cfg.supabaseUrl || !cfg.supabaseKey || !window.supabase?.createClient) {
         throw fail('NOT_CONFIGURED', 'Supabase が未設定です');
@@ -2270,12 +2271,15 @@
       // ティッカーのライブイベント（0057）：サーバー側の関数が
       // realtime.send で流す Broadcast を受ける。貯めない・その場限り
       subscribeTicker(onEvent) {
-        const ch = getClient().channel('kl-ticker')
+        if (tickerChannel) return () => {};
+        tickerChannel = getClient().channel('kl-ticker')
           .on('broadcast', { event: 'event' }, (msg) => {
             try { onEvent(msg.payload); } catch { /* 表示側の失敗は無視 */ }
           })
           .subscribe();
-        return () => { getClient().removeChannel(ch); };
+        return () => {
+          if (tickerChannel) { getClient().removeChannel(tickerChannel); tickerChannel = null; }
+        };
       },
       // グループチャット（0036 で実 DB 配線。書き込みは RPC 経由のみ）
       // RPC の { id, name, memberIds } に profiles を合わせて Sim の

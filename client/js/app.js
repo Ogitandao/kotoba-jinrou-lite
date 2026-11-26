@@ -618,9 +618,14 @@
   // ライブイベントの受け口（0057）：最高額ギフトと100勝の節目は
   // サーバーが Broadcast で流す。ロビーを見ている時だけ取り込み、
   // その場にいない人には流さない（貯めない・遡らない）
+  let lastTickerEvent = { text: '', at: 0 };
   function onTickerEvent(payload) {
     const text = payload?.text;
     if (!text) return;
+    // 同一イベントの二重配送（再接続時のリプレイ等）は1回に抑える
+    const now = Date.now();
+    if (text === lastTickerEvent.text && now - lastTickerEvent.at < 2000) return;
+    lastTickerEvent = { text, at: now };
     if (state.tab !== 'lobby') return;
     if (!$('dm-screen').classList.contains('hidden')) return;
     if (!$('room-screen').classList.contains('hidden')) return;
@@ -3581,6 +3586,8 @@
       $('row-fresh-enter').classList.toggle('hidden', DATA.mode !== 'sim' || IS_FRESH);
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
+      // ビルド表示：端末がどの版を動かしているかを目で確認するため
+      $('build-stamp').textContent = 'build 2026-11-26 17:12 / ticker3';
       openModal('modal-settings');
     });
     $('btn-gift-test').addEventListener('click', () => {
