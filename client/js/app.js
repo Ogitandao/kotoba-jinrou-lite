@@ -658,9 +658,7 @@
   }
   async function loadPushSettings() {
     const supported = pushSupported();
-    for (const id of ['row-push-master', 'row-push-dm', 'row-push-invite', 'row-push-announce', 'row-push-comeback']) {
-      $(id).classList.toggle('hidden', !supported);
-    }
+    $('row-push').classList.toggle('hidden', !supported);
     if (!supported) return;
     try {
       const p = await DATA.getPushPrefs();
@@ -3712,7 +3710,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 18:12 / giftfx1';
+      $('build-stamp').textContent = 'build 2026-11-26 18:16 / pushset1';
       loadPushSettings();
       openModal('modal-settings');
     });
@@ -3864,6 +3862,10 @@
     $('btn-blocklist').addEventListener('click', async () => {
       await renderBlocklist();
       openModal('modal-blocklist');
+    });
+    $('btn-push-settings').addEventListener('click', async () => {
+      await loadPushSettings();
+      openModal('modal-push');
     });
     $('btn-account').addEventListener('click', () => toast('アカウント設定は認証接続フェーズで実装します'));
     $('btn-fresh-enter').addEventListener('click', () => { location.href = `${location.pathname}?fresh=1`; });
