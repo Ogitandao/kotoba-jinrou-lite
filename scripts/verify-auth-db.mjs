@@ -5,6 +5,10 @@
 // - クライアントの直接 UPDATE は guard トリガで巻き戻される（変更不可）
 // - kl_monthly_cap_yen：14歳→5000／18歳→20000／25歳→NULL（SQL で確認）
 // - anon からは kl_set_birthdate を実行できない
+// - 鉄壁ガード（0050）：生年月日未登録ではルーム作成・ボーナス・DM が
+//   BIRTHDATE_REQUIRED で止まり、登録後は通る
+// - 自動削除（0051）：未完了のまま30日を過ぎたアカウントは
+//   kl__retention_cleanup で auth.users ごと削除される
 // 実行：node scripts/verify-auth-db.mjs
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -103,6 +107,49 @@ const C = await signup('c');
   const anon = mkClient();
   const r = await rpc(anon, 'kl_set_birthdate', { p_birthdate: '2000-01-01' });
   check('C: anon は実行できない', Boolean(r.error), r.error?.message ?? '実行できてしまった');
+}
+
+// ---------- E：鉄壁ガード（0050）生年月日未登録では主要 RPC が全部止まる ----------
+const E = await signup('e');
+{
+  check('E: 前提として birthdate は NULL', birthdateOf(E.id) === null);
+  const room = await rpc(E.sb, 'ww_create_room', { p_title: 'ガード検証' });
+  check('E: ルーム作成は BIRTHDATE_REQUIRED', room.code === 'BIRTHDATE_REQUIRED',
+    room.error?.message ?? '作成できてしまった');
+  const bonus = await rpc(E.sb, 'kl_claim_login_bonus', {});
+  check('E: ボーナス受け取りは BIRTHDATE_REQUIRED', bonus.code === 'BIRTHDATE_REQUIRED',
+    bonus.error?.message ?? '受け取れてしまった');
+  const dm = await rpc(E.sb, 'kl_send_dm', { p_to: A.id, p_body: 'ガード検証' });
+  check('E: DM 送信は BIRTHDATE_REQUIRED', dm.code === 'BIRTHDATE_REQUIRED',
+    dm.error?.message ?? '送れてしまった');
+  const set = await rpc(E.sb, 'kl_set_birthdate', { p_birthdate: '2000-01-01' });
+  check('E: 生年月日の登録自体は通る', !set.error, set.error?.message ?? '');
+  // ルーム作成にはチュートリアル同意も要る（生年月日ガードの先の関門）
+  await rpc(E.sb, 'kl_agree_rules', {});
+  const room2 = await rpc(E.sb, 'ww_create_room', { p_title: 'ガード検証2' });
+  check('E: 登録後はルーム作成できる', !room2.error && Boolean(room2.data?.id ?? room2.data),
+    room2.error?.message ?? '');
+  if (!room2.error) {
+    const roomId = room2.data?.id ?? room2.data?.room_id ?? room2.data;
+    if (roomId) await rpc(E.sb, 'ww_leave_room', { p_room: roomId });
+  }
+}
+
+// ---------- F：未完了アカウントの自動削除（0051） ----------
+const F = await signup('f');
+{
+  check('F: 前提として birthdate は NULL', birthdateOf(F.id) === null);
+  sql(`update public.profiles set created_at = now() - interval '40 days'
+        where id = '${F.id}'`);
+  sql('select public.kl__retention_cleanup()');
+  const prof = sql(`select id from public.profiles where id = '${F.id}'`);
+  const auth = sql(`select id from auth.users where id = '${F.id}'`);
+  check('F: 40日経過した未完了アカウントは削除される', prof.length === 0 && auth.length === 0,
+    `profiles=${prof.length} auth=${auth.length}`);
+  const cProf = sql(`select id from public.profiles where id = '${C.id}'`);
+  check('F: 未完了でも新しいアカウントは残る', cProf.length === 1);
+  const aProf = sql(`select id from public.profiles where id = '${A.id}'`);
+  check('F: 登録済みアカウントは残る', aProf.length === 1);
 }
 
 // ---------- D：月額上限ヘルパー（JST 年齢） ----------

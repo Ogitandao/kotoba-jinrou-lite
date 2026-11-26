@@ -73,7 +73,12 @@
     }, 2600);
   }
   function toastError(err) {
-    toast(err?.message ?? 'エラーが発生しました');
+    // RPC エラーは "CODE: 本文" 形式で届くため、表示では内部コードを落とす
+    const msg = (err?.message ?? 'エラーが発生しました').replace(/^[A-Z][A-Z0-9_]*:\s*/, '');
+    toast(msg);
+    // サーバー側ガードに弾かれたら、年齢確認のセットアップを出し直す
+    // （閉じられても操作のたびに戻ってくる＝鉄壁化のクライアント側）
+    if (err?.code === 'BIRTHDATE_REQUIRED') state.openNameSetup?.();
   }
   function rememberUsers(list) {
     for (const u of list ?? []) if (u?.id) state.users.set(u.id, u);
@@ -3230,10 +3235,66 @@
     $('btn-login-google').querySelector('span').textContent = 'Googleでログイン';
     $('btn-login-apple').querySelector('span').textContent = 'Appleでログイン';
   }
+  // 年齢確認ゲート（2026-11-26）：実ログインの前に生年月日を確認する。
+  // 入力値は端末内でのみ判定し、13歳未満なら破棄して先へ進ませない
+  // （アカウント自体を作らない）。13歳以上なら sessionStorage に保持し、
+  // ログイン直後にそのまま登録する（init の後処理）。判定は日本時間
+  const AGE_PENDING_KEY = 'kl_pending_birthdate';
+  function ageInJst(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso ?? '');
+    if (!m) return null;
+    const by = +m[1], bm = +m[2], bd = +m[3];
+    const now = new Date(Date.now() + 9 * 3600 * 1000);
+    let age = now.getUTCFullYear() - by;
+    const mm = now.getUTCMonth() + 1, dd = now.getUTCDate();
+    if (mm < bm || (mm === bm && dd < bd)) age -= 1;
+    return age;
+  }
+  function pendingBirthdate() {
+    try { return sessionStorage.getItem(AGE_PENDING_KEY); } catch { return null; }
+  }
+  function showAgeGate() {
+    const gate = $('age-gate');
+    // カードの出現アニメーションを毎回再生する
+    const card = gate.querySelector('.age-card');
+    card.style.animation = 'none';
+    void card.offsetWidth;
+    card.style.animation = '';
+    $('age-error').classList.add('hidden');
+    gate.classList.remove('hidden');
+    gate.setAttribute('aria-hidden', 'false');
+  }
+  function hideAgeGate() {
+    const gate = $('age-gate');
+    gate.classList.add('hidden');
+    gate.setAttribute('aria-hidden', 'true');
+  }
+  function confirmAgeGate() {
+    const iso = $('age-birthdate').value;
+    const err = $('age-error');
+    const age = ageInJst(iso);
+    if (!iso || age === null) {
+      err.textContent = '生年月日を入力してください';
+      err.classList.remove('hidden');
+      return;
+    }
+    if (age < 13) {
+      err.textContent = '13歳未満の方は登録できません';
+      err.classList.remove('hidden');
+      $('age-birthdate').value = ''; // 入力値は破棄する（どこにも保持しない）
+      return;
+    }
+    try { sessionStorage.setItem(AGE_PENDING_KEY, iso); } catch {}
+    hideAgeGate();
+  }
+
   async function doLogin(btn, provider) {
     // 実認証モード：Google は本物の OAuth へ。Apple は提供開始まで準備中
     if (DATA.authState === 'signed-out') {
       if (provider === 'apple') { toast('Appleでログインは準備中です'); return; }
+      // 年齢確認を通っていない場合はゲートを出し直す（アカウントを
+      // 作らせないための最後の砦。サーバー側ガードも別途ある）
+      if (!pendingBirthdate()) { showAgeGate(); return; }
       if (loginBusy) return;
       loginBusy = true;
       $('btn-login-google').disabled = true;
@@ -3307,14 +3368,31 @@
     state.rooms = boot.rooms ?? [];
     rememberUsers([state.me]);
 
+    // 年齢確認ゲートで保持した生年月日を、ログイン直後にそのまま登録
+    // する（実 DB モードで未登録のときだけ）。失敗した場合は末尾の
+    // 初回セットアップモーダルが受け皿になる
+    if (DATA.mode === 'supabase' && !state.me.birthdate) {
+      const pending = pendingBirthdate();
+      if (pending) {
+        try {
+          const saved = await DATA.setBirthdate(pending);
+          state.me.birthdate = saved?.birthdate ?? pending;
+        } catch { /* モーダル側で再入力してもらう */ }
+        try { sessionStorage.removeItem(AGE_PENDING_KEY); } catch {}
+      }
+    }
+
     // ログイン画面：配線は常に張り、表示は未ログイン時（実セッションで
     // 起動できた場合は出さない）。refreshSocial より前に出して、ギフト
     // 通知をログイン完了まで保留できるようにする（pumpGiftNotify 側でも判定）
     $('btn-login-google').addEventListener('click', (e) => doLogin(e.currentTarget, 'google'));
     $('btn-login-apple').addEventListener('click', (e) => doLogin(e.currentTarget, 'apple'));
+    $('age-confirm').addEventListener('click', confirmAgeGate);
     $('btn-terms').addEventListener('click', () => window.open('terms.html', '_blank', 'noopener'));
     $('btn-privacy').addEventListener('click', () => window.open('privacy.html', '_blank', 'noopener'));
     if (DATA.mode === 'sim') showLoginScreen();
+    // 未ログイン確定時は、ログインボタンの前に年齢確認ゲートを出す
+    if (DATA.authState === 'signed-out') showAgeGate();
 
     renderProfile();
     renderCoins();
@@ -3835,6 +3913,11 @@
       if (!$('modal-report').classList.contains('hidden')) { closeReport(); return; }
       if (!$('modal-confirm').classList.contains('hidden')) { closeConfirm(); return; }
       if (!$('modal-gift-confirm').classList.contains('hidden')) { closeGiftConfirm(); return; }
+      // 初回セットアップ（名前・生年月日）表示中は「戻る」でも閉じない。
+      // 閉じられると年齢確認を終えていないのにそのまま遊べてしまう
+      // （2026-11-26 おぎ実機で発見）。判定は枠外タップのガードと揃える
+      if (!$('modal-name').classList.contains('hidden')
+        && $('name-x').classList.contains('hidden')) return;
       if (modalStack.length > 0) { backModal(); return; }
       const s = $('dm-screen');
       if (!s.classList.contains('hidden') && s.classList.contains('open')) closeDm();
