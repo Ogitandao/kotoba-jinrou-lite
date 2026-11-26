@@ -522,6 +522,8 @@
     // 実 DB の room_members.violation_points に相当し、退室・キック・
     // 強制退室でエントリを消す＝滞在リセットになる
     const penState = { events: [], untilByUser: new Map(), roomPoints: new Map() };
+    // 異議申し立て（デモ用）：テスト行からだけ処分が入る
+    const appealSim = { penalties: [], appeals: [] };
     let rulesAgreed = false;
     try { rulesAgreed = localStorage.getItem('kl_rules_agreed') === '1'; } catch { /* 保存できない環境ではメモリのみ */ }
     const penFormatMinutes = (min) => {
@@ -1770,6 +1772,48 @@
         wwState.rooms.set(room.id, room);
         return ok(wwRoomDetail(room));
       },
+      // 異議申し立て（デモ用）：通常は対象なし。テスト行で処分を入れると
+      // システムDM画面に申立てバーが出る
+      listMyAppealablePenalties() {
+        return appealSim.penalties.map((p) => {
+          const a = appealSim.appeals.find((x) => x.penaltyEventId === p.penaltyEventId);
+          return { ...p, alreadyAppealed: !!a, appealStatus: a?.status ?? null };
+        });
+      },
+      submitAppeal(penaltyEventId, reason) {
+        const p = appealSim.penalties.find((x) => x.penaltyEventId === penaltyEventId);
+        if (!p) throw fail('PENALTY_NOT_FOUND', '対象の処分が見つかりません');
+        if (appealSim.appeals.some((x) => x.penaltyEventId === penaltyEventId)) {
+          throw fail('ALREADY_APPEALED', 'この処分には既に申し立て済みです');
+        }
+        if (!reason?.trim()) throw fail('REASON_EMPTY', '申立ての理由を入力してください');
+        appealSim.appeals.push({ penaltyEventId, status: 'pending' });
+        state.dm.push({
+          id: 'dm-' + (++state.seq), from: 'system', to: 'me', kind: 'system',
+          body: '利用制限に対する異議申し立てを受け付けました。確認にはお時間をいただく場合があります。結果はこのシステムDMでお知らせします。\n※申し立ては1つの処分につき1回までです。この結果が最終判断となります。',
+          read: false, at: Date.now(),
+        });
+        return { appealId: 'sim-appeal-' + penaltyEventId };
+      },
+      // テスト専用：申立て可能な処分（ハラスメント7日）を用意し、
+      // 処分通知のシステムDMも届ける
+      __simInjectAppealablePenalty() {
+        if (!appealSim.penalties.length) {
+          appealSim.penalties.push({
+            penaltyEventId: 'sim-pen-1', minutes: 10080,
+            createdAt: new Date().toISOString(),
+            penaltyUntil: new Date(Date.now() + 7 * 86400000).toISOString(),
+            category: '嫌がらせ・暴言',
+            deadline: new Date(Date.now() + 30 * 86400000).toISOString(),
+          });
+          state.dm.push({
+            id: 'dm-' + (++state.seq), from: 'system', to: 'me', kind: 'system',
+            body: 'あなたの発言が「ことば人狼」のルール（嫌がらせ・暴言等）に違反すると確認されたため、利用制限を行いました。\n■ 理由：嫌がらせ・暴言\n■ 制限期間：7日間\n心当たりがない場合は、この画面の「異議申し立て」から申請できます（1回まで）。',
+            read: false, at: Date.now(),
+          });
+        }
+        return appealSim.penalties;
+      },
     };
   }
 
@@ -1869,6 +1913,10 @@
         return p.rules_agreed_at != null;
       },
       agreeRules() { return rpc('kl_agree_rules'); },
+      listMyAppealablePenalties() { return rpc('kl_my_appealable_penalties'); },
+      submitAppeal(penaltyEventId, reason) {
+        return rpc('kl_submit_appeal', { p_penalty_event_id: penaltyEventId, p_reason: reason });
+      },
       resetRulesConsent() { return Promise.resolve(true); }, // 実DBでは使わない（デモ専用行）
       heartbeat(roomId) { return rpc('ww_heartbeat', { p_room: roomId }); },
       async claimLoginBonus() {
@@ -2541,6 +2589,12 @@
     heartbeat: (roomId) => (active.heartbeat ? active.heartbeat(roomId) : Promise.resolve(null)),
     getRulesAgreed: () => active.getRulesAgreed(),
     agreeRules: () => active.agreeRules(),
+    listMyAppealablePenalties: () => active.listMyAppealablePenalties(),
+    submitAppeal: (penaltyEventId, reason) => active.submitAppeal(penaltyEventId, reason),
+    // テスト専用：申立て可能な処分を用意する（SimBackend のみ）
+    __simInjectAppealablePenalty: () => (active.__simInjectAppealablePenalty
+      ? active.__simInjectAppealablePenalty()
+      : Promise.reject(new Error('NOT_SUPPORTED'))),
     resetRulesConsent: () => active.resetRulesConsent(),
     // テスト専用：SimBackend の仮想時計を進める（実 DB では無効）
     __simAdvanceTime: (sec) => active.__simAdvanceTime(sec),

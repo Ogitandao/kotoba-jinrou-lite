@@ -1550,6 +1550,7 @@
     if (!isSystem) refreshDmFriendBtn(user);
     showDmScreen();
     updateCreateBar();
+    renderAppealBar();
     try {
       const messages = await DATA.listMessages(user.id);
       renderMessages(messages);
@@ -1562,6 +1563,39 @@
     state.dmGroup = null;
     hideDmScreen();
     updateCreateBar();
+  }
+  // 異議申し立てバー（システムDM内）：申立て可能な処分があるときだけ出す
+  async function renderAppealBar() {
+    const bar = $('dm-appeal-bar');
+    if (state.dmPeer?.id !== 'system') { bar.classList.add('hidden'); return; }
+    try {
+      const items = await DATA.listMyAppealablePenalties();
+      const target = items.find((i) => !i.alreadyAppealed);
+      state.appealTarget = target ?? null;
+      if (target) {
+        bar.textContent = '利用制限への異議申し立て';
+        bar.disabled = false;
+        bar.classList.remove('hidden');
+      } else if (items.some((i) => i.appealStatus === 'pending')) {
+        bar.textContent = '異議申し立てを受け付けています（確認中）';
+        bar.disabled = true;
+        bar.classList.remove('hidden');
+      } else {
+        bar.classList.add('hidden');
+      }
+    } catch { bar.classList.add('hidden'); }
+  }
+  function openAppealModal() {
+    const t = state.appealTarget;
+    if (!t) return;
+    const until = t.minutes === -1
+      ? '無期限'
+      : (() => { const d = new Date(t.penaltyUntil); return `${d.getMonth() + 1}月${d.getDate()}日まで`; })();
+    $('appeal-summary').textContent =
+      `理由：${t.category}\n制限期間：${until}`;
+    $('appeal-reason').value = '';
+    $('appeal-count').textContent = '0';
+    openModal('modal-appeal');
   }
   // DMヘッダーのフレンド申請ボタン（2026-11-25 おぎ）：フレンドでない相手との
   // DMでのみ出す。相手から申請が来ていれば「承認」動作になる。
@@ -3301,6 +3335,7 @@
       $('row-removed-test').classList.toggle('hidden', DATA.mode !== 'sim');
       $('row-terminated-test').classList.toggle('hidden', DATA.mode !== 'sim');
       $('row-penalty-test').classList.toggle('hidden', DATA.mode !== 'sim');
+      $('row-appeal-test').classList.toggle('hidden', DATA.mode !== 'sim');
       $('row-result-room-test').classList.toggle('hidden', DATA.mode !== 'sim');
       $('row-fresh-enter').classList.toggle('hidden', DATA.mode !== 'sim' || IS_FRESH);
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
@@ -3352,6 +3387,14 @@
         await DATA.__simApplyMyPenalty();
         await refreshPenalty();
         toast('ペナルティを適用しました。ロビーのバナーと、トークのシステム通知を見てください（リロードでリセットされます）');
+      } catch (e) { toastError(e); }
+    });
+    $('btn-appeal-test').addEventListener('click', async () => {
+      closeModal();
+      try {
+        await DATA.__simInjectAppealablePenalty();
+        await renderTalkList();
+        toast('テスト用の処分を用意しました。トーク → システム を開いて「異議申し立て」を試してください');
       } catch (e) { toastError(e); }
     });
     $('btn-result-room-test').addEventListener('click', async () => {
@@ -3673,6 +3716,27 @@
       if (e.key === 'Enter') doSearch();
     });
     $('dm-back').addEventListener('click', closeDm);
+    $('dm-appeal-bar').addEventListener('click', openAppealModal);
+    $('appeal-reason').addEventListener('input', () => {
+      $('appeal-count').textContent = [...$('appeal-reason').value].length;
+    });
+    $('appeal-send').addEventListener('click', () => {
+      const t = state.appealTarget;
+      const reason = $('appeal-reason').value.trim();
+      if (!t) return;
+      if (!reason) { toast('申立ての理由を入力してください'); return; }
+      openConfirm('異議申し立てを送信しますか？\n（1つの処分につき1回までです）', '送信する', async () => {
+        try {
+          await DATA.submitAppeal(t.penaltyEventId, reason);
+          closeModal();
+          toast('異議申し立てを送信しました');
+          if (state.dmPeer?.id === 'system') {
+            renderMessages(await DATA.listMessages('system'));
+            await renderAppealBar();
+          }
+        } catch (e) { toastError(e); }
+      });
+    });
     // スワイプで戻る（2026-11-26 おぎ）：画面の左端から右へ引く動きで
     // 「戻る」と同じ動作をする。対象は戻り先のある画面（DM→トーク一覧）
     // だけ。ルーム／対戦画面では一切発動しない：入室も退出もボタン操作

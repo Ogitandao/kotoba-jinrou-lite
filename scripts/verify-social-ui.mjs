@@ -435,6 +435,37 @@ $('room-screen').classList.add('hidden');
 $('dm-back').click();
 await tick();
 
+// --- 異議申し立て（デモ用）：処分を用意 → システムDMのバー → 送信 → 受付DM ---
+rowByName($('talk-list'), 'システム').click();
+await tick(90);
+check('申立て前：システムDMに異議申し立てバーは出ない', $('dm-appeal-bar').classList.contains('hidden'));
+$('dm-back').click();
+await tick();
+$('btn-settings').click();
+await tick(60);
+$('btn-appeal-test').click();
+await tick(120);
+rowByName($('talk-list'), 'システム').click();
+await tick(120);
+check('処分があるとシステムDMに異議申し立てバーが出る',
+  !$('dm-appeal-bar').classList.contains('hidden') && !$('dm-appeal-bar').disabled);
+$('dm-appeal-bar').click();
+await tick(80);
+check('バーから申立てモーダルが開く', !$('modal-appeal').classList.contains('hidden'));
+$('appeal-reason').value = '心当たりがありません';
+$('appeal-reason').dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+$('appeal-send').click();
+await tick(80);
+check('送信前に確認ポップアップが出る', !$('modal-confirm').classList.contains('hidden'));
+$('confirm-yes').click();
+await tick(150);
+check('送信すると受付のシステムDMが届く',
+  $('dm-msgs-inner').textContent.includes('異議申し立てを受け付けました'));
+check('送信後はバーが「確認中」の表示になる',
+  $('dm-appeal-bar').disabled && $('dm-appeal-bar').textContent.includes('確認中'));
+$('dm-back').click();
+await tick();
+
 const failed = results.filter((r) => !r.ok);
 console.log(`\n=== ${results.length - failed.length}/${results.length} PASS ===`);
 process.exit(failed.length ? 1 : 0);

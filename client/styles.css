@@ -981,6 +981,20 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   display: flex; align-items: center; justify-content: center; color: var(--sky);
 }
 .gift-open-btn.icon-only { padding: 7px 9px; }
+/* 異議申し立てバー（システムDM内・対象の処分があるときだけ出す） */
+.dm-appeal-bar {
+  flex: 0 0 auto; margin: 8px 12px 0; padding: 10px 12px;
+  border: none; border-radius: 12px; background: var(--sky); color: #fff;
+  font: inherit; font-weight: 700; font-size: 14px;
+  box-shadow: var(--shadow); cursor: pointer;
+}
+.dm-appeal-bar[disabled] {
+  background: #eaf6ff; color: var(--muted); box-shadow: none; cursor: default;
+}
+.appeal-summary {
+  background: #eaf6ff; border-radius: 12px; padding: 10px 12px;
+  font-size: 13.5px; line-height: 1.6; white-space: pre-line; margin: 0 0 10px;
+}
 .dm-peer-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dm-peer-name { flex: 1 1 auto; font-weight: 800; }
 .gift-open-btn {
