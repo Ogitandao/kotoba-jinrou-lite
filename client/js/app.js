@@ -566,63 +566,54 @@
     '🎁 試合のあとは、活躍した人にギフトを贈ってみよう',
     '🔰 はじめての人は「初心者歓迎」のルームがおすすめ',
   ];
-  // ティッカーの速さを実幅から決める。非表示中（DM等を開いている間）は
-  // 幅が 0 になり、その計測で duration を決めると最速（18秒固定）に
-  // 化けてしまうため、幅が取れる時だけ反映する。再表示への追随には
-  // ResizeObserver を使う（2026-11-26 実機：DM でギフトを送って
-  // ロビーに戻るとティッカーが高速化するバグの修正）
-  let tickerRo = null;
-  function fitTickerDuration() {
-    const track = $('ticker-track');
-    const set = track?.querySelector('.ticker-set');
-    if (!set) return;
-    const w = set.getBoundingClientRect().width;
-    if (w > 0) track.style.animationDuration = `${Math.max(18, w / 45)}s`;
+  // ティッカーは JS 駆動の連続スクロール（2026-11-26 方式ごと作り替え）。
+  // CSS ループアニメーションは「イベントを1回だけ流す」と周期管理が
+  // 衝突し、高速化・途中で消える・同じ文が溜まる、を繰り返したため：
+  // ・固定のお知らせは左端を抜けたら最後尾へ回してループし続ける
+  // ・ライブイベントは流れの次点に差し込み、左端を抜けたら消す
+  // ・差し込みや削除で流れは止まらない・巻き戻らない。速さは常に一定
+  const TICKER_SPEED = 45; // px/秒
+  const tickerScroll = { offset: 0, lastTs: 0, running: false };
+  function tickerItemEl(text, loop) {
+    const s = document.createElement('span');
+    s.className = 'ticker-item';
+    s.textContent = text;
+    if (loop) s.dataset.loop = '1';
+    return s;
   }
   function renderTicker() {
     const track = $('ticker-track');
     if (!track) return;
-    // 流すのは「ライブイベント（1回だけ）＋固定のお知らせ」だけ。
-    // サーバーに貯めた履歴は読み直さない（0057 で Realtime 化）
-    const items = [
-      ...(state.tickerEvents ?? []),
-      ...TICKER_BASE,
-    ];
-    // 中身が変わっていないときは作り直さない（アニメーションが巻き戻るため）
-    const key = items.join('\u0001');
-    if (key === state.tickerKey) return;
-    state.tickerKey = key;
-    const setHtml = items
-      .map((t) => `<span class="ticker-item">${t}</span>`)
-      .join('');
-    // 同じ並びを2セット並べて -50% まで流すと切れ目なくループする
-    track.innerHTML = `<span class="ticker-set">${setHtml}</span><span class="ticker-set">${setHtml}</span>`;
-    // 中身を差し替えたらアニメーションを先頭から再生し直す。差し替え
-    // 前の経過時間を引き継ぐと、周期の残りが短い時に差し替えた
-    // ライブイベントが流れ切る前に animationiteration が来て
-    // 消えてしまう（2026-11-26 実機）
-    track.classList.remove('run');
-    void track.offsetWidth;
-    track.classList.add('run');
-    if (!tickerRo && window.ResizeObserver) {
-      const box = $('ticker');
-      if (box) {
-        tickerRo = new ResizeObserver(() => fitTickerDuration());
-        tickerRo.observe(box);
+    if (!track.children.length) {
+      for (const t of TICKER_BASE) track.appendChild(tickerItemEl(t, true));
+    }
+    startTickerScroll();
+  }
+  function startTickerScroll() {
+    if (tickerScroll.running) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    tickerScroll.running = true;
+    const step = (ts) => {
+      if (!tickerScroll.running) return;
+      requestAnimationFrame(step);
+      const track = $('ticker-track');
+      if (!track) return;
+      // 非表示の間は進めない（幅0＝ロビーを見ていない）
+      if (!track.getBoundingClientRect().width) { tickerScroll.lastTs = ts; return; }
+      if (!tickerScroll.lastTs) tickerScroll.lastTs = ts;
+      const dt = Math.min(0.1, (ts - tickerScroll.lastTs) / 1000);
+      tickerScroll.lastTs = ts;
+      tickerScroll.offset += TICKER_SPEED * dt;
+      let first = track.firstElementChild;
+      while (first && first.offsetWidth > 0 && tickerScroll.offset >= first.offsetWidth) {
+        tickerScroll.offset -= first.offsetWidth;
+        if (first.dataset.loop) track.appendChild(first);
+        else first.remove();
+        first = track.firstElementChild;
       }
-    }
-    // ライブイベントは1周流れたら消す（ループに残し続けない）
-    if (!track.dataset.iterBound) {
-      track.dataset.iterBound = '1';
-      track.addEventListener('animationiteration', () => {
-        if (state.tickerEvents?.length) {
-          state.tickerEvents = [];
-          state.tickerKey = null;
-          renderTicker();
-        }
-      });
-    }
-    requestAnimationFrame(fitTickerDuration);
+      track.style.transform = `translateX(${-tickerScroll.offset}px)`;
+    };
+    requestAnimationFrame(step);
   }
   // ライブイベントの受け口（0057）：最高額ギフトと100勝の節目は
   // サーバーが Broadcast で流す。ロビーを見ている時だけ取り込み、
@@ -637,10 +628,19 @@
     pushTickerEvent(text);
   }
   function pushTickerEvent(text) {
-    state.tickerEvents = state.tickerEvents ?? [];
-    state.tickerEvents.unshift(text);
-    state.tickerEvents = state.tickerEvents.slice(0, 6);
+    const track = $('ticker-track');
+    if (!track) return;
     renderTicker();
+    // いま流れ出ている先頭の次に差し込む（すぐ次に流れる位置。
+    // 先頭に割り込むと表示中の文が途中で飛ぶため）。すでに差し込み
+    // 済みのイベントがある場合は、その最後尾に続ける（届いた順を保つ）
+    const el = tickerItemEl(text, false);
+    let anchor = track.firstElementChild;
+    while (anchor?.nextElementSibling && !anchor.nextElementSibling.dataset.loop) {
+      anchor = anchor.nextElementSibling;
+    }
+    if (anchor?.nextSibling) track.insertBefore(el, anchor.nextSibling);
+    else track.appendChild(el);
   }
   function detectRoomEvents(rooms) {
     const prev = state.prevRooms;

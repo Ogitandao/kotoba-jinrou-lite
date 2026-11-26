@@ -152,17 +152,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   white-space: nowrap;
   will-change: transform;
 }
-.ticker-track.run {
-  animation: ticker-scroll 30s linear infinite;
-}
-.ticker-set { display: inline-flex; }
 .ticker-item {
   font-size: 12.5px; font-weight: 700; color: #33536d;
   padding: 0 22px;
-}
-@keyframes ticker-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
 }
 .profile-card {
   display: flex;
