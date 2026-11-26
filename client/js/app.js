@@ -3709,8 +3709,13 @@
     // 変換して目印を積み直す。ルーム／対戦中とロビーでは無反応
     // （閉じない・ルームへ戻ることもない。退出はボタン操作だけ）
     history.pushState({ kl: 'app' }, '');
+    let rearmTimer = null;
     window.addEventListener('popstate', () => {
-      history.pushState({ kl: 'app' }, '');
+      // 目印の積み直しは少し遅らせる。即座に積み直すとブラウザ側の
+      // 「戻る」アニメーションと競合して、画面が一瞬戻ってから
+      // カクッと切り替わる見え方になったため（2026-11-26 おぎ実機）
+      clearTimeout(rearmTimer);
+      rearmTimer = setTimeout(() => history.pushState({ kl: 'app' }, ''), 350);
       if (!$('modal-report').classList.contains('hidden')) { closeReport(); return; }
       if (!$('modal-confirm').classList.contains('hidden')) { closeConfirm(); return; }
       if (!$('modal-gift-confirm').classList.contains('hidden')) { closeGiftConfirm(); return; }
