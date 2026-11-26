@@ -3824,7 +3824,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 19:30 / sw1';
+      $('build-stamp').textContent = 'build 2026-11-26 19:36 / sw2';
       loadPushSettings();
       openModal('modal-settings');
     });
