@@ -3287,8 +3287,8 @@
     // 保留できるようにする（pumpGiftNotify 側でも判定）
     $('btn-login-google').addEventListener('click', (e) => doLogin(e.currentTarget));
     $('btn-login-apple').addEventListener('click', (e) => doLogin(e.currentTarget));
-    $('link-terms').addEventListener('click', (e) => { e.preventDefault(); toast('利用規約は準備中です'); });
-    $('link-privacy').addEventListener('click', (e) => { e.preventDefault(); toast('プライバシーポリシーは準備中です'); });
+    $('btn-terms').addEventListener('click', () => window.open('terms.html', '_blank', 'noopener'));
+    $('btn-privacy').addEventListener('click', () => window.open('privacy.html', '_blank', 'noopener'));
     if (DATA.mode === 'sim') showLoginScreen();
 
     renderProfile();
