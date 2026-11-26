@@ -652,7 +652,6 @@
   // ---------- トーク一覧 ----------
   function lastMessagePreview(m) {
     if (!m) return '';
-    if (m.deleted) return 'メッセージは削除されました';
     if (m.kind === 'system' || m.kind === 'welcome') return '📢 システムからのお知らせ';
     if (m.kind === 'gift') return '🎁 ギフトが届きました';
     if (m.kind === 'invite') return '📩 ルームへの招待カード';
@@ -1186,7 +1185,41 @@
         side.appendChild(badge);
       }
       if (side.childNodes.length) row.appendChild(side);
-      row.addEventListener('click', () => (c.isGroup ? openGroupChat(c.partner) : openDm(c.partner)));
+      // 長押しでトーク削除（自分の画面からだけ消える。相手の画面には
+      // 影響しない。2026-11-26 おぎ要望：ブロックした相手との会話を
+      // 自分の一覧に残したくない、が用途）
+      let pressTimer = null;
+      let pressFired = false;
+      let pressX = 0;
+      let pressY = 0;
+      const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+      row.addEventListener('pointerdown', (ev) => {
+        pressFired = false;
+        pressX = ev.clientX ?? 0;
+        pressY = ev.clientY ?? 0;
+        pressTimer = setTimeout(() => {
+          pressTimer = null;
+          pressFired = true;
+          openConfirm(`${c.partner.name}とのトークを削除しますか？`, '削除する', async () => {
+            try {
+              await DATA.clearConversation(c.partnerId);
+              toast('トークを削除しました');
+              renderTalkList();
+            } catch (e) { toastError(e); }
+          });
+        }, 500);
+      });
+      row.addEventListener('pointermove', (ev) => {
+        if (pressTimer && (Math.abs((ev.clientX ?? 0) - pressX) > 10
+          || Math.abs((ev.clientY ?? 0) - pressY) > 10)) cancelPress();
+      });
+      row.addEventListener('pointerup', cancelPress);
+      row.addEventListener('pointercancel', cancelPress);
+      row.addEventListener('contextmenu', (ev) => ev.preventDefault());
+      row.addEventListener('click', () => {
+        if (pressFired) { pressFired = false; return; }
+        (c.isGroup ? openGroupChat(c.partner) : openDm(c.partner));
+      });
       list.appendChild(row);
     }
   }
@@ -1461,21 +1494,6 @@
         });
       });
       return card;
-    }
-    if (m.deleted) {
-      // 削除済みメッセージ：本文は伏せて置換表示。相手のものは
-      // 通報だけできるよう長押しメニューを残す（証跡はサーバー保持）
-      const ph = document.createElement('div');
-      ph.className = `dm-msg deleted ${mine ? 'mine' : 'theirs'}`;
-      ph.textContent = 'メッセージは削除されました';
-      if (!mine) {
-        attachMsgPress(ph, {
-          kind: state.dmGroup ? 'group_message' : 'dm_message',
-          ref: m.id, userId: m.from, body: '', mine, deleted: true,
-          name: state.users.get(m.from)?.name ?? state.dmPeer?.name ?? '',
-        });
-      }
-      return ph;
     }
     const bubble = document.createElement('div');
     bubble.className = `dm-msg ${mine ? 'mine' : 'theirs'}`;
@@ -1896,10 +1914,6 @@
   function openMsgMenu(target) {
     msgMenuTarget = target;
     $('mm-report').classList.toggle('hidden', !!target.mine);
-    // 削除は DM／グループの自分の発言だけ（ルーム・対戦の発言は対象外）
-    $('mm-delete').classList.toggle('hidden', !(target.mine
-      && (target.kind === 'dm_message' || target.kind === 'group_message')));
-    $('mm-copy').classList.toggle('hidden', !!target.deleted);
     openModal('modal-msg-menu');
   }
   function attachMsgPress(el, target) {
@@ -3518,23 +3532,6 @@
         await navigator.clipboard.writeText(t.body);
         toast('コピーしました');
       } catch { toast('コピーできませんでした'); }
-    });
-    $('mm-delete').addEventListener('click', () => {
-      const t = msgMenuTarget;
-      closeModal();
-      if (!t) return;
-      openConfirm('本当にメッセージを消しますか？', '削除する', async () => {
-        try {
-          if (t.kind === 'group_message') await DATA.deleteGroupMessage(t.ref);
-          else await DATA.deleteMessage(t.ref);
-          toast('メッセージを削除しました');
-          const msgs = state.dmGroup
-            ? await DATA.listGroupMessages(state.dmGroup.id)
-            : await DATA.listMessages(state.dmPeer.id);
-          renderMessages(msgs);
-          renderTalkList();
-        } catch (e) { toastError(e); }
-      });
     });
     $('btn-rules').addEventListener('click', () => openTutorial('view'));
     $('btn-tutorial-close').addEventListener('click', closeModal);

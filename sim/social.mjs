@@ -230,20 +230,23 @@ export class SocialSim {
   }
 
   messagesWith(meId, otherId) {
+    const cut = this.clearSeqOf(meId, otherId);
     return this.dm.filter(
-      (m) => (m.senderId === meId && m.recipientId === otherId)
-        || (m.senderId === otherId && m.recipientId === meId),
+      (m) => m.at >= cut
+        && ((m.senderId === meId && m.recipientId === otherId)
+          || (m.senderId === otherId && m.recipientId === meId)),
     );
   }
 
-  // 0052：自分の text メッセージだけ削除可（ソフトデリート）
-  deleteDm(meId, messageId) {
-    const m = this.dm.find((x) => x.id === messageId);
-    if (!m) fail('MESSAGE_NOT_FOUND', 'メッセージが存在しません');
-    if (m.senderId !== meId) fail('NOT_OWN_MESSAGE', '自分のメッセージだけ削除できます');
-    if (m.kind !== 'text') fail('NOT_DELETABLE', 'このメッセージは削除できません');
-    m.deletedAt = ++this.seq;
-    return m;
+  // 0053：トーク削除は「自分の画面からだけ」。相手の画面には影響せず、
+  // 削除後に来たメッセージだけが再び見える（clearedSeq 方式）
+  clearConversation(meId, partnerId) {
+    if (!this.clears) this.clears = new Map();
+    this.clears.set(`${meId}:${partnerId}`, ++this.seq);
+  }
+
+  clearSeqOf(meId, partnerId) {
+    return this.clears?.get(`${meId}:${partnerId}`) ?? -1;
   }
 
   markDmRead(meId, otherId) {
@@ -258,8 +261,9 @@ export class SocialSim {
   }
 
   unreadCount(meId, otherId) {
+    const cut = this.clearSeqOf(meId, otherId);
     return this.dm.filter(
-      (m) => m.senderId === otherId && m.recipientId === meId && m.readAt === null,
+      (m) => m.at >= cut && m.senderId === otherId && m.recipientId === meId && m.readAt === null,
     ).length;
   }
 
@@ -268,6 +272,7 @@ export class SocialSim {
     for (const m of this.dm) {
       const partner = m.senderId === meId ? m.recipientId : m.recipientId === meId ? m.senderId : null;
       if (!partner) continue;
+      if (m.at < this.clearSeqOf(meId, partner)) continue;
       const cur = byPartner.get(partner) ?? { partnerId: partner, last: null, unread: 0 };
       cur.last = m;
       if (m.recipientId === meId && m.readAt === null) cur.unread += 1;

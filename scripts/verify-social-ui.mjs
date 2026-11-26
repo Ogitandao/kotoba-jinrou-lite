@@ -175,8 +175,6 @@ check('送信すると自分の吹き出しが末尾に追加される',
   await tick(650);
   check('吹き出し長押しでメニューが開き、通報するが見える',
     visible($('modal-msg-menu')) && !$('mm-report').classList.contains('hidden'));
-  check('相手の吹き出しのメニューに削除するは出ない',
-    $('mm-delete').classList.contains('hidden'));
   $('mm-report').click();
   await tick();
   check('メニューの通報するから通報フォームが開く',
@@ -188,19 +186,8 @@ check('送信すると自分の吹き出しが末尾に追加される',
   await tick(650);
   check('自分の吹き出しのメニューに通報するは出ない',
     visible($('modal-msg-menu')) && $('mm-report').classList.contains('hidden'));
-  check('自分の吹き出しのメニューに削除するが出る',
-    !$('mm-delete').classList.contains('hidden'));
-  $('mm-delete').click();
+  document.querySelector('#modal-msg-menu [data-close]').click();
   await tick();
-  check('削除するで確認が出る（本当にメッセージを消しますか？）',
-    visible($('modal-confirm')) && $('confirm-text').textContent.includes('本当にメッセージを消しますか？'));
-  $('confirm-yes').click();
-  await tick();
-  check('削除した吹き出しが置換表示になる',
-    msgs()[2].textContent.includes('メッセージは削除されました')
-    && !!msgs()[2].querySelector('.dm-msg.deleted'));
-  check('トーク一覧のプレビューも削除表示になる',
-    rowByName($('talk-list'), 'みか')?.textContent.includes('メッセージは削除されました'));
 }
 
 $('dm-input').value = 'これ見て https://example.com';
@@ -235,6 +222,21 @@ check('ギフト画面の閉じるでモーダルが閉じる', !visible($('moda
 $('dm-back').click();
 await tick(420);
 check('戻るでDM画面が閉じる（スライドアウト後）', !visible($('dm-screen')));
+
+// --- トーク削除（長押し：自分の画面からだけ消える） ---
+{
+  // 名前検索だとグループ行のプレビュー（発言者名）に引っかかるため ID で特定
+  const kenRow = document.querySelector('#talk-list .talk-row[data-user-id="u-ken"]');
+  kenRow.dispatchEvent(new dom.window.MouseEvent('pointerdown', { bubbles: true, clientX: 5, clientY: 5 }));
+  await tick(650);
+  check('トーク行の長押しで削除の確認が出る',
+    visible($('modal-confirm')) && $('confirm-text').textContent.includes('けんとのトークを削除しますか？'));
+  $('confirm-yes').click();
+  await tick();
+  check('削除したトークが一覧から消える（他は残る）',
+    !document.querySelector('#talk-list .talk-row[data-user-id="u-ken"]')
+    && !!document.querySelector('#talk-list .talk-row[data-user-id="u-mika"]'));
+}
 
 // --- 送ったギフトが相手プロフへ即時反映される ---
 {

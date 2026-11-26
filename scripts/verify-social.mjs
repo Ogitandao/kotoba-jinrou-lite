@@ -80,13 +80,17 @@ expectCode('URL は URL_NOT_ALLOWED（DM のリンク禁止）',
   () => sim.sendDm('alice', 'bob', '見て https://example.com'), 'URL_NOT_ALLOWED');
 expectCode('501文字は MESSAGE_TOO_LONG',
   () => sim.sendDm('alice', 'bob', 'あ'.repeat(501)), 'MESSAGE_TOO_LONG');
-// --- メッセージ削除（0052） ---
-expectCode('相手のメッセージは消せない（NOT_OWN_MESSAGE）',
-  () => sim.deleteDm('bob', m1.id), 'NOT_OWN_MESSAGE');
-check('自分のメッセージは削除できる（ソフトデリート）',
-  sim.deleteDm('alice', m1.id).deletedAt != null);
-expectCode('存在しないメッセージは MESSAGE_NOT_FOUND',
-  () => sim.deleteDm('alice', 'dm-9999'), 'MESSAGE_NOT_FOUND');
+// --- トーク削除（0053：自分の画面からだけ消える） ---
+sim.clearConversation('alice', 'bob');
+check('トーク削除すると自分の画面から会話が消える',
+  sim.messagesWith('alice', 'bob').length === 0
+  && sim.conversations('alice').length === 0);
+check('相手の画面には会話が残る',
+  sim.messagesWith('bob', 'alice').length === 2);
+sim.sendDm('bob', 'alice', 'またね！');
+check('削除後に来たメッセージだけが見える',
+  sim.messagesWith('alice', 'bob').length === 1
+  && sim.messagesWith('alice', 'bob')[0].body === 'またね！');
 
 // --- ギフトとコイン整合 ---
 const heart = GIFT_CATALOG.find((g) => g.key === 'heart'); // 30コイン

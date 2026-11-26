@@ -631,6 +631,7 @@
       state.outgoing = new Set();
       // ようこそDM（dm-0）だけは本番でも登録直後に届くので残す
       state.dm = state.dm.filter((m) => m.id === 'dm-0');
+      for (const m of state.dm) delete m.hiddenForMe;
       state.groups = [];
       state.groupMessages = [];
       state.ticker = [];
@@ -1269,6 +1270,7 @@
       listConversations() {
         const byPartner = new Map();
         state.dm.forEach((m, i) => {
+          if (m.hiddenForMe) return;
           const partner = m.from === 'me' ? m.to : m.to === 'me' ? m.from : null;
           if (!partner) return;
           const cur = byPartner.get(partner) ?? { partnerId: partner, last: null, unread: 0, lastSeq: -1 };
@@ -1282,7 +1284,7 @@
         // グループも会話として合流（最新のやり取りがある会話が上）
         for (const g of state.groups) {
           if (!g.memberIds.includes('me')) continue;
-          const msgs = state.groupMessages.filter((m) => m.groupId === g.id);
+          const msgs = state.groupMessages.filter((m) => m.groupId === g.id && !m.hiddenForMe);
           const last = msgs.length ? msgs[msgs.length - 1] : null;
           convs.push({
             partnerId: g.id, partner: pubGroup(g), last, isGroup: true,
@@ -1311,7 +1313,7 @@
         return ok(pubGroup(g));
       },
       listGroupMessages(groupId) {
-        return ok(state.groupMessages.filter((m) => m.groupId === groupId));
+        return ok(state.groupMessages.filter((m) => m.groupId === groupId && !m.hiddenForMe));
       },
       sendGroupMessage(groupId, body) {
         const m = {
@@ -1321,15 +1323,7 @@
         state.groupMessages.push(m);
         return ok(m);
       },
-      deleteGroupMessage(messageId) {
-        const m = state.groupMessages.find((x) => x.id === messageId);
-        if (!m) return Promise.reject(fail('MESSAGE_NOT_FOUND', 'メッセージが存在しません'));
-        if (m.from !== 'me') return Promise.reject(fail('NOT_OWN_MESSAGE', '自分のメッセージだけ削除できます'));
-        if (m.kind !== 'text') return Promise.reject(fail('NOT_DELETABLE', 'このメッセージは削除できません'));
-        m.deleted = true;
-        m.body = null;
-        return ok(null);
-      },
+      // グループのトーク削除も clearConversation（key = グループID）で共用
       markGroupRead(groupId) {
         for (const m of state.groupMessages) {
           if (m.groupId === groupId && m.from !== 'me') m.read = true;
@@ -1369,7 +1363,8 @@
       subscribeDm() { return () => {}; },
       listMessages(userId) {
         return ok(state.dm.filter(
-          (m) => (m.from === 'me' && m.to === userId) || (m.from === userId && m.to === 'me'),
+          (m) => !m.hiddenForMe
+            && ((m.from === 'me' && m.to === userId) || (m.from === userId && m.to === 'me')),
         ));
       },
       sendMessage(userId, bodyRaw) {
@@ -1384,13 +1379,16 @@
         state.dm.push(msg);
         return ok(msg);
       },
-      deleteMessage(messageId) {
-        const m = state.dm.find((x) => x.id === messageId);
-        if (!m) return Promise.reject(fail('MESSAGE_NOT_FOUND', 'メッセージが存在しません'));
-        if (m.from !== 'me') return Promise.reject(fail('NOT_OWN_MESSAGE', '自分のメッセージだけ削除できます'));
-        if (m.kind !== 'text') return Promise.reject(fail('NOT_DELETABLE', 'このメッセージは削除できません'));
-        m.deleted = true;
-        m.body = null;
+      // トーク削除（0053）：その会話の既存メッセージを自分の画面で
+      // だけ隠す。新しいメッセージが来ればその分だけ再び見える
+      clearConversation(key) {
+        for (const m of state.dm) {
+          const partner = m.from === 'me' ? m.to : m.from;
+          if (partner === key) m.hiddenForMe = true;
+        }
+        for (const m of state.groupMessages) {
+          if (m.groupId === key) m.hiddenForMe = true;
+        }
         return ok(null);
       },
       markRead(userId) {
@@ -1889,6 +1887,17 @@
     // 運営により非表示のメッセージは、他人には本文を渡さず置換表示にする
     const maskHidden = (m) => (m.hidden_at && m.sender_id && m.sender_id !== meId)
       ? '（運営により非表示）' : m.body;
+    // トーク削除（0053）：自分が消した会話は cleared_at 以前を表示しない。
+    // 相手の画面には影響しない。key は相手ID／'system'／グループID
+    const myClears = async () => {
+      const { data } = await getClient()
+        .from('kl_conversation_clears').select('conv_key, cleared_at');
+      return new Map((data ?? []).map((r) => [r.conv_key, Date.parse(r.cleared_at)]));
+    };
+    const afterClear = (clears, key, atMs) => {
+      const cut = clears.get(key);
+      return cut === undefined || atMs >= cut;
+    };
     const profileRow = (p, extra = {}) => ({
       id: p.id, publicId: p.public_id, name: p.display_name, icon: p.icon_emoji,
       iconKey: p.icon_key ?? null,
@@ -2073,11 +2082,13 @@
         }
         const { data, error } = await query.order('created_at', { ascending: true });
         if (error) throw fail('DM_ERROR', error.message);
-        return data.map((m) => ({
+        const clears = await myClears();
+        return data
+          .filter((m) => afterClear(clears, userId, Date.parse(m.created_at)))
+          .map((m) => ({
           id: m.id,
           from: (m.kind === 'system' || m.kind === 'welcome') ? 'system' : m.sender_id,
-          to: m.recipient_id, kind: m.kind, body: m.deleted_at ? null : maskHidden(m),
-          deleted: m.deleted_at != null, at: Date.parse(m.created_at),
+          to: m.recipient_id, kind: m.kind, body: maskHidden(m), at: Date.parse(m.created_at),
           invite: m.invite_payload, gift: m.gift_payload
             ? { giftKey: m.gift_payload.giftKey, name: m.gift_payload.name, icon: m.gift_payload.icon, price: m.gift_payload.price }
             : null,
@@ -2090,17 +2101,18 @@
           .or(`sender_id.eq.${meId},recipient_id.eq.${meId}`)
           .order('created_at', { ascending: false });
         if (error) throw fail('DM_ERROR', error.message);
+        const clears = await myClears();
         const byPartner = new Map();
         for (const m of data) {
           const partner = (m.kind === 'system' || m.kind === 'welcome') ? 'system'
             : m.sender_id === meId ? m.recipient_id : m.sender_id;
+          if (!afterClear(clears, partner, Date.parse(m.created_at))) continue;
           const cur = byPartner.get(partner) ?? { partnerId: partner, last: null, unread: 0 };
           if (!cur.last) {
             cur.last = {
               id: m.id, from: (m.kind === 'system' || m.kind === 'welcome') ? 'system' : m.sender_id,
               to: m.recipient_id, kind: m.kind, at: Date.parse(m.created_at),
-              body: m.deleted_at ? null : maskHidden(m), deleted: m.deleted_at != null,
-              gift: m.gift_payload, invite: m.invite_payload,
+              body: maskHidden(m), gift: m.gift_payload, invite: m.invite_payload,
             };
           }
           if (m.recipient_id === meId && m.read_at === null) cur.unread += 1;
@@ -2147,14 +2159,15 @@
         }
         const profs = await profilesByIds([...new Set(mRes.data.map((r) => r.user_id))]);
         const profById = new Map(profs.map((p) => [p.id, p]));
+        const clears = await myClears();
         const lastByGroup = new Map();
         const unreadByGroup = new Map();
         for (const m of msgRes.data) { // created_at の新しい順
+          if (!afterClear(clears, m.group_id, Date.parse(m.created_at))) continue;
           if (!lastByGroup.has(m.group_id)) {
             lastByGroup.set(m.group_id, {
               id: m.id, from: m.kind === 'system' ? 'system' : m.sender_id,
-              kind: m.kind, body: m.deleted_at ? null : maskHidden(m),
-              deleted: m.deleted_at != null, at: Date.parse(m.created_at),
+              kind: m.kind, body: maskHidden(m), at: Date.parse(m.created_at),
             });
           }
           const my = mine.get(m.group_id);
@@ -2182,7 +2195,7 @@
         const m = await rpc('kl_send_dm', { p_to: userId, p_body: body });
         return { id: m.id, from: m.sender_id, to: m.recipient_id, kind: 'text', body: m.body, read: true };
       },
-      deleteMessage(messageId) { return rpc('kl_delete_dm_message', { p_id: messageId }); },
+      clearConversation(key) { return rpc('kl_clear_conversation', { p_key: key }); },
       markRead(userId) {
         if (userId === 'system') return rpc('kl_mark_system_dm_read');
         return rpc('kl_mark_dm_read', { p_other: userId });
@@ -2233,11 +2246,13 @@
           .from('kl_group_messages').select('*')
           .eq('group_id', groupId).order('created_at', { ascending: true });
         if (error) throw fail('GROUP_ERROR', error.message);
-        return data.map((m) => ({
+        const clears = await myClears();
+        return data
+          .filter((m) => afterClear(clears, groupId, Date.parse(m.created_at)))
+          .map((m) => ({
           id: m.id, groupId: m.group_id,
           from: m.kind === 'system' ? 'system' : m.sender_id,
-          kind: m.kind, body: m.deleted_at ? null : maskHidden(m),
-          deleted: m.deleted_at != null, read: true,
+          kind: m.kind, body: maskHidden(m), read: true,
           at: Date.parse(m.created_at),
         }));
       },
@@ -2248,7 +2263,7 @@
           body: m.body, read: true, at: Date.parse(m.created_at),
         };
       },
-      deleteGroupMessage(messageId) { return rpc('kl_delete_group_message', { p_id: messageId }); },
+      // グループ側のトーク削除も clearConversation（key = グループID）で共用
       markGroupRead(groupId) {
         return rpc('kl_mark_group_read', { p_group: groupId });
       },
@@ -2672,8 +2687,7 @@
     listConversations: () => active.listConversations(),
     listMessages: (id) => active.listMessages(id),
     sendMessage: (id, body) => active.sendMessage(id, body),
-    deleteMessage: (mid) => active.deleteMessage(mid),
-    deleteGroupMessage: (mid) => active.deleteGroupMessage(mid),
+    clearConversation: (key) => active.clearConversation(key),
     markRead: (id) => active.markRead(id),
     subscribeDm: (cb) => active.subscribeDm(cb),
     createGroup: (name, ids) => active.createGroup(name, ids),
