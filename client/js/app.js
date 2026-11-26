@@ -3205,10 +3205,11 @@
     el.classList.toggle('show', land);
   }
 
-  // --- ログイン画面（2026-11-26） ---
-  // 実 OAuth の配線は認証フェーズ。現状はセッションなし（Sim で起動した）
-  // ときだけ表示し、タップでそのまま入るデモ導線にする。Supabase で
-  // 起動できた＝ログイン済みなので出さない
+  // --- ログイン画面（2026-11-26 新設／認証配線 2026-11-26） ---
+  // Supabase 設定があり「未ログイン」が確定した状態（DATA.authState ===
+  // 'signed-out'）では、Google ボタンは実 OAuth（Google へ遷移）、Apple
+  // ボタンは「準備中」トースト。セッションがあれば画面自体を出さない。
+  // 設定なし／判定不能のデモ（Sim）では従来どおりタップでそのまま入る
   // まっさら体験（?fresh=1）かどうか。設定の出入りボタンの出し分け用
   const IS_FRESH = (() => {
     try { return new URLSearchParams(location.search).has('fresh'); } catch { return false; }
@@ -3222,7 +3223,31 @@
     $('btn-login-apple').querySelector('span').textContent = 'Appleでログイン';
     $('login-screen').classList.remove('hidden', 'login-bye');
   }
-  function doLogin(btn) {
+  function resetLoginButtons() {
+    loginBusy = false;
+    $('btn-login-google').disabled = false;
+    $('btn-login-apple').disabled = false;
+    $('btn-login-google').querySelector('span').textContent = 'Googleでログイン';
+    $('btn-login-apple').querySelector('span').textContent = 'Appleでログイン';
+  }
+  async function doLogin(btn, provider) {
+    // 実認証モード：Google は本物の OAuth へ。Apple は提供開始まで準備中
+    if (DATA.authState === 'signed-out') {
+      if (provider === 'apple') { toast('Appleでログインは準備中です'); return; }
+      if (loginBusy) return;
+      loginBusy = true;
+      $('btn-login-google').disabled = true;
+      $('btn-login-apple').disabled = true;
+      btn.querySelector('span').textContent = 'ログイン中…';
+      try {
+        await DATA.signInWithGoogle(); // 成功時は Google の画面へ遷移する
+        resetLoginButtons(); // 遷移しなかった場合（想定外）の復帰
+      } catch (e) {
+        resetLoginButtons();
+        toastError(e);
+      }
+      return;
+    }
     if (loginBusy) return;
     loginBusy = true;
     $('btn-login-google').disabled = true;
@@ -3282,11 +3307,11 @@
     state.rooms = boot.rooms ?? [];
     rememberUsers([state.me]);
 
-    // ログイン画面：配線は常に張り、表示は Sim（未ログイン）時のみ。
-    // refreshSocial より前に出して、ギフト通知をログイン完了まで
-    // 保留できるようにする（pumpGiftNotify 側でも判定）
-    $('btn-login-google').addEventListener('click', (e) => doLogin(e.currentTarget));
-    $('btn-login-apple').addEventListener('click', (e) => doLogin(e.currentTarget));
+    // ログイン画面：配線は常に張り、表示は未ログイン時（実セッションで
+    // 起動できた場合は出さない）。refreshSocial より前に出して、ギフト
+    // 通知をログイン完了まで保留できるようにする（pumpGiftNotify 側でも判定）
+    $('btn-login-google').addEventListener('click', (e) => doLogin(e.currentTarget, 'google'));
+    $('btn-login-apple').addEventListener('click', (e) => doLogin(e.currentTarget, 'apple'));
     $('btn-terms').addEventListener('click', () => window.open('terms.html', '_blank', 'noopener'));
     $('btn-privacy').addEventListener('click', () => window.open('privacy.html', '_blank', 'noopener'));
     if (DATA.mode === 'sim') showLoginScreen();
@@ -3506,10 +3531,17 @@
         location.reload();
       });
     });
-    $('btn-logout').addEventListener('click', () => {
-      // デモ（Sim）時はログイン画面に戻る。本番のログアウトは認証フェーズ
-      if (DATA.mode === 'sim') { closeModal(); showLoginScreen(); }
-      else toast('ログアウトは認証接続フェーズで実装します');
+    $('btn-logout').addEventListener('click', async () => {
+      if (DATA.mode === 'supabase') {
+        // 実セッションを破棄して再読み込みし、未ログイン状態で起動し直す
+        closeModal();
+        try { await DATA.signOut(); } catch { /* 失敗しても再読み込みで状態を正す */ }
+        location.reload();
+        return;
+      }
+      // デモ（Sim）時はログイン画面に戻る
+      closeModal();
+      showLoginScreen();
     });
     $('my-avatar').addEventListener('click', openIconModal);
     // 名前編集（タップで編集）。新規登録直後は「名前を決める」ポップアップ
@@ -3521,8 +3553,12 @@
       $('name-setup-note').classList.toggle('hidden', !setup);
       $('name-x').classList.toggle('hidden', !!setup);
       $('name-save').textContent = setup ? '決定する' : '保存する';
-      $('name-input').value = setup ? '' : (state.me?.name ?? '');
+      $('name-input').value = setup && !state.me?.nameDecidedAt ? '' : (state.me?.name ?? '');
       $('name-count').textContent = [...$('name-input').value].length;
+      // 初回セットアップでは生年月日も同時に聞く（実 DB モードで未登録の
+      // ときだけ表示。登録後は変更不可＝0049 kl_set_birthdate）
+      const needBirth = !!setup && DATA.mode === 'supabase' && !state.me?.birthdate;
+      $('name-birth-row').classList.toggle('hidden', !needBirth);
       openModal('modal-name');
     }
     state.openNameSetup = () => openNameModal(true);
@@ -3531,12 +3567,23 @@
       $('name-count').textContent = [...$('name-input').value].length;
     });
     $('name-save').addEventListener('click', async () => {
+      const birthVisible = !$('name-birth-row').classList.contains('hidden');
+      const birthVal = birthVisible ? $('birthdate-input').value : '';
+      if (birthVisible && !birthVal) { toast('生年月日を入力してください'); return; }
       try {
         const r = await DATA.updateName($('name-input').value);
         state.me.name = r.displayName;
         state.me.nameDecidedAt = new Date().toISOString();
         rememberUsers([state.me]);
         renderProfile();
+        if (birthVisible) {
+          // 生年月日の登録に失敗したらモーダルを開いたままにして直してもらう
+          // （13歳未満の場合はここで止まり、セットアップは完了しない）
+          try {
+            const b = await DATA.setBirthdate(birthVal);
+            state.me.birthdate = b?.birthdate ?? birthVal;
+          } catch (e) { toastError(e); return; }
+        }
         const wasSetup = nameSetupMode;
         nameSetupMode = false;
         closeModal();
@@ -3836,10 +3883,12 @@
         && $('name-x').classList.contains('hidden')) return;
       backModal();
     });
-    // 新規登録後、名前が未決定なら最初に決めてもらう（1回だけ）。
+    // 新規登録後の初回セットアップ：名前が未決定、または実 DB モードで
+    // 生年月日が未登録なら、最初に決めてもらう（完了まで繰り返し出す）。
     // ログイン画面が出ている間は後回しにする（本番の流れは
     // ログイン→名前セットアップの順。ログイン前に出さない）
-    if (state.me && !state.me.nameDecidedAt) {
+    if (state.me && (!state.me.nameDecidedAt
+        || (DATA.mode === 'supabase' && !state.me.birthdate))) {
       if ($('login-screen').classList.contains('hidden')) openNameModal(true);
       else state.pendingNameSetup = true;
     }

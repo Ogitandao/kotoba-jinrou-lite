@@ -121,6 +121,7 @@
       id: 'me', publicId: D.me.userId, name: D.me.name, icon: D.me.icon, iconKey: 'wolf',
       iconBg: D.me.iconBg, bio: D.me.bio, popularity: D.me.popularity, online: true,
       nameDecidedAt: '2026-01-01T00:00:00Z',
+      birthdate: '2000-01-01',
     });
     addUser({ id: 'u-mika', publicId: 'mika_1024', name: 'みか', icon: '🐰', iconKey: 'rabbit', iconBg: '#ffeef5', bio: 'ワードウルフ大好き！毎晩やってます', popularity: 320, online: true, roomTitle: 'はじめてさん集合！', wordwolfWins: 42 });
     addUser({ id: 'u-ken', publicId: 'ken_7788', name: 'けん', icon: '🦉', iconKey: 'owl', iconBg: '#eef7ff', bio: '毎晩ワードウルフで遊んでます！推理で追い詰めるのが快感。初心者さん歓迎、まったり部屋によく出没します', popularity: 560000, online: true, roomTitle: null, wordwolfWins: 1024 });
@@ -1151,6 +1152,7 @@
             ...pub(users.get('me')), coins: state.coins, bonusClaimed: state.bonusClaimed,
             starterDays: state.starterDays, starterEligible: true,
             penaltyUntilMs: penInfo('me'), rulesAgreed,
+            birthdate: users.get('me').birthdate ?? null,
           },
           rooms: D.rooms.slice(),
         });
@@ -1159,6 +1161,7 @@
         return ok({
           ...pub(users.get('me')), coins: state.coins, bonusClaimed: state.bonusClaimed,
           penaltyUntilMs: penInfo('me'), rulesAgreed,
+          birthdate: users.get('me').birthdate ?? null,
         });
       },
       getRulesAgreed() {
@@ -1460,6 +1463,31 @@
         me.name = v;
         me.nameDecidedAt = new Date().toISOString();
         return ok({ displayName: v });
+      },
+      // 生年月日（0049 の kl_set_birthdate と同じ判定をデモでも再現）
+      setBirthdate(iso) {
+        const v = String(iso ?? '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+          return Promise.reject(fail('BIRTHDATE_REQUIRED', '生年月日を入力してください'));
+        }
+        const me = users.get('me');
+        if (me.birthdate) {
+          return Promise.reject(fail('BIRTHDATE_ALREADY_SET', '生年月日は登録後に変更できません'));
+        }
+        const [y, m, d] = v.split('-').map(Number);
+        const now = new Date();
+        let age = now.getFullYear() - y;
+        if (now.getMonth() + 1 < m || (now.getMonth() + 1 === m && now.getDate() < d)) age -= 1;
+        if (age < 13) {
+          return Promise.reject(fail('UNDERAGE', '13歳未満の方は登録できません'));
+        }
+        me.birthdate = v;
+        return ok({ birthdate: v });
+      },
+      // 認証系はデモでは使わない（画面側は Sim 時は従来導線に分岐する）
+      signOut() { return ok(true); },
+      signInWithGoogle() {
+        return Promise.reject(fail('NOT_SUPPORTED', 'デモモードでは Google ログインは使えません'));
       },
       setIcon(key) {
         const cat = ICON_CATALOG.find((c) => c.key === key);
@@ -1872,6 +1900,31 @@
 
     return {
       mode: 'supabase',
+      // セッションの有無だけを先に判定する（Facade の bootstrap が使う）。
+      // 取得自体に失敗した場合は例外になり、呼び出し側は「判定不能」と
+      // して従来のデモフォールバックに落とす
+      async probeSession() {
+        const { data, error } = await getClient().auth.getSession();
+        if (error) throw fail('AUTH_PROBE_ERROR', error.message);
+        return data?.session ? 'signed-in' : 'signed-out';
+      },
+      // Google ログイン（OAuth）。成功時は Google の画面へ遷移する
+      async signInWithGoogle() {
+        const { error } = await getClient().auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: window.location.origin },
+        });
+        if (error) throw fail('OAUTH_ERROR', error.message);
+        return true;
+      },
+      async signOut() {
+        const { error } = await getClient().auth.signOut();
+        if (error) throw fail('SIGNOUT_ERROR', error.message);
+        return true;
+      },
+      setBirthdate(iso) {
+        return rpc('kl_set_birthdate', { p_birthdate: String(iso ?? '') });
+      },
       async bootstrap() {
         const sb = getClient();
         const { data: sessionData } = await sb.auth.getSession();
@@ -1896,6 +1949,7 @@
             starterDays, starterEligible,
             penaltyUntilMs: p.penalty_until ? Date.parse(p.penalty_until) : null,
             rulesAgreed: p.rules_agreed_at != null,
+            birthdate: p.birthdate ?? null,
           },
           rooms: null, // ルーム一覧は ww 側の取得に切り替える（次フェーズ）
         };
@@ -1906,6 +1960,7 @@
           ...profileRow(p), coins: w.free_balance + w.paid_balance,
           penaltyUntilMs: p.penalty_until ? Date.parse(p.penalty_until) : null,
           rulesAgreed: p.rules_agreed_at != null,
+          birthdate: p.birthdate ?? null,
         };
       },
       async getRulesAgreed() {
@@ -2505,32 +2560,57 @@
   const sim = createSimBackend();
   let active = sim;
   let booted = false;
+  // 認証状態：'sim'（設定なし／判定不能＝デモ動作）／'signed-in'（実セッション
+  // あり）／'signed-out'（設定あり＋セッション無しが確定）。ログイン画面の
+  // ボタンの実 OAuth 分岐は 'signed-out' のときだけ効かせる（検証環境の
+  // jsdom では Supabase 初期化自体が例外になるため、判定不能を実認証と
+  // 誤認してデモ導線を壊さないための切り分け）
+  let authState = 'sim';
+  let authBackend = null;
 
   window.KL_DATA = {
     get mode() { return active.mode; },
+    get authState() { return authState; },
     async bootstrap() {
       if (booted) return active.bootstrap();
       booted = true;
       const cfg = window.KL_CONFIG ?? {};
+      let signedOut = false;
       if (cfg.supabaseUrl && cfg.supabaseKey) {
-        try {
-          const sb = createSupabaseBackend();
-          const result = await sb.bootstrap();
-          active = sb;
-          // ルーム一覧は実データ（ww_list_rooms）。失敗時はデモ一覧に落とす
-          result.rooms = await sb.listRooms().catch(async () => {
-            const simBoot = await sim.bootstrap();
-            return simBoot.rooms;
-          });
-          return result;
-        } catch (e) {
-          active = sim; // 未ログイン等はデモモードで動かす
+        const sb = createSupabaseBackend();
+        authBackend = sb;
+        const probe = await sb.probeSession().catch(() => 'unknown');
+        if (probe === 'signed-in') {
+          try {
+            const result = await sb.bootstrap();
+            active = sb;
+            authState = 'signed-in';
+            // ルーム一覧は実データ（ww_list_rooms）。失敗時はデモ一覧に落とす
+            result.rooms = await sb.listRooms().catch(async () => {
+              const simBoot = await sim.bootstrap();
+              return simBoot.rooms;
+            });
+            return result;
+          } catch (e) {
+            active = sim; // セッションはあったが初期化に失敗 → デモで動かす
+          }
+        } else if (probe === 'signed-out') {
+          // 未ログインが確定：データはデモに落とすが、画面側はログイン
+          // 画面を出し、ボタンは実 OAuth に分岐する（authState で判定）
+          authState = 'signed-out';
+          signedOut = true;
         }
       }
       const result = await active.bootstrap();
       result.rooms = await active.listRooms().catch(() => result.rooms);
+      if (signedOut) result.signedOut = true;
       return result;
     },
+    signInWithGoogle: () => (authBackend
+      ? authBackend.signInWithGoogle()
+      : Promise.reject(fail('NOT_SUPPORTED', 'Google ログインは使えません'))),
+    signOut: () => active.signOut(),
+    setBirthdate: (iso) => active.setBirthdate(iso),
     getMe: () => active.getMe(),
     claimLoginBonus: () => active.claimLoginBonus(),
     listOnlineFriends: () => active.listOnlineFriends(),

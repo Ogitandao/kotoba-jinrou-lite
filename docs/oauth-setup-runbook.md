@@ -10,19 +10,26 @@ Lite のログインは本家と同じ OAuth 方式（Google＋Apple ID の2つ�
 - OAuth コールバック URL（両プロバイダ共通で使う）：
   `https://dtdwkluanoaqiaruzbwe.supabase.co/auth/v1/callback`
 
-現在の状態（2026-11-24 の疎通確認時点）：`/auth/v1/settings` で
-Google / Apple とも **未有効化（false）**。
+現在の状態（2026-11-26 更新）：
+- **Google：有効化済み・配線完了**。おぎが Google Cloud Console で
+  OAuth クライアントを作成し、Supabase Providers → Google に登録して
+  Enabled 化（`/auth/v1/settings` で `external.google = true` を確認）。
+  同意画面は「公開（本番）」に切替済みで、アプリ名は「ことば人狼」。
+  クライアント側の配線（ログイン画面→実 OAuth、実 signOut、初回の
+  名前＋生年月日セットアップ）も完了（追補55）
+- **Apple：未有効化のまま後回し**（ログインのみでも Apple Developer
+  Program 年99ドルが前提のため。App Store 進出の判断とセットで再開）
 
-## 共通：Supabase 側の URL 設定（最初にやる）
+## 共通：Supabase 側の URL 設定（実施済み）
 
 1. ダッシュボード → **Authentication → URL Configuration**
-2. **Site URL**：当面は開発用に `http://localhost:8787` 等、配信が
-   決まったら Cloudflare Pages の Lite 用 URL に差し替える
-3. **Redirect URLs** に、アプリ側で使う戻り先を追加する
-   （Web：配信 URL、アプリ化後：Capacitor のカスタムスキーム。
-   本家の設定が参考になる）
+2. **Site URL**：`https://kotoba-jinrou-lite.pages.dev`（設定済み）
+3. **Redirect URLs**：`https://kotoba-jinrou-lite.pages.dev`（設定済み。
+   クライアントは `redirectTo = location.origin` で戻す）
 
-## Google
+## Google（実施済み・2026-11-26）
+
+以下は実施記録として残す（再設定時の参照用）。
 
 1. [Google Cloud Console](https://console.cloud.google.com/) で
    プロジェクトを作成（本家と分けたい場合は新規。同じプロジェクト
@@ -65,6 +72,11 @@ iOS 提出の直前まで後回しでもよい（Android 先行の方針）。
 
 ## ハマりどころメモ
 
+- **User support email はユーザーに見える**：Google のログイン同意画面で
+  アプリ情報として表示される。現在は個人の Gmail を設定済みのため、
+  公開前に事業用の受け口（既存の屋号メール等）へ差し替えるのが
+  検討事項（Developer contact information の方は Google からの通知専用で
+  ユーザーには見えない）
 - コールバック URL は **Supabase のプロジェクト URL** の方を使う
   （アプリの URL ではない）。プロバイダ側の登録と Supabase 側の
   設定はこの URL で一致させる

@@ -25,7 +25,8 @@
     "verify:fresh": "node scripts/verify-fresh.mjs",
     "verify:gameflows-db": "node scripts/verify-gameflows-db.mjs",
     "verify:ng-db": "node scripts/verify-ng-db.mjs",
-    "verify:appeals-db": "node scripts/verify-appeals-db.mjs"
+    "verify:appeals-db": "node scripts/verify-appeals-db.mjs",
+    "verify:auth-db": "node scripts/verify-auth-db.mjs"
   },
   "type": "module",
   "version": "0.1.0"
