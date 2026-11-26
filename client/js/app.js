@@ -3741,13 +3741,34 @@
     // レイアウトは縮めず、入力バーだけを持ち上げる方式（CSS 側）
     const vv = window.visualViewport;
     if (vv) {
+      // 基準の高さは最大値で自己較正する（端末によっては innerHeight が
+      // キーボードと一緒に縮み、差分が 0 になることがあるため）
+      let baseH = 0;
       const syncKb = () => {
-        const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        baseH = Math.max(baseH, document.documentElement.clientHeight,
+          window.innerHeight, vv.height + vv.offsetTop);
+        let kb = Math.max(0, baseH - vv.height - vv.offsetTop);
+        if (kb < 80) kb = 0; // 小さい変動はキーボードとみなさない
         document.documentElement.style.setProperty('--kb', `${Math.round(kb)}px`);
       };
       vv.addEventListener('resize', syncKb);
       vv.addEventListener('scroll', syncKb);
       syncKb();
+      // 保険：フォーカス後にまだ入力欄が隠れていたら、実測で持ち上げる
+      document.addEventListener('focusin', (e) => {
+        const el = e.target;
+        if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return;
+        setTimeout(() => {
+          const row = el.closest('.dm-input-row') ?? el;
+          const over = row.getBoundingClientRect().bottom - vv.height;
+          if (over > 4) {
+            const cur = parseFloat(getComputedStyle(document.documentElement)
+              .getPropertyValue('--kb')) || 0;
+            document.documentElement.style.setProperty(
+              '--kb', `${Math.round(cur + over + 6)}px`);
+          }
+        }, 400);
+      });
     }
     // Web Push（0059）：最終アクセスの記録・購読の自動更新・通知タップ遷移
     // バッジ設定は設定画面を開く前から効かせるため、起動時に先読みする
@@ -3817,7 +3838,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 18:52 / dmicon1';
+      $('build-stamp').textContent = 'build 2026-11-26 19:00 / kb2';
       loadPushSettings();
       openModal('modal-settings');
     });
