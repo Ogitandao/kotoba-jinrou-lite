@@ -34,6 +34,9 @@ async function makeUser(tag, displayName) {
   const client = createClient(URL_, KEY);
   const { error: e2 } = await client.auth.signInWithPassword({ email, password: pw });
   if (e2) throw new Error(`signIn ${tag}: ${e2.message}`);
+  // 0050 の年齢確認ガード以降、グループ作成等には生年月日登録が必須
+  await client.rpc('kl_set_birthdate', { p_birthdate: '1995-01-01' });
+  await client.rpc('kl_agree_rules', {});
   return { id, client };
 }
 

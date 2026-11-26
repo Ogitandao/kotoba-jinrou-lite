@@ -19,6 +19,10 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
+/* 引っ張って更新（プルトゥリフレッシュ）で画面がリロードされ、いる場所が
+   リセットされるのを防ぐ（2026-11-26 おぎ要望：そもそも対戦中は更新
+   できないように。アプリ全体で無効化する） */
+* { overscroll-behavior: none; }
 body {
   /* 丸ゴシック M PLUS Rounded 1c（Google Fonts CDN / OFL）を第一に。
      見出し・ボタン・名前などは各所の font-weight: 800 で ExtraBold に寄る。
@@ -1041,6 +1045,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .msg-menu-btn.danger { color: #d64545; }
 /* 自分の吹き出しはブランドの空色グラデ（LINEの緑に寄せない。2026-11-25 おぎ） */
 .dm-msg.mine { background: linear-gradient(120deg, #9adcff 0%, #c9efff 100%); align-self: flex-end; }
+/* 削除済みメッセージの置換表示 */
+.dm-msg.deleted { background: #edf1f5; color: #8a97a5; box-shadow: none; }
 .dm-gift-card {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 14px; border-radius: 16px;

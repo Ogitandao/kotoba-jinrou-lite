@@ -175,6 +175,8 @@ check('送信すると自分の吹き出しが末尾に追加される',
   await tick(650);
   check('吹き出し長押しでメニューが開き、通報するが見える',
     visible($('modal-msg-menu')) && !$('mm-report').classList.contains('hidden'));
+  check('相手の吹き出しのメニューに削除するは出ない',
+    $('mm-delete').classList.contains('hidden'));
   $('mm-report').click();
   await tick();
   check('メニューの通報するから通報フォームが開く',
@@ -186,8 +188,19 @@ check('送信すると自分の吹き出しが末尾に追加される',
   await tick(650);
   check('自分の吹き出しのメニューに通報するは出ない',
     visible($('modal-msg-menu')) && $('mm-report').classList.contains('hidden'));
-  document.querySelector('#modal-msg-menu [data-close]').click();
+  check('自分の吹き出しのメニューに削除するが出る',
+    !$('mm-delete').classList.contains('hidden'));
+  $('mm-delete').click();
   await tick();
+  check('削除するで確認が出る（本当にメッセージを消しますか？）',
+    visible($('modal-confirm')) && $('confirm-text').textContent.includes('本当にメッセージを消しますか？'));
+  $('confirm-yes').click();
+  await tick();
+  check('削除した吹き出しが置換表示になる',
+    msgs()[2].textContent.includes('メッセージは削除されました')
+    && !!msgs()[2].querySelector('.dm-msg.deleted'));
+  check('トーク一覧のプレビューも削除表示になる',
+    rowByName($('talk-list'), 'みか')?.textContent.includes('メッセージは削除されました'));
 }
 
 $('dm-input').value = 'これ見て https://example.com';

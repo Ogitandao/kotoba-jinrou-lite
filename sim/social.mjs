@@ -236,6 +236,16 @@ export class SocialSim {
     );
   }
 
+  // 0052：自分の text メッセージだけ削除可（ソフトデリート）
+  deleteDm(meId, messageId) {
+    const m = this.dm.find((x) => x.id === messageId);
+    if (!m) fail('MESSAGE_NOT_FOUND', 'メッセージが存在しません');
+    if (m.senderId !== meId) fail('NOT_OWN_MESSAGE', '自分のメッセージだけ削除できます');
+    if (m.kind !== 'text') fail('NOT_DELETABLE', 'このメッセージは削除できません');
+    m.deletedAt = ++this.seq;
+    return m;
+  }
+
   markDmRead(meId, otherId) {
     let n = 0;
     for (const m of this.dm) {

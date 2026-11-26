@@ -1321,6 +1321,15 @@
         state.groupMessages.push(m);
         return ok(m);
       },
+      deleteGroupMessage(messageId) {
+        const m = state.groupMessages.find((x) => x.id === messageId);
+        if (!m) return Promise.reject(fail('MESSAGE_NOT_FOUND', 'メッセージが存在しません'));
+        if (m.from !== 'me') return Promise.reject(fail('NOT_OWN_MESSAGE', '自分のメッセージだけ削除できます'));
+        if (m.kind !== 'text') return Promise.reject(fail('NOT_DELETABLE', 'このメッセージは削除できません'));
+        m.deleted = true;
+        m.body = null;
+        return ok(null);
+      },
       markGroupRead(groupId) {
         for (const m of state.groupMessages) {
           if (m.groupId === groupId && m.from !== 'me') m.read = true;
@@ -1374,6 +1383,15 @@
         const msg = { id: 'dm-' + (++state.seq), from: 'me', to: userId, kind: 'text', body, read: true, at: Date.now() };
         state.dm.push(msg);
         return ok(msg);
+      },
+      deleteMessage(messageId) {
+        const m = state.dm.find((x) => x.id === messageId);
+        if (!m) return Promise.reject(fail('MESSAGE_NOT_FOUND', 'メッセージが存在しません'));
+        if (m.from !== 'me') return Promise.reject(fail('NOT_OWN_MESSAGE', '自分のメッセージだけ削除できます'));
+        if (m.kind !== 'text') return Promise.reject(fail('NOT_DELETABLE', 'このメッセージは削除できません'));
+        m.deleted = true;
+        m.body = null;
+        return ok(null);
       },
       markRead(userId) {
         let n = 0;
@@ -2058,7 +2076,8 @@
         return data.map((m) => ({
           id: m.id,
           from: (m.kind === 'system' || m.kind === 'welcome') ? 'system' : m.sender_id,
-          to: m.recipient_id, kind: m.kind, body: maskHidden(m), at: Date.parse(m.created_at),
+          to: m.recipient_id, kind: m.kind, body: m.deleted_at ? null : maskHidden(m),
+          deleted: m.deleted_at != null, at: Date.parse(m.created_at),
           invite: m.invite_payload, gift: m.gift_payload
             ? { giftKey: m.gift_payload.giftKey, name: m.gift_payload.name, icon: m.gift_payload.icon, price: m.gift_payload.price }
             : null,
@@ -2080,7 +2099,8 @@
             cur.last = {
               id: m.id, from: (m.kind === 'system' || m.kind === 'welcome') ? 'system' : m.sender_id,
               to: m.recipient_id, kind: m.kind, at: Date.parse(m.created_at),
-              body: maskHidden(m), gift: m.gift_payload, invite: m.invite_payload,
+              body: m.deleted_at ? null : maskHidden(m), deleted: m.deleted_at != null,
+              gift: m.gift_payload, invite: m.invite_payload,
             };
           }
           if (m.recipient_id === meId && m.read_at === null) cur.unread += 1;
@@ -2133,7 +2153,8 @@
           if (!lastByGroup.has(m.group_id)) {
             lastByGroup.set(m.group_id, {
               id: m.id, from: m.kind === 'system' ? 'system' : m.sender_id,
-              kind: m.kind, body: maskHidden(m), at: Date.parse(m.created_at),
+              kind: m.kind, body: m.deleted_at ? null : maskHidden(m),
+              deleted: m.deleted_at != null, at: Date.parse(m.created_at),
             });
           }
           const my = mine.get(m.group_id);
@@ -2161,6 +2182,7 @@
         const m = await rpc('kl_send_dm', { p_to: userId, p_body: body });
         return { id: m.id, from: m.sender_id, to: m.recipient_id, kind: 'text', body: m.body, read: true };
       },
+      deleteMessage(messageId) { return rpc('kl_delete_dm_message', { p_id: messageId }); },
       markRead(userId) {
         if (userId === 'system') return rpc('kl_mark_system_dm_read');
         return rpc('kl_mark_dm_read', { p_other: userId });
@@ -2214,7 +2236,8 @@
         return data.map((m) => ({
           id: m.id, groupId: m.group_id,
           from: m.kind === 'system' ? 'system' : m.sender_id,
-          kind: m.kind, body: maskHidden(m), read: true,
+          kind: m.kind, body: m.deleted_at ? null : maskHidden(m),
+          deleted: m.deleted_at != null, read: true,
           at: Date.parse(m.created_at),
         }));
       },
@@ -2225,6 +2248,7 @@
           body: m.body, read: true, at: Date.parse(m.created_at),
         };
       },
+      deleteGroupMessage(messageId) { return rpc('kl_delete_group_message', { p_id: messageId }); },
       markGroupRead(groupId) {
         return rpc('kl_mark_group_read', { p_group: groupId });
       },
@@ -2648,6 +2672,8 @@
     listConversations: () => active.listConversations(),
     listMessages: (id) => active.listMessages(id),
     sendMessage: (id, body) => active.sendMessage(id, body),
+    deleteMessage: (mid) => active.deleteMessage(mid),
+    deleteGroupMessage: (mid) => active.deleteGroupMessage(mid),
     markRead: (id) => active.markRead(id),
     subscribeDm: (cb) => active.subscribeDm(cb),
     createGroup: (name, ids) => active.createGroup(name, ids),
