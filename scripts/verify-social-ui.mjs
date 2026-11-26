@@ -415,6 +415,17 @@ $('room-screen').classList.add('hidden');
 $('dm-back').click();
 await tick();
 
+// --- 端末の「戻る」（popstate）の変換 ---
+rowByName($('talk-list'), 'みか').click();
+await tick(90);
+check('戻る検証：DMが開いている', $('dm-screen').classList.contains('open'));
+dom.window.dispatchEvent(new dom.window.Event('popstate'));
+await tick(60);
+check('端末の戻るでDMが閉じる（アプリごと閉じない）', !$('dm-screen').classList.contains('open'));
+dom.window.dispatchEvent(new dom.window.Event('popstate'));
+await tick(30);
+check('ロビーで端末の戻るを押しても何も起きない', !$('dm-screen').classList.contains('open'));
+
 const failed = results.filter((r) => !r.ok);
 console.log(`\n=== ${results.length - failed.length}/${results.length} PASS ===`);
 process.exit(failed.length ? 1 : 0);

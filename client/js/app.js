@@ -3702,6 +3702,22 @@
         if (dx >= 64 && dy < 60) closeDm();
       }, { passive: true });
     }
+    // Androidの「戻る」ジェスチャー／ボタン対策（2026-11-26 おぎ実機）：
+    // 端末の戻るは画面端スワイプごと OS が横取りしてブラウザ履歴を戻す
+    // ため、そのままだとアプリごと閉じてしまう。履歴にアプリの目印を
+    // 1つ積んでおき、戻るが来たら「今開いているものを1つ閉じる」に
+    // 変換して目印を積み直す。ルーム／対戦中とロビーでは無反応
+    // （閉じない・ルームへ戻ることもない。退出はボタン操作だけ）
+    history.pushState({ kl: 'app' }, '');
+    window.addEventListener('popstate', () => {
+      history.pushState({ kl: 'app' }, '');
+      if (!$('modal-report').classList.contains('hidden')) { closeReport(); return; }
+      if (!$('modal-confirm').classList.contains('hidden')) { closeConfirm(); return; }
+      if (!$('modal-gift-confirm').classList.contains('hidden')) { closeGiftConfirm(); return; }
+      if (modalStack.length > 0) { backModal(); return; }
+      const s = $('dm-screen');
+      if (!s.classList.contains('hidden') && s.classList.contains('open')) closeDm();
+    });
     $('dm-messages').addEventListener('scroll', updateScrollBottomBtn, { passive: true });
     $('dm-scroll-bottom').addEventListener('click', () => {
       dmFollow.follow = true;
