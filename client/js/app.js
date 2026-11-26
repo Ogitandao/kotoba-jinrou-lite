@@ -564,14 +564,30 @@
     '🎁 試合のあとは、活躍した人にギフトを贈ってみよう',
     '🔰 はじめての人は「初心者歓迎」のルームがおすすめ',
   ];
+  // ティッカーの速さを実幅から決める。非表示中（DM等を開いている間）は
+  // 幅が 0 になり、その計測で duration を決めると最速（18秒固定）に
+  // 化けてしまうため、幅が取れる時だけ反映する。再表示への追随には
+  // ResizeObserver を使う（2026-11-26 実機：DM でギフトを送って
+  // ロビーに戻るとティッカーが高速化するバグの修正）
+  let tickerRo = null;
+  function fitTickerDuration() {
+    const track = $('ticker-track');
+    const set = track?.querySelector('.ticker-set');
+    if (!set) return;
+    const w = set.getBoundingClientRect().width;
+    if (w > 0) track.style.animationDuration = `${Math.max(18, w / 45)}s`;
+  }
   function renderTicker() {
     const track = $('ticker-track');
     if (!track) return;
-    const items = [
+    const rawItems = [
       ...(state.feedEvents ?? []).map((e) => e.text),
       ...(state.tickerEvents ?? []),
       ...TICKER_BASE,
     ];
+    // 同じ文面が連続すると連投に見えるため、連続重複は1つに潰す
+    // （最高額ギフトの連投で同じ告知が何度も流れた 2026-11-26 実機）
+    const items = rawItems.filter((t, i) => i === 0 || t !== rawItems[i - 1]);
     // 中身が変わっていないときは作り直さない（アニメーションが巻き戻るため）
     const key = items.join('\u0001');
     if (key === state.tickerKey) return;
@@ -581,13 +597,14 @@
       .join('');
     // 同じ並びを2セット並べて -50% まで流すと切れ目なくループする
     track.innerHTML = `<span class="ticker-set">${setHtml}</span><span class="ticker-set">${setHtml}</span>`;
-    requestAnimationFrame(() => {
-      const set = track.querySelector('.ticker-set');
-      if (!set) return;
-      const w = set.getBoundingClientRect().width;
-      // 約45px/秒のゆっくりした速さ。短いときも最低18秒はかける
-      track.style.animationDuration = `${Math.max(18, w / 45)}s`;
-    });
+    if (!tickerRo && window.ResizeObserver) {
+      const box = $('ticker');
+      if (box) {
+        tickerRo = new ResizeObserver(() => fitTickerDuration());
+        tickerRo.observe(box);
+      }
+    }
+    requestAnimationFrame(fitTickerDuration);
   }
   // サーバー側フィード（100勝の節目／最高額ギフト）を取り込む
   async function refreshTickerFeed() {
