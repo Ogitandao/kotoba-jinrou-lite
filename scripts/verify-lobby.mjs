@@ -133,7 +133,7 @@ $('btn-create-room').click();
 check('初回の作成前にはチュートリアルが出る（作成モーダルはまだ出ない）',
   visible($('modal-tutorial')) && !visible($('modal-create')));
 check('チュートリアルは5枚のスライド構成',
-  document.querySelectorAll('#tutorial-track .tutorial-slide').length === 6);
+  document.querySelectorAll('#tutorial-track .tutorial-slide').length === 7);
 check('チュートリアルに遊び方とマナー（ペナルティ）の説明が入っている',
   $('modal-tutorial').textContent.includes('ウルフ')
   && $('modal-tutorial').textContent.includes('ペナルティ'));
