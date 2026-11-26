@@ -151,6 +151,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   gap: 0;
   white-space: nowrap;
   will-change: transform;
+}
+.ticker-track.run {
   animation: ticker-scroll 30s linear infinite;
 }
 .ticker-set { display: inline-flex; }

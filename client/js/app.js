@@ -595,6 +595,13 @@
       .join('');
     // 同じ並びを2セット並べて -50% まで流すと切れ目なくループする
     track.innerHTML = `<span class="ticker-set">${setHtml}</span><span class="ticker-set">${setHtml}</span>`;
+    // 中身を差し替えたらアニメーションを先頭から再生し直す。差し替え
+    // 前の経過時間を引き継ぐと、周期の残りが短い時に差し替えた
+    // ライブイベントが流れ切る前に animationiteration が来て
+    // 消えてしまう（2026-11-26 実機）
+    track.classList.remove('run');
+    void track.offsetWidth;
+    track.classList.add('run');
     if (!tickerRo && window.ResizeObserver) {
       const box = $('ticker');
       if (box) {
