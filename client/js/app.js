@@ -3824,7 +3824,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 21:57 / biofix1';
+      $('build-stamp').textContent = 'build 2026-11-26 22:03 / birth1';
       loadPushSettings();
       openModal('modal-settings');
     });
@@ -4052,6 +4052,33 @@
     $('name-input').addEventListener('input', () => {
       $('name-count').textContent = [...$('name-input').value].length;
     });
+    // 生年月日は年・月・日のプルダウンで選ぶ。標準のカレンダー入力は
+    // Pixel 等で「今年から1か月ずつ戻る」しかできず、昔の年が選べない
+    // （2026-11-26 友人経由の実機報告）
+    function readBirthdate_() {
+      const y = $('birth-year').value, m = $('birth-month').value, d = $('birth-day').value;
+      if (!y || !m || !d) return '';
+      return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    }
+    {
+      const ySel = $('birth-year'), mSel = $('birth-month'), dSel = $('birth-day');
+      const thisYear = new Date().getFullYear();
+      ySel.innerHTML = '<option value="">年</option>'
+        + Array.from({ length: 101 }, (_, i) => `<option value="${thisYear - i}">${thisYear - i}年</option>`).join('');
+      mSel.innerHTML = '<option value="">月</option>'
+        + Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${i + 1}月</option>`).join('');
+      const rebuildDays = () => {
+        const y = Number(ySel.value), m = Number(mSel.value);
+        const prev = dSel.value;
+        const max = (y && m) ? new Date(y, m, 0).getDate() : 31;
+        dSel.innerHTML = '<option value="">日</option>'
+          + Array.from({ length: max }, (_, i) => `<option value="${i + 1}">${i + 1}日</option>`).join('');
+        if (prev && Number(prev) <= max) dSel.value = prev;
+      };
+      ySel.addEventListener('change', rebuildDays);
+      mSel.addEventListener('change', rebuildDays);
+      rebuildDays();
+    }
     // 入力欄つきモーダルの決定ボタンは pointerdown で先に受ける。
     // click だけだと、タップでキーボードが閉じて画面が組み直される間に
     // ボタンが指の下から逃げて、保存が永遠に押せないことがある
@@ -4070,8 +4097,8 @@
     }
     onActionTap($('name-save'), async () => {
       const birthVisible = !$('name-birth-row').classList.contains('hidden');
-      const birthVal = birthVisible ? $('birthdate-input').value : '';
-      if (birthVisible && !birthVal) { toast('生年月日を入力してください'); return; }
+      const birthVal = birthVisible ? readBirthdate_() : '';
+      if (birthVisible && !birthVal) { toast('生年月日を選んでください'); return; }
       try {
         const r = await DATA.updateName($('name-input').value);
         state.me.name = r.displayName;

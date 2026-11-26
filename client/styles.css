@@ -210,6 +210,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   border: 2px solid var(--line); border-radius: 12px;
   padding: 10px 12px; box-sizing: border-box; background: #f9fdff; color: var(--ink);
 }
+.birth-selects { display: flex; gap: 8px; }
+.birth-sel { width: auto; flex: 1; }
+.birth-sel-y { flex: 1.4; }
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 .dot-on { background: #2ecc71; }
 .profile-id { color: var(--ink-soft); font-size: 14px; margin: 2px 0 6px; }

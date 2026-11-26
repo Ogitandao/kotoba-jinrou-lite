@@ -25,7 +25,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="./styles.css?v=sw2" />
+<link rel="stylesheet" href="./styles.css?v=birth1" />
 <!-- 配信時設定（Cloudflare Pages のビルドで環境変数から生成される。
      ローカルでは存在せず 404 になるが無害：config.js 側の既定値に落ちる） -->
 <script src="./kl-config.js"></script>
@@ -413,7 +413,11 @@
     <p class="modal-note"><span id="name-count">0</span> / 9文字</p>
     <div id="name-birth-row" class="hidden">
       <p class="modal-note">生年月日（登録後に変更はできません）</p>
-      <input id="birthdate-input" class="name-input" type="date" />
+      <div class="birth-selects">
+        <select id="birth-year" class="name-input birth-sel birth-sel-y" aria-label="生まれた年"></select>
+        <select id="birth-month" class="name-input birth-sel" aria-label="生まれた月"></select>
+        <select id="birth-day" class="name-input birth-sel" aria-label="生まれた日"></select>
+      </div>
       <p class="modal-note">13歳未満の方は登録できません</p>
     </div>
     <div class="modal-actions">
