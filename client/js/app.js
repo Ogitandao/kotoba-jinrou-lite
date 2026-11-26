@@ -3744,12 +3744,26 @@
       // 基準の高さは最大値で自己較正する（端末によっては innerHeight が
       // キーボードと一緒に縮み、差分が 0 になることがあるため）
       let baseH = 0;
+      // 一時デバッグ表示（kb3）：実機の計測値をそのまま見せてもらう
+      const dbg = document.createElement('div');
+      dbg.id = 'kb-debug';
+      dbg.style.cssText = 'position:fixed;top:2px;left:2px;z-index:9999;'
+        + 'background:rgba(0,0,0,.75);color:#fff;font-size:11px;'
+        + 'padding:3px 7px;border-radius:6px;pointer-events:none;'
+        + 'font-family:monospace;white-space:pre';
+      document.body.appendChild(dbg);
+      const paintDbg = (kb) => {
+        dbg.textContent = `kb=${Math.round(kb)} vv=${Math.round(vv.height)} `
+          + `ih=${window.innerHeight} ch=${document.documentElement.clientHeight} `
+          + `base=${Math.round(baseH)} off=${Math.round(vv.offsetTop)}`;
+      };
       const syncKb = () => {
         baseH = Math.max(baseH, document.documentElement.clientHeight,
           window.innerHeight, vv.height + vv.offsetTop);
         let kb = Math.max(0, baseH - vv.height - vv.offsetTop);
         if (kb < 80) kb = 0; // 小さい変動はキーボードとみなさない
         document.documentElement.style.setProperty('--kb', `${Math.round(kb)}px`);
+        paintDbg(kb);
       };
       vv.addEventListener('resize', syncKb);
       vv.addEventListener('scroll', syncKb);
@@ -3838,7 +3852,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 19:00 / kb2';
+      $('build-stamp').textContent = 'build 2026-11-26 19:06 / kbdbg1';
       loadPushSettings();
       openModal('modal-settings');
     });
