@@ -7,7 +7,7 @@
 <meta name="description" content="テキストだけで遊べるワードウルフ「ことば人狼」。ボイスなし・4〜8人対戦・DMやギフトでも盛り上がれる、初心者向けの簡単ワードウルフです。" />
 <meta property="og:title" content="ことば人狼〜簡単ワードウルフ〜" />
 <meta property="og:description" content="テキストだけで遊べる、簡単ワードウルフ。みんなと話してウルフを見つけよう！" />
-<meta property="og:image" content="https://kotoba-jinrou-lite.pages.dev/icons/pwa-icon-512.png" />
+<meta property="og:image" content="https://kotoba-jinrou-lite.pages.dev/img/lp-hero.webp" />
 <meta property="og:type" content="website" />
 <link rel="icon" href="./icons/pwa-icon-192.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -17,89 +17,168 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', sans-serif;
-    color: #23405a;
-    background: linear-gradient(180deg, #bdeaff 0%, #e8fbff 45%, #eafff6 100%);
-    min-height: 100vh;
+    color: #23405a; background: #eafaff;
   }
-  .wrap { max-width: 720px; margin: 0 auto; padding: 40px 20px 56px; }
-  .hero { text-align: center; }
-  .app-icon {
-    width: 132px; height: 132px; border-radius: 30px;
-    box-shadow: 0 10px 28px rgba(43, 157, 244, .30);
+  .inner { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+  /* ヒーロー */
+  .hero-art { display: block; width: 100%; height: auto; }
+  .hero { text-align: center; padding: 0 20px 8px; margin-top: -64px; position: relative; }
+  .logo {
+    width: min(360px, 84%); height: auto;
+    filter: drop-shadow(0 4px 14px rgba(255,255,255,.9));
   }
-  .logo { width: min(340px, 82%); height: auto; margin-top: 18px; }
-  .catch {
-    margin-top: 14px; font-size: 24px; font-weight: 800; line-height: 1.5;
-  }
-  .sub { margin-top: 10px; font-size: 15px; line-height: 1.8; color: #40637f; }
+  .catch { margin-top: 12px; font-size: 25px; font-weight: 800; line-height: 1.5; }
+  .sub { margin-top: 10px; font-size: 15px; line-height: 1.85; color: #40637f; }
   .cta {
-    display: inline-block; margin-top: 26px; padding: 16px 42px;
+    display: inline-block; margin-top: 24px; padding: 16px 44px;
     font-size: 19px; font-weight: 800; color: #fff; text-decoration: none;
     background: linear-gradient(180deg, #57b8ff, #2b9df4);
     border-radius: 999px; box-shadow: 0 8px 20px rgba(43, 157, 244, .35);
   }
   .cta-note { margin-top: 12px; font-size: 13px; color: #5d7d94; }
-  section {
-    margin-top: 30px; background: rgba(255, 255, 255, .88);
-    border-radius: 22px; padding: 26px 24px;
-    box-shadow: 0 4px 16px rgba(35, 64, 90, .08);
+  /* 帯セクション */
+  .band { padding: 42px 0 48px; margin-top: 40px; }
+  .band-white { background: #ffffff; }
+  .band-mint { background: linear-gradient(180deg, #eafff6, #d8f7e8); }
+  .band-sky { background: linear-gradient(180deg, #d8f2ff, #eafaff); }
+  h2 { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 8px; }
+  .h2-sub { text-align: center; font-size: 14px; color: #40637f; margin-bottom: 24px; line-height: 1.8; }
+  /* スクリーンショット */
+  .shots { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 18px; }
+  .shot { text-align: center; }
+  .shot img {
+    width: 100%; height: auto; border-radius: 22px;
+    border: 3px solid #eef6fa;
+    box-shadow: 0 10px 24px rgba(35, 64, 90, .16);
   }
-  h2 { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 18px; }
-  .features { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .feature {
-    background: #f2faff; border-radius: 16px; padding: 16px 14px; text-align: center;
-  }
-  .feature .emoji { font-size: 30px; }
-  .feature h3 { font-size: 16px; font-weight: 800; margin-top: 8px; }
-  .feature p { font-size: 13px; line-height: 1.7; color: #40637f; margin-top: 6px; }
+  .shot:nth-child(odd) img { transform: rotate(-1.2deg); }
+  .shot:nth-child(even) img { transform: rotate(1.2deg); }
+  .shot figcaption { margin-top: 10px; font-size: 14.5px; font-weight: 800; }
+  .shot p { font-size: 12.5px; color: #40637f; margin-top: 3px; line-height: 1.6; }
+  /* 遊び方 */
   .steps { list-style: none; }
   .steps li {
     display: flex; gap: 14px; align-items: flex-start;
-    padding: 12px 2px; border-bottom: 1px dashed #cfe6f2;
+    background: rgba(255,255,255,.85); border-radius: 16px;
+    padding: 16px; margin-bottom: 12px;
+    box-shadow: 0 3px 10px rgba(35, 64, 90, .06);
   }
-  .steps li:last-child { border-bottom: none; }
   .step-no {
     flex: none; width: 34px; height: 34px; border-radius: 50%;
     background: #2b9df4; color: #fff; font-weight: 800; font-size: 17px;
     display: flex; align-items: center; justify-content: center;
   }
   .steps p { font-size: 14.5px; line-height: 1.75; padding-top: 5px; }
-  .steps b { font-weight: 800; }
+  .wide-art { display: block; width: 100%; height: auto; border-radius: 20px; margin-top: 18px;
+    box-shadow: 0 8px 20px rgba(35, 64, 90, .12); }
+  /* 特徴 */
+  .features { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .feature { background: #f2faff; border-radius: 16px; padding: 18px 14px; text-align: center; }
+  .feature .emoji { font-size: 30px; }
+  .feature h3 { font-size: 16px; font-weight: 800; margin-top: 8px; }
+  .feature p { font-size: 13px; line-height: 1.7; color: #40637f; margin-top: 6px; }
+  /* アイコン */
   .icon-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-  .icon-row img {
-    width: 62px; height: 62px; border-radius: 16px;
-    box-shadow: 0 3px 8px rgba(35, 64, 90, .14);
-  }
+  .icon-row img { width: 62px; height: 62px; border-radius: 16px; box-shadow: 0 3px 8px rgba(35,64,90,.14); }
   .icon-note { text-align: center; font-size: 13.5px; color: #40637f; margin-top: 14px; line-height: 1.8; }
-  .safety { list-style: none; font-size: 14.5px; line-height: 2.1; }
+  /* 安心 */
+  .safety { list-style: none; font-size: 14.5px; line-height: 2.1; max-width: 520px; margin: 0 auto; }
   .safety li::before { content: '🐾 '; }
-  footer { margin-top: 34px; text-align: center; font-size: 13px; color: #5d7d94; line-height: 2.2; }
+  .card {
+    background: rgba(255,255,255,.9); border-radius: 22px; padding: 26px 24px;
+    box-shadow: 0 4px 16px rgba(35, 64, 90, .08);
+  }
+  .plain { padding: 42px 0 8px; }
+  footer { margin-top: 40px; padding-bottom: 48px; text-align: center; font-size: 13px; color: #5d7d94; line-height: 2.2; }
   footer a { color: #2b9df4; }
-  .wolf-art { width: min(420px, 92%); height: auto; border-radius: 18px; margin-top: 6px; }
+  .final-cta { text-align: center; margin-top: 36px; }
   @media (max-width: 480px) {
     .features { grid-template-columns: 1fr; }
-    .catch { font-size: 21px; }
+    .catch { font-size: 22px; }
+    .hero { margin-top: -40px; }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <div class="hero">
-    <img class="app-icon" src="./icons/pwa-icon-512.png" alt="ことば人狼 アイコン" />
-    <br />
-    <img class="logo" src="./img/logo.webp" alt="ことば人狼" />
-    <p class="catch">みんなと話して、ウルフを見つけよう。</p>
-    <p class="sub">
-      テキストだけで遊べる、簡単ワードウルフ。<br />
-      ボイスなしだから、場所を選ばずいつでも遊べます。
-    </p>
-    <a class="cta" href="https://kotoba-jinrou-lite.pages.dev/">今すぐ遊ぶ（無料）</a>
-    <p class="cta-note">Googleアカウントでログインして遊べます（Google Play版も準備中）</p>
+<img class="hero-art" src="./img/lp-hero.webp" alt="ことば人狼のキャラクターたち" />
+<div class="hero">
+  <img class="logo" src="./img/logo.webp" alt="ことば人狼" />
+  <p class="catch">みんなと話して、ウルフを見つけよう。</p>
+  <p class="sub">
+    テキストだけで遊べる、簡単ワードウルフ。<br />
+    ボイスなしだから、場所を選ばずいつでも遊べます。
+  </p>
+  <a class="cta" href="https://kotoba-jinrou-lite.pages.dev/">今すぐ遊ぶ（無料）</a>
+  <p class="cta-note">Googleアカウントでログインして遊べます（Google Play版も準備中）</p>
+</div>
+
+<div class="band band-white">
+  <div class="inner">
+    <h2>ゲーム画面</h2>
+    <p class="h2-sub">実際の画面はこんな感じ。見やすくて、初めてでも迷いません。</p>
+    <div class="shots">
+      <figure class="shot">
+        <img src="./img/lp-shot-lobby.webp" alt="ロビー画面" loading="lazy" />
+        <figcaption>ロビー</figcaption>
+        <p>部屋を選んですぐ対戦。ギフトやボーナスもここに集まります</p>
+      </figure>
+      <figure class="shot">
+        <img src="./img/lp-shot-room.webp" alt="待機室画面" loading="lazy" />
+        <figcaption>待機室</figcaption>
+        <p>集まったメンバーで雑談しながら、準備OKでスタート</p>
+      </figure>
+      <figure class="shot">
+        <img src="./img/lp-shot-game.webp" alt="話し合い画面" loading="lazy" />
+        <figcaption>話し合い</figcaption>
+        <p>お題について話し合って、かみ合わない人＝ウルフを探します</p>
+      </figure>
+      <figure class="shot">
+        <img src="./img/lp-shot-group.webp" alt="グループチャット画面" loading="lazy" />
+        <figcaption>グループチャット</figcaption>
+        <p>フレンド同士で集まって、次の対戦の約束もできます</p>
+      </figure>
+    </div>
   </div>
+</div>
 
-  <section>
+<div class="band band-mint">
+  <div class="inner">
+    <h2>遊び方</h2>
+    <p class="h2-sub">ルールは3ステップだけ。</p>
+    <ol class="steps">
+      <li>
+        <span class="step-no">1</span>
+        <p><b>お題が配られます。</b>全員に同じお題……ただし1人だけ、ちょっと違うお題。それがウルフです。自分がウルフかどうかは、まだ誰にも分かりません。</p>
+      </li>
+      <li>
+        <span class="step-no">2</span>
+        <p><b>話し合って探ります。</b>お題について話し合ううちに、話がかみ合わない人が見えてきます。自分がウルフだと気づいたら、うまく話を合わせましょう。</p>
+      </li>
+      <li>
+        <span class="step-no">3</span>
+        <p><b>投票でウルフを当てる。</b>市民がウルフを当てれば市民の勝ち。でもウルフも、正体がバレたあとに市民のお題を当てれば逆転勝ちできます。</p>
+      </li>
+    </ol>
+    <img class="wide-art" src="./img/tutorial-wolf.webp" alt="ことば人狼のキャラクターたち" loading="lazy" />
+  </div>
+</div>
+
+<div class="band band-sky">
+  <div class="inner">
+    <h2>ギフトで盛り上がろう</h2>
+    <p class="h2-sub">
+      試合で活躍した相手や、いつも遊ぶフレンドにギフトをプレゼント。<br />
+      もらったギフトは人気度になって、プロフィールに飾られます。
+    </p>
+    <img class="wide-art" src="./img/lp-gift.webp" alt="ギフトを贈るキャラクターたち" loading="lazy" style="margin-top:0" />
+  </div>
+</div>
+
+<div class="plain">
+  <div class="inner">
     <h2>ことば人狼の特徴</h2>
+    <p class="h2-sub"></p>
     <div class="features">
       <div class="feature">
         <div class="emoji">💬</div>
@@ -122,61 +201,47 @@
         <p>活躍した相手にギフトをプレゼント。もらったギフトは人気度に反映されます。</p>
       </div>
     </div>
-  </section>
-
-  <section>
-    <h2>遊び方</h2>
-    <ol class="steps">
-      <li>
-        <span class="step-no">1</span>
-        <p><b>お題が配られます。</b>全員に同じお題……ただし1人だけ、ちょっと違うお題。それがウルフです。自分がウルフかどうかは、まだ誰にも分かりません。</p>
-      </li>
-      <li>
-        <span class="step-no">2</span>
-        <p><b>話し合って探ります。</b>お題について話し合ううちに、話がかみ合わない人が見えてきます。自分がウルフだと気づいたら、うまく話を合わせましょう。</p>
-      </li>
-      <li>
-        <span class="step-no">3</span>
-        <p><b>投票でウルフを当てる。</b>市民がウルフを当てれば市民の勝ち。でもウルフも、正体がバレたあとに市民のお題を当てれば逆転勝ちできます。</p>
-      </li>
-    </ol>
-    <div style="text-align:center">
-      <img class="wolf-art" src="./img/tutorial-wolf.webp" alt="ことば人狼のキャラクターたち" />
-    </div>
-  </section>
-
-  <section>
-    <h2>かわいいアイコンがいっぱい</h2>
-    <div class="icon-row">
-      <img src="./icons/icon-wolf.webp" alt="オオカミ" />
-      <img src="./icons/icon-rabbit.webp" alt="うさぎ" />
-      <img src="./icons/icon-panda.webp" alt="パンダ" />
-      <img src="./icons/icon-cat.webp" alt="ねこ" />
-      <img src="./icons/icon-penguin.webp" alt="ペンギン" />
-      <img src="./icons/icon-fox.webp" alt="きつね" />
-    </div>
-    <p class="icon-note">アイコンは選ぶだけ。対戦に勝つと解放されるアイコンもあります。</p>
-  </section>
-
-  <section>
-    <h2>安心して遊べます</h2>
-    <ul class="safety">
-      <li>13歳から遊べます（年齢に合わせた課金上限つき）</li>
-      <li>通報・ブロック機能で、困った相手とは距離を置けます</li>
-      <li>不適切な言葉は自動チェックで送信を止めます</li>
-    </ul>
-  </section>
-
-  <div class="hero">
-    <a class="cta" href="https://kotoba-jinrou-lite.pages.dev/">今すぐ遊ぶ（無料）</a>
   </div>
-
-  <footer>
-    運営：OGI games<br />
-    <a href="./terms.html">利用規約</a>　｜　<a href="./privacy.html">プライバシーポリシー</a><br />
-    お問い合わせ：<a href="mailto:ogi-games-support@googlegroups.com">ogi-games-support@googlegroups.com</a>
-  </footer>
-
 </div>
+
+<div class="plain">
+  <div class="inner">
+    <div class="card">
+      <h2>かわいいアイコンがいっぱい</h2>
+      <div class="icon-row" style="margin-top:16px">
+        <img src="./icons/icon-wolf.webp" alt="オオカミ" />
+        <img src="./icons/icon-rabbit.webp" alt="うさぎ" />
+        <img src="./icons/icon-panda.webp" alt="パンダ" />
+        <img src="./icons/icon-cat.webp" alt="ねこ" />
+        <img src="./icons/icon-penguin.webp" alt="ペンギン" />
+        <img src="./icons/icon-fox.webp" alt="きつね" />
+      </div>
+      <p class="icon-note">アイコンは選ぶだけ。対戦に勝つと解放されるアイコンもあります。</p>
+    </div>
+  </div>
+</div>
+
+<div class="plain">
+  <div class="inner">
+    <div class="card">
+      <h2>安心して遊べます</h2>
+      <ul class="safety" style="margin-top:14px">
+        <li>13歳から遊べます（年齢に合わせた課金上限つき）</li>
+        <li>通報・ブロック機能で、困った相手とは距離を置けます</li>
+        <li>不適切な言葉は自動チェックで送信を止めます</li>
+      </ul>
+    </div>
+    <div class="final-cta">
+      <a class="cta" href="https://kotoba-jinrou-lite.pages.dev/">今すぐ遊ぶ（無料）</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  運営：OGI games<br />
+  <a href="./terms.html">利用規約</a>　｜　<a href="./privacy.html">プライバシーポリシー</a><br />
+  お問い合わせ：<a href="mailto:ogi-games-support@googlegroups.com">ogi-games-support@googlegroups.com</a>
+</footer>
+
 </body>
 </html>

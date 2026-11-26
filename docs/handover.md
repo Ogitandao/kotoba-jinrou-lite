@@ -1434,3 +1434,4 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
 - 公式紹介LP（client/lp.html）を追加：ヒーロー（アプリアイコン＋ロゴ＋「今すぐ遊ぶ」→本体）／特徴4点／遊び方3ステップ／アイコン紹介／安心メモ／フッター（運営 OGI games・規約・プラポリ・問い合わせ）。公開URL は https://kotoba-jinrou-lite.pages.dev/lp 。Play リリース後は CTA を Play バッジに差し替える想定。
 - 同日：フレンドタブ一式を「フレンドタブパッケージLite」として Drive の OGI Games フォルダに収録（README＋SQL/JS/CSS 8ファイル）。引き継ぎパック（Drive）を最新化（4件更新＋4件追加）。スペース「ことば人狼 Lite 開発メモ」を最新版に更新。
 - Supabase 方針メモ：無料枠は2プロジェクトで満杯（本家＋Lite）。今後の Lite 系は「1プロジェクトに接頭辞で相乗り」が無料運用の本命、Pro は $25/月＋追加1件ごとに $10/月。
+- LP v2（同日）：おぎ要望「画像が豊富なLPに」で作り直し。ヒーローイラスト（生成・lp-hero.webp）とギフトイラスト（lp-gift.webp）を新規生成し、実際のゲーム画面スクショ4点（ロビー／待機室／話し合い／グループチャット、デモモードで撮影し client/img/lp-shot-*.webp に最適化）を掲載。結果画面はデモ表示文言が写るため不採用。生成マスターは ~/workspace/kotoba-jinrou-lite-data/lp/ に保管。
