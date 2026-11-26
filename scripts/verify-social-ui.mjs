@@ -35,18 +35,31 @@ const rowByName = (container, name) =>
   [...container.querySelectorAll('.user-row, .talk-row')]
     .find((r) => r.textContent.includes(name));
 
-// --- ギフト到着スライド通知（ログイン後、未読ギフトDMを検出して出る） ---
-// ログイン画面が出ている間は通知を保留する仕様（2026-11-26）のため、
-// 先にログインを済ませてから届くことを確認する
+// --- ギフト到着スライド通知 ---
+// 仕様（2026-11-26 おぎ）：通知はアプリを開いている間に届いた分だけ。
+// 種データの未読ギフト（開く前に届いていた分）では開幕に出ない
 $('btn-login-google').click();
 await tick(1500);
+check('開く前に届いていたギフトでは通知が出ない（溜まった分は流さない）',
+  !$('gift-notify').classList.contains('show'));
+// 通知の表示とエフェクトは、設定のテスト発火（本物の通知経路）で確認する
+$('btn-settings').click();
+await tick();
+$('btn-gift-test').click();
+await tick(700);
 check('ギフトが届くとスライド通知が出る（送り主とギフト名）',
   $('gift-notify').classList.contains('show')
   && $('gn-title').textContent.includes('けん')
-  && $('gn-gift').textContent.includes('王冠'));
+  && $('gn-gift').textContent.includes('ハート'));
+await tick(2400);
+$('btn-settings').click();
+await tick();
+$('btn-gift-test').click();
+await tick(700);
 check('王冠（3,000）は中額エフェクト：ポップアップにキラキラ＋グロー',
   $('gift-notify').classList.contains('fx-glow')
   && document.querySelectorAll('#gift-notify .gn-spark').length === 14);
+await tick(2400);
 
 // --- チュートリアル同意（フレンドタブは同意するまで開けない） ---
 check('未同意ではフレンドタブがグレーアウトしている',
