@@ -1338,6 +1338,10 @@
     if (!q) return;
     try {
       const u = await DATA.searchUser(q);
+      // 検索のついでに申請まわりも最新化する。相手が拒否／承認すると
+      // サーバー側の申請は消えるが、画面の「申請中」が古いまま残って
+      // 検索結果と食い違うため（2026-11-26 おぎ実機指摘）
+      renderFriendPanel();
       if (!u) {
         box.innerHTML = '<p class="modal-note">その公開IDのユーザーは見つかりませんでした</p>';
         return;
