@@ -336,8 +336,9 @@ check('申請中リストの申請中タップでも取り消し確認が出る'
   visible($('modal-confirm')) && $('confirm-text').textContent === '申請を取り消しますか？');
 $('confirm-yes').click();
 await tick();
-check('リスト側からも取り消せる',
-  !visible($('outgoing-section')));
+check('リスト側で取り消すと行が消え、検索結果は「申請する」に戻る',
+  !visible($('outgoing-section'))
+  && rowByName($('search-result'), 'もち')?.textContent.includes('申請する'));
 $('friend-search-input').value = 'zzzz9999';
 $('btn-friend-search').click();
 await tick();

@@ -1296,12 +1296,12 @@
     outList.innerHTML = '';
     $('outgoing-section').classList.toggle('hidden', outgoing.length === 0);
     for (const u of outgoing) {
-      // 「申請中」はタップで取り消せる（2026-11-26 おぎ要望）
+      // 「申請中」はタップで取り消せる（取り消すと行は消える）
       const label = document.createElement('button');
       label.type = 'button';
       label.className = 'pending-label pending-btn';
       label.textContent = '申請中';
-      label.addEventListener('click', () => confirmCancelRequest(u, false));
+      label.addEventListener('click', () => confirmCancelRequest(u));
       outList.appendChild(userRow(u, [label]));
     }
 
@@ -1389,7 +1389,7 @@
         action = smallBtn('フレンドです', 'mini-btn', () => {});
         action.disabled = true;
       } else if (u.relation === 'requested_out') {
-        action = smallBtn('申請中', 'mini-btn', () => confirmCancelRequest(u, true));
+        action = smallBtn('申請中', 'mini-btn', () => confirmCancelRequest(u));
       } else if (u.relation === 'requested_in') {
         action = smallBtn('承認する', 'mini-btn primary', () => {
           openConfirm(`${u.name}さんのフレンド申請を\n承認しますか？`, '承認する', async () => {
@@ -1992,14 +1992,17 @@
       renderTalkList();
     } catch (e) { toastError(e); }
   }
-  // フレンド申請の取り消し確認（申請中リスト／検索結果の両方から使う）
-  function confirmCancelRequest(u, fromSearch) {
+  // フレンド申請の取り消し確認（申請中リスト／検索結果の両方から使う）。
+  // 申請中リスト側では行ごと消える（沢山申請していると残り続けて
+  // 邪魔になるため。2026-11-26 おぎ判断）。検索結果側は「誰だったか」
+  // が分からなくならないよう、行は残ってボタンが「申請する」に戻る
+  function confirmCancelRequest(u) {
     openConfirm('申請を取り消しますか？', '取り消す', async () => {
       try {
         await DATA.cancelFriendRequest(u.id);
         toast('申請を取り消しました');
         await refreshSocial();
-        if (fromSearch) doSearch();
+        doSearch();
       } catch (e) { toastError(e); }
     });
   }
