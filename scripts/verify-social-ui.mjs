@@ -425,6 +425,15 @@ check('端末の戻るでDMが閉じる（アプリごと閉じない）', !$('d
 dom.window.dispatchEvent(new dom.window.Event('popstate'));
 await tick(30);
 check('ロビーで端末の戻るを押しても何も起きない', !$('dm-screen').classList.contains('open'));
+rowByName($('talk-list'), 'みか').click();
+await tick(90);
+$('room-screen').classList.remove('hidden'); // ルーム表示中を擬似再現
+dom.window.dispatchEvent(new dom.window.Event('popstate'));
+await tick(60);
+check('ルーム表示中は端末の戻るでもDMが閉じない（完全無反応）', $('dm-screen').classList.contains('open'));
+$('room-screen').classList.add('hidden');
+$('dm-back').click();
+await tick();
 
 const failed = results.filter((r) => !r.ok);
 console.log(`\n=== ${results.length - failed.length}/${results.length} PASS ===`);

@@ -3716,6 +3716,11 @@
       // カクッと切り替わる見え方になったため（2026-11-26 おぎ実機）
       clearTimeout(rearmTimer);
       rearmTimer = setTimeout(() => history.pushState({ kl: 'app' }, ''), 350);
+      // ルーム／対戦中は完全無反応（2026-11-26 おぎの精査依頼で統一）：
+      // 中で開いたポップアップやDMも「戻る」では閉じない。閉じるのは
+      // 各画面のボタンだけ。タッチスワイプ側のガードと挙動を揃えた
+      if (!$('room-screen').classList.contains('hidden')) return;
+      if (!$('game-screen').classList.contains('hidden')) return;
       if (!$('modal-report').classList.contains('hidden')) { closeReport(); return; }
       if (!$('modal-confirm').classList.contains('hidden')) { closeConfirm(); return; }
       if (!$('modal-gift-confirm').classList.contains('hidden')) { closeGiftConfirm(); return; }
