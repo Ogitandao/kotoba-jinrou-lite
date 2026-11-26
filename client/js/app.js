@@ -657,16 +657,25 @@
     if (m.kind === 'invite') return '📩 ルームへの招待カード';
     return m.body ?? '';
   }
-  // 未読DMの合計を、下部メニューのフレンドタブとトークタブの
-  // 赤バッジに反映する（2026-11-25 おぎ）
-  function updateNavBadges(convs) {
-    const total = (convs ?? []).reduce((s, c) => s + (c.unread ?? 0), 0);
-    for (const id of ['badge-tab-friends', 'badge-subtab-talk']) {
+  // バッジの内訳（2026-11-26 おぎ指摘でフレンド申請も数えるよう変更）：
+  // 下部メニューのフレンドタブ＝DM未読＋申請、トークタブ＝DM未読、
+  // フレンドタブ＝申請の件数
+  let dmUnreadTotal = 0;
+  let incomingReqCount = 0;
+  function paintNavBadges() {
+    const paint = (id, n) => {
       const b = $(id);
-      if (!b) continue;
-      b.textContent = total > 99 ? '99+' : String(total);
-      b.classList.toggle('hidden', total <= 0);
-    }
+      if (!b) return;
+      b.textContent = n > 99 ? '99+' : String(n);
+      b.classList.toggle('hidden', n <= 0);
+    };
+    paint('badge-tab-friends', dmUnreadTotal + incomingReqCount);
+    paint('badge-subtab-talk', dmUnreadTotal);
+    paint('badge-subtab-friend', incomingReqCount);
+  }
+  function updateNavBadges(convs) {
+    dmUnreadTotal = (convs ?? []).reduce((s, c) => s + (c.unread ?? 0), 0);
+    paintNavBadges();
   }
 
   // --- ギフト到着のスライド通知（おぎ） ---
@@ -1212,6 +1221,8 @@
     const [friends, incoming, outgoing] = await Promise.all([
       DATA.listFriends(), DATA.listIncomingRequests(), DATA.listOutgoingRequests(),
     ]);
+    incomingReqCount = incoming.length;
+    paintNavBadges();
     rememberUsers([...friends, ...incoming, ...outgoing]);
 
     const reqList = $('request-list');
@@ -3780,10 +3791,10 @@
         return;
       }
       switchTab('friends');
-      renderTalkList(); // システムDMなど、滞在中に届いた分を反映する
+      refreshSocial(); // 滞在中に届いたDM・フレンド申請を反映する
     });
     $('subtab-talk').addEventListener('click', () => { switchSubtab('talk'); renderTalkList(); });
-    $('subtab-friend').addEventListener('click', () => switchSubtab('friend'));
+    $('subtab-friend').addEventListener('click', () => { switchSubtab('friend'); renderFriendPanel(); });
     $('btn-friend-search').addEventListener('click', doSearch);
     $('friend-search-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') doSearch();

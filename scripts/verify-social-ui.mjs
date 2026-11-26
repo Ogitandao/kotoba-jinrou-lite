@@ -106,11 +106,13 @@ $('room-back').click();
 await tick(450);
 check('待機室からロビーへ戻れる', !visible($('room-screen')));
 
-// --- 未読バッジ（下部メニュー／トークタブ） ---
-check('起動直後から下部メニューのフレンドに未読バッジ（4）が出る',
-  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '8');
-check('トークタブにも未読バッジ（4）が出る',
+// --- 未読バッジ（下部メニュー／トークタブ／フレンドタブ） ---
+check('下部メニューのフレンドにバッジが出る（DM未読8＋申請1＝9）',
+  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '9');
+check('トークタブにはDM未読だけのバッジ（8）が出る',
   visible($('badge-subtab-talk')) && $('badge-subtab-talk').textContent === '8');
+check('フレンドタブには申請だけのバッジ（1）が出る',
+  visible($('badge-subtab-friend')) && $('badge-subtab-friend').textContent === '1');
 
 // --- フレンドタブ：トーク一覧 ---
 $('tabbtn-friends').click();
@@ -137,8 +139,8 @@ await tick();
 const mikaRow = rowByName($('talk-list'), 'みか');
 check('みかの行に未読バッジ（1）が出る',
   mikaRow?.querySelector('.unread-badge')?.textContent === '1');
-check('システムDMを読むとナビの未読バッジが3に減る',
-  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '7');
+check('システムDMを読むとナビのバッジが8に減る（DM7＋申請1）',
+  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '8');
 check('最新メッセージのプレビューが出る',
   mikaRow?.textContent.includes('部屋立てるから来て'));
 
@@ -156,8 +158,8 @@ check('日付区切り（昨日／今日）と吹き出し横の時刻が出る�
   && msgs().every((r) => /^\d{1,2}:\d{2}$/.test(r.querySelector('.msg-time')?.textContent ?? '')));
 check('DMを開くと未読バッジが消える',
   !rowByName($('talk-list'), 'みか')?.querySelector('.unread-badge'));
-check('みかを読むとナビの未読バッジが2に減る（けんの招待＋ギフト分が残る）',
-  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '6');
+check('みかを読むとナビのバッジが7に減る（DM6＋申請1）',
+  visible($('badge-tab-friends')) && $('badge-tab-friends').textContent === '7');
 
 $('dm-input').value = 'うん、行く行く！';
 $('dm-send').click();
