@@ -660,6 +660,9 @@
   // 表示だけ一斉に外れて無効化、入れ直すと元の選択に戻る
   // （2026-11-26 おぎ）。サーバー側も master=false で全停止する
   let pushCatState = { dm: true, invite: true, announce: true };
+  // アイコンバッジはプッシュとは独立（2026-11-26 おぎ）：
+  // プッシュOFFでもバッジだけ欲しい人がいるため、別トグルで持つ
+  let pushBadgeOn = true;
   function renderPushChecks(master) {
     $('push-master').checked = !!master;
     for (const c of PUSH_CATS) {
@@ -679,7 +682,10 @@
         dm: !!p.dm, invite: !!p.invite,
         announce: !!p.announce,
       };
+      pushBadgeOn = p.badge !== false;
+      $('push-badge').checked = pushBadgeOn;
       renderPushChecks(!!p.master);
+      paintNavBadges();
     } catch { /* 読めない時は既定表示のまま */ }
   }
   async function onPushToggle() {
@@ -694,7 +700,11 @@
       if (prefs.master && (prefs.dm || prefs.invite || prefs.announce)) {
         const okSub = await ensurePushSubscription();
         if (!okSub) {
-          toast('通知が許可されませんでした。ブラウザの設定を確認してください');
+          // 端末側でブロックされている場合は再表示できないので、
+          // 端末設定での許可を案内する（2026-11-26 おぎのフロー）
+          toast(Notification.permission === 'denied'
+            ? '通知がブロックされています。端末のアプリ設定で通知を許可してから、もう一度ONにしてください'
+            : '通知が許可されませんでした。ブラウザの設定を確認してください');
           renderPushChecks(false);
           await DATA.savePushPrefs({ ...prefs, master: false });
         }
@@ -714,7 +724,46 @@
         await DATA.savePushPrefs({ master: true, dm: true, invite: true, announce: true });
         await ensurePushSubscription();
       } catch (e) { toastError(e); }
+    }, async () => {
+      // 断ったらゲーム内もALL OFFに揃える（2026-11-26 おぎ）
+      try { await DATA.savePushPrefs({ master: false, dm: true, invite: true, announce: true }); } catch {}
     });
+  }
+  // 初回セットアップ（名前＋年齢確認）完了直後の通知オンボーディング
+  // （2026-11-26 おぎ）：端末側で許可→ゲーム内も自動ALL ON、
+  // 拒否→ゲーム内ALL OFF。1端末1回だけ聞く
+  async function maybeAskPushAtSetup() {
+    if (!pushSupported()) return;
+    try {
+      if (localStorage.getItem('kl_push_setup_asked')) return;
+      localStorage.setItem('kl_push_setup_asked', '1');
+      localStorage.setItem('kl_push_asked', '1');
+    } catch { return; }
+    if (Notification.permission === 'granted') {
+      pushCatState = { dm: true, invite: true, announce: true };
+      try { await DATA.savePushPrefs({ master: true, ...pushCatState }); } catch {}
+      await ensurePushSubscription();
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      try { await DATA.savePushPrefs({ master: false, dm: true, invite: true, announce: true }); } catch {}
+      return;
+    }
+    setTimeout(() => {
+      openConfirm('メッセージや招待が届いたら、通知でお知らせしますか？', 'ONにする', async () => {
+        const ok = await ensurePushSubscription();
+        if (ok) {
+          pushCatState = { dm: true, invite: true, announce: true };
+          try { await DATA.savePushPrefs({ master: true, ...pushCatState }); } catch (e) { toastError(e); }
+          toast('通知をONにしました');
+        } else {
+          try { await DATA.savePushPrefs({ master: false, dm: true, invite: true, announce: true }); } catch {}
+          toast('通知はOFFにしました（設定からいつでも変えられます）');
+        }
+      }, async () => {
+        try { await DATA.savePushPrefs({ master: false, dm: true, invite: true, announce: true }); } catch {}
+      });
+    }, 600);
   }
   // 通知タップからの遷移（SW の postMessage と、コールドスタート時の # ハッシュ）
   async function routePushTarget(rawUrl) {
@@ -806,10 +855,11 @@
     paint('badge-tab-friends', dmUnreadTotal + incomingReqCount);
     paint('badge-subtab-talk', dmUnreadTotal);
     paint('badge-subtab-friend', incomingReqCount);
-    // ホーム画面アイコンのバッジ（アプリ内バッジと同じ数字）
+    // ホーム画面アイコンのバッジ（アプリ内バッジと同じ数字。
+    // プッシュとは独立した設定でOFFにもできる）
     if ('setAppBadge' in navigator) {
       const n = dmUnreadTotal + incomingReqCount;
-      if (n > 0) navigator.setAppBadge(n).catch(() => {});
+      if (pushBadgeOn && n > 0) navigator.setAppBadge(n).catch(() => {});
       else if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
     }
   }
@@ -2095,10 +2145,12 @@
   }
   // 重要な決断には確認ポップアップを1回挟む（汎用確認。2026-11-25 おぎ方針）
   let confirmAction = null;
-  function openConfirm(text, yesLabel, onYes) {
+  let confirmCancelAction = null;
+  function openConfirm(text, yesLabel, onYes, onCancel) {
     $('confirm-text').textContent = text;
     $('confirm-yes').textContent = yesLabel;
     confirmAction = onYes;
+    confirmCancelAction = onCancel || null;
     $('modal-gift-confirm').classList.add('hidden');
     $('modal-confirm').classList.remove('hidden');
     $('modal-backdrop2').classList.remove('hidden');
@@ -3682,6 +3734,13 @@
       syncKb();
     }
     // Web Push（0059）：最終アクセスの記録・購読の自動更新・通知タップ遷移
+    // バッジ設定は設定画面を開く前から効かせるため、起動時に先読みする
+    if (pushSupported()) {
+      DATA.getPushPrefs().then((p) => {
+        pushBadgeOn = p.badge !== false;
+        paintNavBadges();
+      }).catch(() => {});
+    }
     touchSeenThrottled();
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') touchSeenThrottled();
@@ -3698,6 +3757,11 @@
     for (const id of ['push-master', 'push-dm', 'push-invite', 'push-announce']) {
       $(id).addEventListener('change', onPushToggle);
     }
+    $('push-badge').addEventListener('change', async () => {
+      pushBadgeOn = $('push-badge').checked;
+      paintNavBadges();
+      try { await DATA.savePushPrefs({ badge: pushBadgeOn }); } catch (e) { toastError(e); }
+    });
     // サブタブのトラック高さをアクティブ側に追随させる
     syncSubtabHeight();
     if (typeof ResizeObserver !== 'undefined') {
@@ -3737,7 +3801,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 18:33 / pushset3';
+      $('build-stamp').textContent = 'build 2026-11-26 18:47 / pushonb1+badge1';
       loadPushSettings();
       openModal('modal-settings');
     });
@@ -3987,6 +4051,8 @@
         nameSetupMode = false;
         closeModal();
         toast(wasSetup ? '名前を決めました' : '名前を変更しました');
+        // 初回セットアップ完了直後に通知の許可を聞く（おぎ指定のタイミング）
+        if (wasSetup) maybeAskPushAtSetup();
       } catch (e) { toastError(e); }
     });
     $('my-bio').addEventListener('click', () => {
@@ -4280,9 +4346,15 @@
     $('btn-group-add').addEventListener('click', askAddGroupMembers);
     $('btn-group-rename').addEventListener('click', doRenameGroup);
     $('btn-group-leave').addEventListener('click', askLeaveGroup);
-    $('confirm-x').addEventListener('click', closeConfirm);
+    $('confirm-x').addEventListener('click', () => {
+      const fn = confirmCancelAction;
+      confirmCancelAction = null;
+      closeConfirm();
+      if (fn) fn();
+    });
     $('confirm-yes').addEventListener('click', () => {
       const fn = confirmAction;
+      confirmCancelAction = null;
       closeConfirm();
       if (fn) fn();
     });

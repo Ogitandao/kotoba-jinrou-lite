@@ -1369,7 +1369,7 @@
       subscribeFriends() { return () => {}; },
       subscribeTicker() { return () => {}; },
       listAnnouncements() { return ok([]); },
-      getPushPrefs() { return ok({ master: true, dm: true, invite: true, announce: true, comeback: true }); },
+      getPushPrefs() { return ok({ master: true, dm: true, invite: true, announce: true, comeback: true, badge: true }); },
       savePushPrefs() { return ok(true); },
       savePushSubscription() { return ok(true); },
       removePushSubscription() { return ok(true); },
@@ -2298,11 +2298,11 @@
       // Web Push（0059）：購読と通知設定は本人の行だけ（RLS）
       async getPushPrefs() {
         const { data: u } = await getClient().auth.getUser();
-        if (!u?.user) return { master: true, dm: true, invite: true, announce: true, comeback: true };
+        if (!u?.user) return { master: true, dm: true, invite: true, announce: true, comeback: true, badge: true };
         const { data } = await getClient()
-          .from('kl_push_prefs').select('master, dm, invite, announce, comeback')
+          .from('kl_push_prefs').select('master, dm, invite, announce, comeback, badge')
           .eq('user_id', u.user.id).maybeSingle();
-        return data ?? { master: true, dm: true, invite: true, announce: true, comeback: true };
+        return data ?? { master: true, dm: true, invite: true, announce: true, comeback: true, badge: true };
       },
       async savePushPrefs(prefs) {
         const { data: u } = await getClient().auth.getUser();

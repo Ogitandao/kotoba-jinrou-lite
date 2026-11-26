@@ -1381,3 +1381,13 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
 - おぎ：「おひさしぶり通知」が分かりにくい。プッシュ通知／運営からのお知らせをOFFにしている人は呼び戻しもOFFでよい。
 - 対応：通知設定ポップアップから「おひさしぶり通知」トグルを削除。呼び戻し（3日以上不在・週1回まで）の送信条件を master && announce に変更（kl__comeback_run を 0060 で差し替え＋push-send のカテゴリ判定も announce に変更、EF v5）。kl_push_prefs.comeback 列は残置（以後参照しない）。
 - 検証：push-db ALL PASS／social-ui 90/90／lobby 75/75。ビルド表示は「build 2026-11-26 18:33 / pushset3」。
+
+## 追補93（2026-11-26）通知オンボーディングを初回セットアップ直後に（pushonb1）
+- おぎ指定フロー：登録直後（年齢確認が終わるタイミング＝初回セットアップ完了直後）に端末側の通知許可を聞く。許可→ゲーム内も自動ALL ON／拒否→ゲーム内ALL OFF。端末側で拒否した人が設定でONにしようとしたら、もう一度許可を尋ねる（ブロック済みの場合は端末設定での許可を案内）。
+- 実装：name-save の wasSetup 成功直後に maybeAskPushAtSetup()（1端末1回、kl_push_setup_asked）。許可済みならALL ONに同期、ブロック済みならALL OFFを保存、未決定なら自前確認→ブラウザ許可ダイアログ。openConfirm に任意の onCancel を追加（✕で閉じた時＝拒否としてALL OFF保存）。DM初回送信時の従来の声かけも、断ったらALL OFFに揃えるよう統一。
+- 検証：lobby 75/75／social-ui 90/90／game-ui 123/123。
+
+## 追補94（2026-11-26）アイコンバッジをプッシュから独立（badge1、migration 0061）
+- おぎ：プッシュ通知は要らないけどバッジは欲しい人がいる。バッジを独立トグル化。
+- 実装：kl_push_prefs に badge 列（既定 true）。通知設定ポップアップに区切りを入れて「アイコンバッジ」トグルを追加（大元プッシュOFFでも無効化されない）。paintNavBadges は badge 設定がONの時だけ setAppBadge し、OFFなら clearAppBadge。起動時にバッジ設定を先読みして反映。オンボーディングの許可/拒否ではバッジに触らない。
+- 注意（端末仕様）：Android の数字バッジ表示はランチャー依存（出ない端末もある）。iOS の PWA バッジは通知許可とセット（Apple の仕様）。
