@@ -19,6 +19,8 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
+/* 入力欄は文字選択・編集を今まで通り使えるようにする */
+input, textarea { -webkit-user-select: text; user-select: text; }
 /* 引っ張って更新（プルトゥリフレッシュ）で画面がリロードされ、いる場所が
    リセットされるのを防ぐ（2026-11-26 おぎ要望：そもそも対戦中は更新
    できないように。アプリ全体で無効化する） */
@@ -30,6 +32,11 @@ body {
   font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
   font-weight: 700;
   color: var(--ink);
+  /* 長押しでブラウザの文字選択（コピー／すべて選択の帯）が出ないように。
+     アプリ内の長押しメニューと競合するため全体で無効化し、入力欄だけ戻す */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   background: #cfeefc;
 }
 /* 全画面（PWA）時のステータスバー裏・ジェスチャーバー裏は白で塗る。
