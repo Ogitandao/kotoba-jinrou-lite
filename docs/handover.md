@@ -1339,3 +1339,9 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
 - 残置：0057 の Broadcast 送信側（kl_send_gift／ww__finish 内の realtime.send）とアダプタ subscribeTicker は未使用のまま（害なし、将来の再利用候補）。
 - 検証：lobby 75/75（ティッカーチェックを「実イベントは流れない」に差し替え）／social-ui 90/90／game-ui 123/123／supabase-mode 8/8。
 - ビルド表示は「build 2026-11-26 17:47 / ticker5」。
+
+## 追補85（2026-11-26）ティッカーを横流れに戻す（ticker6）
+- おぎ選択：中身が固定＋運営だけになったため、動きは切り替え式でなく横流れ（マーキー）がよい。
+- ticker3 で使った JS 駆動の連続スクロールを復活（実ブラウザ再現で健全性確認済みの実装）。項目は全てループ専用で差し込みなし。項目の並びが変わった時だけ（運営お知らせ到着時）組み直す（dataset.sig 比較）。
+- HTML/CSS は #ticker-track／.ticker-item に復帰。検証：lobby 75/75／social-ui 90/90／game-ui 123/123。
+- ビルド表示は「build 2026-11-26 17:56 / ticker6」。

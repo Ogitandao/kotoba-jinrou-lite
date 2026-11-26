@@ -159,8 +159,8 @@ check('同意するとフレンドタブのグレーアウトが解除される'
 $('create-title').value = '検証用ルーム';
 $('btn-create-confirm').click();
 check('ティッカーにお知らせが流れている',
-  ['ことば人狼へようこそ', '試合のあとは', 'はじめての人は'].some((t) => $('ticker-text').textContent.includes(t)));
-check('対戦中ルームは常時表示ではなく開始時に流れる（初期表示では流れない）', !$('ticker-text').textContent.includes('が対戦中です'));
+  ['ことば人狼へようこそ', '試合のあとは', 'はじめての人は'].some((t) => $('ticker-track').textContent.includes(t)));
+check('対戦中ルームは常時表示ではなく開始時に流れる（初期表示では流れない）', !$('ticker-track').textContent.includes('が対戦中です'));
 check('公開ルームを作成すると一覧の先頭に増える',
   document.querySelectorAll('#room-list .room-card').length === 9 &&
   document.querySelector('#room-list .room-card').textContent.includes('検証用ルーム'));
@@ -171,8 +171,8 @@ check('新しく作ったルームはスライドイン用クラスが付く',
 // 2026-11-26 おぎ判断でライブ表示を廃止）
 await new Promise((r) => setTimeout(r, 1200));
 check('ルームを作ってもティッカーに実イベントは流れない（固定＋運営のみ）',
-  !$('ticker-text').textContent.includes('作りました') &&
-  ['ことば人狼へようこそ', '試合のあとは', 'はじめての人は'].some((t) => $('ticker-text').textContent.includes(t)));
+  !$('ticker-track').textContent.includes('作りました') &&
+  ['ことば人狼へようこそ', '試合のあとは', 'はじめての人は'].some((t) => $('ticker-track').textContent.includes(t)));
 // --- ルーム作成（非公開：100コイン消費） ---
 $('btn-create-room').click();
 document.querySelector('input[name="create-visibility"][value="private"]').click();

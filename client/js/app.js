@@ -570,26 +570,57 @@
   ];
   let tickerAnnouncements = [];
   const tickerItems = () => [...TICKER_BASE, ...tickerAnnouncements];
-  // 「1件ずつ切り替え」方式：表示中の文はフェード完了まで触らない
-  const TICKER_BASE_MS = 4200;
-  const tickerState = { idx: 0, timer: null };
-  function tickerArm(ms) {
-    clearTimeout(tickerState.timer);
-    tickerState.timer = setTimeout(showTickerSlot, ms);
-  }
-  function showTickerSlot() {
-    const el = $('ticker-text');
-    if (!el) return;
-    const items = tickerItems();
-    const text = items[tickerState.idx++ % items.length];
-    el.classList.toggle('long', [...text].length > 29);
-    el.classList.add('swap');
-    setTimeout(() => { el.textContent = text; el.classList.remove('swap'); }, 200);
-    tickerArm(TICKER_BASE_MS);
+  // 横流れ（JS駆動の連続スクロール）。中身は固定＋運営のみで
+  // 差し込みが一切ないため、実ブラウザ再現で健全性を確認済みの
+  // この方式がそのまま使える（2026-11-26 おぎが横流れを選択）。
+  // 項目は左端を抜けたら最後尾へ回してループし続ける
+  const TICKER_SPEED = 45; // px/秒
+  const tickerScroll = { offset: 0, lastTs: 0, running: false };
+  function tickerItemEl(text) {
+    const s = document.createElement('span');
+    s.className = 'ticker-item';
+    s.textContent = text;
+    s.dataset.loop = '1';
+    return s;
   }
   function renderTicker() {
-    if (tickerState.timer) return;
-    if ($('ticker-text')) showTickerSlot();
+    const track = $('ticker-track');
+    if (!track) return;
+    // 項目の並びが変わった時だけ組み直す（運営お知らせの到着時など）
+    const items = tickerItems();
+    const sig = items.join('\n');
+    if (track.dataset.sig !== sig) {
+      track.dataset.sig = sig;
+      track.innerHTML = '';
+      tickerScroll.offset = 0;
+      for (const t of items) track.appendChild(tickerItemEl(t));
+    }
+    startTickerScroll();
+  }
+  function startTickerScroll() {
+    if (tickerScroll.running) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    tickerScroll.running = true;
+    const step = (ts) => {
+      if (!tickerScroll.running) return;
+      requestAnimationFrame(step);
+      const track = $('ticker-track');
+      if (!track) return;
+      // 非表示の間は進めない（幅0＝ロビーを見ていない）
+      if (!track.getBoundingClientRect().width) { tickerScroll.lastTs = ts; return; }
+      if (!tickerScroll.lastTs) tickerScroll.lastTs = ts;
+      const dt = Math.min(0.1, (ts - tickerScroll.lastTs) / 1000);
+      tickerScroll.lastTs = ts;
+      tickerScroll.offset += TICKER_SPEED * dt;
+      let first = track.firstElementChild;
+      while (first && first.offsetWidth > 0 && tickerScroll.offset >= first.offsetWidth) {
+        tickerScroll.offset -= first.offsetWidth;
+        track.appendChild(first);
+        first = track.firstElementChild;
+      }
+      track.style.transform = `translateX(${-tickerScroll.offset}px)`;
+    };
+    requestAnimationFrame(step);
   }
 
   // ルーム作成バーは「ロビー表示中」だけ出す。ルーム／対戦／DM など
@@ -3515,7 +3546,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 17:47 / ticker5';
+      $('build-stamp').textContent = 'build 2026-11-26 17:56 / ticker6';
       openModal('modal-settings');
     });
     $('btn-gift-test').addEventListener('click', () => {
