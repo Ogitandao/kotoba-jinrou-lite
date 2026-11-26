@@ -79,6 +79,28 @@
     // サーバー側ガードに弾かれたら、年齢確認のセットアップを出し直す
     // （閉じられても操作のたびに戻ってくる＝鉄壁化のクライアント側）
     if (err?.code === 'BIRTHDATE_REQUIRED') state.openNameSetup?.();
+    recoverSessionIfNeeded(err);
+  }
+
+  // セッションがアプリ使用中に切れた場合の自己復旧。起動時の
+  // デッドセッション掃除は起動直後しか効かず、使用中に失効すると
+  // 「Permission denied」や無反応が静かに続くため（2026-11-26 実機：
+  // iPad で DM が開けずギフトボタンも反応しなくなった）。権限系の
+  // エラーを見たら一度だけ更新を試し、ダメならログインへ戻す
+  let sessionRecovering = false;
+  async function recoverSessionIfNeeded(err) {
+    const msg = err?.message ?? '';
+    if (!/permission denied|jwt|401/i.test(msg)) return;
+    if (sessionRecovering || DATA.mode !== 'supabase') return;
+    sessionRecovering = true;
+    const ok = await DATA.refreshSession().catch(() => false);
+    if (ok) {
+      toast('接続を復旧しました。もう一度お試しください');
+      setTimeout(() => { sessionRecovering = false; }, 30000);
+    } else {
+      try { await DATA.signOut(); } catch { /* 掃除済み扱いで進む */ }
+      location.reload();
+    }
   }
   function rememberUsers(list) {
     for (const u of list ?? []) if (u?.id) state.users.set(u.id, u);

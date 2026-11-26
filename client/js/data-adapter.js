@@ -1508,6 +1508,7 @@
       },
       // 認証系はデモでは使わない（画面側は Sim 時は従来導線に分岐する）
       signOut() { return ok(true); },
+      refreshSession() { return Promise.resolve(true); },
       signInWithGoogle() {
         return Promise.reject(fail('NOT_SUPPORTED', 'デモモードでは Google ログインは使えません'));
       },
@@ -1958,6 +1959,17 @@
         });
         if (error) throw fail('OAUTH_ERROR', error.message);
         return true;
+      },
+      // セッションの自己復旧用：生きていれば更新して true、
+      // 失効していれば false（呼び出し側がログインへ戻す）
+      async refreshSession() {
+        try {
+          const c = getClient();
+          const cur = await c.auth.getSession();
+          if (!cur.data?.session) return false;
+          const r = await c.auth.refreshSession();
+          return !!r.data?.session;
+        } catch { return false; }
       },
       async signOut() {
         const { error } = await getClient().auth.signOut();
@@ -2700,6 +2712,7 @@
       ? authBackend.signInWithGoogle()
       : Promise.reject(fail('NOT_SUPPORTED', 'Google ログインは使えません'))),
     signOut: () => active.signOut(),
+    refreshSession: () => active.refreshSession(),
     setBirthdate: (iso) => active.setBirthdate(iso),
     getMe: () => active.getMe(),
     claimLoginBonus: () => active.claimLoginBonus(),
