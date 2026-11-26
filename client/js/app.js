@@ -1824,7 +1824,23 @@
     const t = document.createElement('span');
     t.className = 'msg-time';
     t.textContent = fmtMsgTime(m.at);
-    if (mine) row.append(t, node); else row.append(node, t);
+    if (mine) { row.append(t, node); return row; }
+    // 相手の発言には小さめのアイコンを付け、タップでその人の
+    // プロフィールを開く（DMから相手のプロフを見る手段がなかった。
+    // 2026-11-26 おぎ）
+    const sender = state.users.get(m.from)
+      ?? (state.dmPeer && state.dmPeer.id === m.from ? state.dmPeer : null);
+    if (sender) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'dm-msg-icon-btn';
+      btn.setAttribute('aria-label', `${sender.name}のプロフィール`);
+      btn.appendChild(avatarSpan(sender, 'avatar-xs'));
+      btn.addEventListener('click', () => openUserProfile(sender));
+      row.append(btn, node, t);
+    } else {
+      row.append(node, t);
+    }
     return row;
   }
   // 日付が変わったら区切りを挟みながら1件追加する（描画・実況共通）
@@ -3801,7 +3817,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 18:47 / pushonb1+badge1';
+      $('build-stamp').textContent = 'build 2026-11-26 18:52 / dmicon1';
       loadPushSettings();
       openModal('modal-settings');
     });
