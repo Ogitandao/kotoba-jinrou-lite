@@ -1370,6 +1370,7 @@
       subscribeTicker() { return () => {}; },
       listAnnouncements() { return ok([]); },
       getPushPrefs() { return ok({ master: true, dm: true, invite: true, announce: true, comeback: true, badge: true }); },
+      hasPushPrefs() { return ok(true); },
       savePushPrefs() { return ok(true); },
       savePushSubscription() { return ok(true); },
       removePushSubscription() { return ok(true); },
@@ -2304,6 +2305,14 @@
           .eq('user_id', u.user.id).maybeSingle();
         return data ?? { master: true, dm: true, invite: true, announce: true, comeback: true, badge: true };
       },
+      async hasPushPrefs() {
+        const { data: u } = await getClient().auth.getUser();
+        if (!u?.user) return true;
+        const { data } = await getClient()
+          .from('kl_push_prefs').select('user_id')
+          .eq('user_id', u.user.id).maybeSingle();
+        return !!data;
+      },
       async savePushPrefs(prefs) {
         const { data: u } = await getClient().auth.getUser();
         if (!u?.user) return false;
@@ -2810,6 +2819,7 @@
     subscribeTicker: (cb) => active.subscribeTicker(cb),
     listAnnouncements: () => active.listAnnouncements(),
     getPushPrefs: () => active.getPushPrefs(),
+    hasPushPrefs: () => active.hasPushPrefs(),
     savePushPrefs: (p) => active.savePushPrefs(p),
     savePushSubscription: (s) => active.savePushSubscription(s),
     removePushSubscription: (e) => active.removePushSubscription(e),

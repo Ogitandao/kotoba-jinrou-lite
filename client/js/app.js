@@ -765,6 +765,45 @@
       });
     }, 600);
   }
+  // セットアップ時の確認が届かなかった人への保険：通知設定がサーバーに
+  // 未保存で、端末の許可も未決定なら、次のログイン時に1回だけ聞き直す
+  // （アプリ内ブラウザで登録すると通知の仕組み自体が無く、確認が出ない
+  // まま終わるため。2026-11-27 おぎ・友人の実例）
+  async function maybeAskPushRetry() {
+    if (!pushSupported()) return;
+    try {
+      if (localStorage.getItem('kl_push_retry_asked')) return;
+    } catch { return; }
+    let has = true;
+    try { has = await DATA.hasPushPrefs(); } catch { return; }
+    if (has) return;
+    try { localStorage.setItem('kl_push_retry_asked', '1'); } catch { return; }
+    if (Notification.permission === 'granted') {
+      pushCatState = { dm: true, invite: true, announce: true };
+      try { await DATA.savePushPrefs({ master: true, ...pushCatState }); } catch {}
+      await ensurePushSubscription();
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      try { await DATA.savePushPrefs({ master: false, dm: true, invite: true, announce: true }); } catch {}
+      return;
+    }
+    setTimeout(() => {
+      openConfirm('メッセージや招待が届いたら、通知でお知らせしますか？', 'ONにする', async () => {
+        const ok = await ensurePushSubscription();
+        if (ok) {
+          pushCatState = { dm: true, invite: true, announce: true };
+          try { await DATA.savePushPrefs({ master: true, ...pushCatState }); } catch (e) { toastError(e); }
+          toast('通知をONにしました');
+        } else {
+          try { await DATA.savePushPrefs({ master: false, dm: true, invite: true, announce: true }); } catch {}
+          toast('通知はOFFにしました（設定からいつでも変えられます）');
+        }
+      }, async () => {
+        try { await DATA.savePushPrefs({ master: false, dm: true, invite: true, announce: true }); } catch {}
+      });
+    }, 1200);
+  }
   // 通知タップからの遷移（SW の postMessage と、コールドスタート時の # ハッシュ）
   async function routePushTarget(rawUrl) {
     const m = /#dm\/([^\s]+)/.exec(rawUrl || '');
@@ -3828,7 +3867,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-27 10:13 / giftcap1';
+      $('build-stamp').textContent = 'build 2026-11-27 10:30 / pushretry1';
       loadPushSettings();
       openModal('modal-settings');
     });
@@ -4455,6 +4494,9 @@
         || (DATA.mode === 'supabase' && !state.me.birthdate))) {
       if ($('login-screen').classList.contains('hidden')) openNameModal(true);
       else state.pendingNameSetup = true;
+    } else if (state.me && DATA.mode === 'supabase'
+        && $('login-screen').classList.contains('hidden')) {
+      maybeAskPushRetry();
     }
   }
 
