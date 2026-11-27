@@ -494,6 +494,13 @@
     rememberUsers(friends);
     const wrap = $('online-friends');
     wrap.innerHTML = '';
+    if (!friends.length) {
+      // 誰もいないときは空白にせず一言だけ出す（2026-11-27 おぎ）
+      const s = document.createElement('span');
+      s.className = 'friends-strip-empty';
+      s.textContent = 'オンラインの友達はいません';
+      wrap.appendChild(s);
+    }
     for (const f of friends) {
       const b = document.createElement('button');
       b.type = 'button';
@@ -3879,7 +3886,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-27 12:40 / scrollfix2';
+      $('build-stamp').textContent = 'build 2026-11-27 12:44 / scrollfix3';
       loadPushSettings();
       openModal('modal-settings');
     });
