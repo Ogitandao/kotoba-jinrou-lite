@@ -369,7 +369,12 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .see-all-icon { width: 17px; height: 17px; display: block; flex: 0 0 auto; }
 
 /* オンラインの友達 */
-.friends-strip { display: flex; gap: 14px; overflow-x: auto; padding: 2px 2px 6px; }
+/* 横スクロール帯は touch-action: pan-x にする。auto のままだと
+   帯の上で始めた縦スワイプ（少し斜めになるだけで）が横スクロール側に
+   奪われ、ページ全体がスクロールしなくなる（2026-11-27 おぎ実機：
+   もらったギフト／オンラインの友達のあたりから滑らない）。
+   pan-x なら横は帯、縦は外側のスクロールに渡る */
+.friends-strip { display: flex; gap: 14px; overflow-x: auto; padding: 2px 2px 6px; touch-action: pan-x; }
 .friend-item { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 56px; }
 .friend-item .friend-name { font-size: 13px; font-weight: 700; }
 .friend-item .dot { position: absolute; right: -1px; bottom: -1px; border: 2px solid #eafaf1; width: 13px; height: 13px; }
@@ -410,6 +415,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   display: flex; align-items: flex-start; gap: 12px;
   padding: 7px 0 0;
   white-space: nowrap; overflow-x: auto; overflow-y: hidden;
+  touch-action: pan-x;
   scrollbar-width: none;
   font-size: 14.5px; font-weight: 700; color: var(--ink);
   /* 右端を少し透かして「横に続きがある」ことを匂わせる */
@@ -956,6 +962,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   /* モーダル（flex縦）の中で潰れないよう固定。潰れると顔が下切れする */
   flex: 0 0 auto;
   display: flex; gap: 10px; overflow-x: auto; overflow-y: hidden;
+  touch-action: pan-x;
   padding: 2px 2px 6px;
   scrollbar-width: none;
 }
