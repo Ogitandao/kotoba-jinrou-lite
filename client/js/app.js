@@ -3758,6 +3758,58 @@
     checkOrientation();
     roomFollow = makeScrollFollow('room-chat-messages', 'room-scroll-bottom');
     gameFollow = makeScrollFollow('game-messages', 'game-scroll-bottom');
+    // 横スクロール帯（ギフト帯・オンラインの友達帯）の上で始めた縦スワイプは、
+    // ブラウザが帯側に奪ってページが滑らなくなる（overflow のスクロール
+    // コンテナが直交ジェスチャを吸う。touch-action でも救えないことを
+    // 実機＋検証で確認済み 2026-11-27）。指の動きが縦優勢なら、帯のネイティブ
+    // スクロールを止めて外側のスクローラを自前で動かすことで回避する。
+    // 横優勢なら何もしない（帯の横スクロールがそのまま効く）。タップは
+    // slop 未満なのでクリックに影響しない
+    const passVertical = (el, scroller) => {
+      if (!el || !scroller) return;
+      let sx = 0, sy = 0, lastY = 0, lastT = 0, vel = 0, axis = null, fling = 0;
+      const stopFling = () => { if (fling) cancelAnimationFrame(fling); fling = 0; };
+      el.addEventListener('touchstart', (e) => {
+        stopFling();
+        if (e.touches.length !== 1) { axis = null; return; }
+        const t = e.touches[0];
+        sx = t.clientX; sy = t.clientY; lastY = t.clientY;
+        lastT = performance.now(); vel = 0; axis = null;
+      }, { passive: true });
+      el.addEventListener('touchmove', (e) => {
+        if (axis === 'x' || e.touches.length !== 1) return;
+        const t = e.touches[0];
+        if (!axis) {
+          const dx = t.clientX - sx, dy = t.clientY - sy;
+          if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+          axis = Math.abs(dy) >= Math.abs(dx) ? 'y' : 'x';
+          if (axis === 'x') return;
+        }
+        e.preventDefault();
+        const now = performance.now();
+        const dt = now - lastT;
+        const ddy = t.clientY - lastY;
+        scroller.scrollTop -= ddy;
+        if (dt > 0) vel = ddy / dt;
+        lastY = t.clientY; lastT = now;
+      }, { passive: false });
+      const end = () => {
+        if (axis === 'y' && Math.abs(vel) > 0.3) {
+          let v = vel * 16;
+          const step = () => {
+            v *= 0.94;
+            scroller.scrollTop -= v;
+            fling = Math.abs(v) > 0.4 ? requestAnimationFrame(step) : 0;
+          };
+          fling = requestAnimationFrame(step);
+        }
+        axis = null;
+      };
+      el.addEventListener('touchend', end);
+      el.addEventListener('touchcancel', () => { axis = null; });
+    };
+    passVertical($('gift-strip'), $('scroll'));
+    passVertical($('online-friends'), $('scroll'));
     // 入力中にドキュメント側がスクロールしたら戻す（ずれの残り対策）
     window.addEventListener('scroll', () => {
       const a = document.activeElement;
@@ -3886,7 +3938,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-27 12:44 / scrollfix3';
+      $('build-stamp').textContent = 'build 2026-11-27 12:52 / scrollfix4';
       loadPushSettings();
       openModal('modal-settings');
     });
