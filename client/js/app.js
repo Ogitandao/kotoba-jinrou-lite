@@ -1025,7 +1025,7 @@
     setTimeout(() => playGiftFxFull(user, newest.gift), 400);
   }
 
-  function playGiftFxFull(partner, gift) {
+  function playGiftFxFull(partner, gift, mode = 'from') {
     const fx = $('gift-fx');
     fx.innerHTML = '';
     fx.classList.remove('hidden');
@@ -1058,7 +1058,11 @@
       center = gfxBigImg(gift);
     }
     const cap = mk('gfx-cap');
-    cap.textContent = `${partner.name}さんから ${gift.name}！`;
+    // 送った側に出すときは「◯◯さんへ」。「さんから」だと相手から
+    // もらったように読めてしまう（2026-11-27 おぎ実機報告）
+    cap.textContent = mode === 'to'
+      ? `${partner.name}さんへ ${gift.name}！`
+      : `${partner.name}さんから ${gift.name}！`;
     fx.append(mk('gfx-dim'), bg, center, cap);
     // ダイヤは Lottie＋グローで十分なので星は飛ばさない（おぎ指定）
     for (let i = 0; gift.giftKey !== 'diamond' && i < 22; i++) {
@@ -2457,7 +2461,7 @@
       // 高額ギフトは送った側にも全画面演出を出す（贈った本人が
       // 大型演出を見られないのは残念、と 2026-11-26 おぎ）
       if ((gift.price ?? 0) >= 5000) {
-        playGiftFxFull(target, { giftKey: gift.key, name: gift.name, price: gift.price });
+        playGiftFxFull(target, { giftKey: gift.key, name: gift.name, price: gift.price }, 'to');
       }
       if (state.dmPeer?.id === target.id) {
         renderMessages(await DATA.listMessages(target.id));
@@ -3824,7 +3828,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-26 22:03 / birth1';
+      $('build-stamp').textContent = 'build 2026-11-27 10:13 / giftcap1';
       loadPushSettings();
       openModal('modal-settings');
     });
