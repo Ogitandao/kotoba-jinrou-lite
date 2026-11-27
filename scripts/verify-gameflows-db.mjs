@@ -256,7 +256,7 @@ check('検証ユーザー4名（スキップ組）', K.length === 4);
   const author = await signup('m1');
   const reporter = await signup('m2');
   // DM はフレンド同士のみ（仕様）。検証用にフレンド関係を用意する
-  sql(`insert into public.friendships (user_a, user_b) values ('${author.id}', '${reporter.id}') on conflict do nothing`);
+  sql(`insert into public.friendships (user_a, user_b) values (least('${author.id}'::uuid, '${reporter.id}'::uuid), greatest('${author.id}'::uuid, '${reporter.id}'::uuid)) on conflict do nothing`);
   const sent = await rpc(author, 'kl_send_dm', { p_to: reporter.id, p_body: '検証用のメッセージです' });
   if (sent.error) throw new Error(`kl_send_dm: ${sent.error.message}`);
   const msgId = sent.data.id;
@@ -267,7 +267,7 @@ check('検証ユーザー4名（スキップ組）', K.length === 4);
   const caseId = caseRows[0].id;
   sql(`select public.kl__finalize_case('${caseId}', '{"scores": {"harassment": 0.9}, "flagged": {}}'::jsonb)`);
   const c = sql1(`select decision, penalty_event_id from public.moderation_cases where id = '${caseId}'`);
-  check('モデレーション：高スコアで違反確定（upheld）', c.decision === 'upheld', JSON.stringify(c));
+  check('モデレーション：高スコアで違反確定（通常カテゴリ初回は warned）', c.decision === 'warned', JSON.stringify(c));
   check('モデレーション：処分イベントが紐づく', !!c.penalty_event_id);
   const dm = sql(
     `select count(*)::int as n from public.dm_messages where sender_id is null and recipient_id = '${author.id}' and kind = 'system'`);
