@@ -58,6 +58,7 @@ async function signup(tag) {
   });
   if (error || !data?.session) throw new Error(`signup ${tag} 失敗: ${error?.message ?? 'session なし'}`);
   await sb.rpc('kl_agree_rules');
+  await sb.rpc('kl_set_birthdate', { p_birthdate: '1995-01-01' });
   await sleepMs(300);
   return { sb, id: data.user.id, email };
 }
@@ -254,6 +255,8 @@ check('検証ユーザー4名（スキップ組）', K.length === 4);
 {
   const author = await signup('m1');
   const reporter = await signup('m2');
+  // DM はフレンド同士のみ（仕様）。検証用にフレンド関係を用意する
+  sql(`insert into public.friendships (user_a, user_b) values ('${author.id}', '${reporter.id}') on conflict do nothing`);
   const sent = await rpc(author, 'kl_send_dm', { p_to: reporter.id, p_body: '検証用のメッセージです' });
   if (sent.error) throw new Error(`kl_send_dm: ${sent.error.message}`);
   const msgId = sent.data.id;

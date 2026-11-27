@@ -2708,8 +2708,26 @@
     // 生存信号（対戦中の離脱判定に使う。先に送ってから状態を取得する）
     DATA.heartbeat(state.roomId).catch(() => {});
     const wasLobby = state.roomDetail?.status === 'lobby';
+    const wasMember = !!state.roomDetail?.isMember;
     try {
       const detail = await DATA.getRoom(state.roomId);
+      // キック／終了の検知：参加していたのに参加でなくなっていたら、
+      // 空の待機室を表示し続けずロビーへ戻す（2026-11-27 おぎ実機報告：
+      // キックされた側が0人の部屋画面に取り残された）。
+      // 自分の心拍は取得前に送っているので、巡回掃除で消されるのは
+      // アプリを開いている本人には起こらず、ここに来るのは実質キック
+      if (wasMember && detail.status === 'closed') {
+        closeRoomScreen();
+        refreshRooms();
+        toast('ルームは終了しました');
+        return;
+      }
+      if (wasMember && !detail.isMember && detail.status === 'lobby') {
+        closeRoomScreen();
+        refreshRooms();
+        toast('マスターにキックされました');
+        return;
+      }
       state.roomDetail = detail;
       rememberUsers(detail.members ?? []);
       renderRoomScreen();
@@ -3968,7 +3986,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-27 12:56 / presence1';
+      $('build-stamp').textContent = 'build 2026-11-27 23:55 / kickfix1';
       loadPushSettings();
       openModal('modal-settings');
     });
