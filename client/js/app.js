@@ -826,7 +826,10 @@
   function touchSeenThrottled() {
     if (DATA.mode === 'sim') return;
     const now = Date.now();
-    if (now - lastTouchSeen < 30 * 60 * 1000) return;
+    // オンライン判定の窓は5分。開きっぱなしの人ほど記録が止まって
+    // 「いない」扱いになる逆転を防ぐため、間引きは2分までに抑える
+    // （2026-11-27 おぎ：来た人がパッと出るのが大事、残るのは許容）
+    if (now - lastTouchSeen < 2 * 60 * 1000) return;
     lastTouchSeen = now;
     DATA.touchSeen().catch(() => {});
   }
@@ -3880,8 +3883,35 @@
     }
     touchSeenThrottled();
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') touchSeenThrottled();
+      if (document.visibilityState === 'visible') {
+        touchSeenThrottled();
+        renderOnlineFriends().catch(() => {});
+      }
     });
+    // 開きっぱなしでも最終アクセスを保つ（1分おきに間引き込みで記録）
+    setInterval(() => {
+      if (document.visibilityState === 'visible') touchSeenThrottled();
+    }, 60 * 1000);
+    // ロビー待機中はオンラインの友達帯を30秒おきに自動更新する。
+    // 画面遷移なしで「来た人がパッと出る」ように（2026-11-27 おぎ要望）。
+    // 帯の横スクロール位置は描き直し前後で保持する
+    let onlineRefreshBusy = false;
+    setInterval(async () => {
+      if (onlineRefreshBusy || document.visibilityState !== 'visible') return;
+      const onLobby = state.tab === 'lobby'
+        && $('room-screen').classList.contains('hidden')
+        && $('game-screen').classList.contains('hidden')
+        && $('dm-screen').classList.contains('hidden');
+      if (!onLobby) return;
+      onlineRefreshBusy = true;
+      try {
+        const strip = $('online-friends');
+        const sl = strip ? strip.scrollLeft : 0;
+        await renderOnlineFriends();
+        if (strip) strip.scrollLeft = sl;
+      } catch { /* 次の周期で再試行 */ }
+      onlineRefreshBusy = false;
+    }, 30 * 1000);
     if (pushSupported() && Notification.permission === 'granted') {
       ensurePushSubscription().catch(() => {});
     }
@@ -3938,7 +3968,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-27 12:52 / scrollfix4';
+      $('build-stamp').textContent = 'build 2026-11-27 12:56 / presence1';
       loadPushSettings();
       openModal('modal-settings');
     });
