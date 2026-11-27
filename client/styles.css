@@ -52,9 +52,14 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
    画面外に落ちる端末があるため（2026-11-25 おぎ実機で発生） */
 .phone {
   position: fixed;
-  inset: 0;
-  max-width: 430px;
-  margin: 0 auto;
+  top: 0;
+  bottom: 0;
+  /* 中央寄せは margin: 0 auto + max-width の組み合わせにしないこと。
+     その形だと Chrome が内側スクロールのタッチ判定を取りこぼし、
+     画面が指でスクロールできなくなる（2026-11-27 おぎ実機＋検証で確認）。
+     左右オフセットの計算で 430px 中央列にする */
+  left: max(0px, calc((100% - 430px) / 2));
+  right: max(0px, calc((100% - 430px) / 2));
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, #e4fbf0 0%, #e0f3ff 55%, #d8efff 100%);
@@ -657,7 +662,12 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 /* サブタブ切り替えは LINE 式の横スライド（おぎ要望 2026-11-25）。
    2枚のパネルを横並びのトラックに入れ、トラックごと滑らせる。
    高さも同時に追随させ、切り替え後の余白が残らないようにする */
-#subpanel-viewport { overflow: hidden; }
+/* overflow: hidden だとこの要素がスクロールコンテナ扱いになり、
+   overscroll-behavior: none と合わさって指のスクロールがここで
+   吸われてしまう（2026-11-27 おぎ実機：フレンド／トーク画面が
+   スクロールできない）。clip はスクロールコンテナを作らないので
+   はみ出し隠しだけが効く。未対応ブラウザは hidden に落ちる */
+#subpanel-viewport { overflow: hidden; overflow: clip; }
 #subpanel-track {
   display: flex; align-items: flex-start;
   transition: transform .33s cubic-bezier(.25, .9, .25, 1), height .33s cubic-bezier(.25, .9, .25, 1);

@@ -2367,7 +2367,12 @@
         const incoming = await DATA.listIncomingRequests();
         incomingReqCount = incoming.length;
         paintNavBadges();
-        if (state.tab === 'friends' && state.subtab === 'friend') renderFriendPanel();
+        if (state.tab === 'friends' && state.subtab === 'friend') {
+          renderFriendPanel();
+          // 検索結果カードも追随させる（相手に承認されてもカードが
+          // 「申請中」のまま残る事故の対策。2026-11-27 おぎ実機指摘）
+          if ($('friend-search-input').value.trim()) doSearch();
+        }
       } catch { /* 次の画面遷移時の取得で回復する */ }
     }, 250);
   }
@@ -2421,6 +2426,7 @@
       if (state.dmGroup) {
         await DATA.sendGroupMessage(state.dmGroup.id, body);
         input.value = '';
+        dmFollow.follow = true;
         renderGroupMessages(await DATA.listGroupMessages(state.dmGroup.id));
         renderTalkList();
         return;
@@ -2429,6 +2435,7 @@
       if (!peer) return;
       await DATA.sendMessage(peer.id, body);
       input.value = '';
+      dmFollow.follow = true;
       renderMessages(await DATA.listMessages(peer.id));
       renderTalkList();
       maybeAskPush();
@@ -2969,6 +2976,9 @@
     try {
       await DATA.postRoomMessage(state.roomDetail.id, input.value);
       input.value = '';
+      // 自分の発言は必ず最新位置で見る（上を読んでいても送信したら
+      // 末尾へ戻す。2026-11-27 おぎ実機指摘）
+      if (roomFollow) roomFollow.follow = true;
       state.roomDetail = await DATA.getRoom(state.roomDetail.id);
       renderRoomScreen();
     } catch (e) { toastError(e); }
@@ -3510,12 +3520,14 @@
         { id: `afk-${Date.now()}`, from: state.me.id, kind: 'chat', body: input.value, atMs: Date.now() }];
       v.myMessageCount = (v.myMessageCount ?? 0) + 1;
       input.value = '';
+      if (gameFollow) gameFollow.follow = true;
       renderGame();
       return;
     }
     try {
       await DATA.postGameMessage(v.gameId, input.value);
       input.value = '';
+      if (gameFollow) gameFollow.follow = true;
       pollGame();
     } catch (e) { toastError(e); }
   }
@@ -3867,7 +3879,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-27 10:30 / pushretry1';
+      $('build-stamp').textContent = 'build 2026-11-27 12:05 / scrollfix1';
       loadPushSettings();
       openModal('modal-settings');
     });
