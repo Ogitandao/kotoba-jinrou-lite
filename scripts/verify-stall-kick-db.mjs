@@ -137,6 +137,9 @@ async function fullReadyRoom(tag, isPrivate) {
   const newHostRow = sql1(`select count(*)::int as n from public.room_members where room_id = '${roomId}' and user_id = '${members[0].id}'`);
   check('公開：2回目の検出では追加の記録もキックも起きない',
     events2.length === 1 && Number(newHostRow.n) === 1);
+  // 後片付け（検証ルームを本番ロビーに残さない）
+  sql(`delete from public.room_members where room_id = '${roomId}'`);
+  sql(`delete from public.rooms where id = '${roomId}'`);
 }
 
 // ================= 非公開ルーム：記録もキックもなし =================
@@ -150,6 +153,9 @@ async function fullReadyRoom(tag, isPrivate) {
   const room = sql1(`select host_id, status from public.rooms where id = '${roomId}'`);
   const hostRow = sql1(`select count(*)::int as n from public.room_members where room_id = '${roomId}' and user_id = '${host.id}'`);
   check('非公開：マスターは残ったまま', room.host_id === host.id && Number(hostRow.n) === 1);
+  // 後片付け（検証ルームを本番ロビーに残さない）
+  sql(`delete from public.room_members where room_id = '${roomId}'`);
+  sql(`delete from public.rooms where id = '${roomId}'`);
 }
 
 const failed = results.filter((r) => !r.ok);

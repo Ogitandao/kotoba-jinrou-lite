@@ -120,6 +120,9 @@ async function befriend(a, b) {
   const afterBlock = await rpc(A, 'kl_send_invite', { p_to: B.id, p_room: room.data.id });
   check('§2-13 ブロック関係では招待できない（BLOCKED）',
     afterBlock.code === 'BLOCKED', afterBlock.code ?? 'エラーなし');
+  // 後片付け（検証ルームを本番ロビーに残さない）
+  sql(`delete from public.room_members where room_id = '${room.data.id}'`);
+  sql(`delete from public.rooms where id = '${room.data.id}'`);
 }
 
 // ================= §3-7 ゴースト掃除（0062） =================
@@ -161,6 +164,12 @@ async function befriend(a, b) {
   check('§3-7 対戦中（playing）の部屋は掃除の対象外',
     members3.length === 1 && room3After.status === 'playing',
     `${members3.length} / ${room3After.status}`);
+  // 後片付け：playing を偽装した部屋3は掃除の対象外＝本番ロビーに残り続ける
+  // ため、検証で作った部屋は必ず自分で消す（2026-11-28 おぎ実機で発見）
+  for (const r of [room1, room2, room3]) {
+    sql(`delete from public.room_members where room_id = '${r.id}'`);
+    sql(`delete from public.rooms where id = '${r.id}'`);
+  }
 }
 
 // ================= §7-9 グループ上限50人 =================
@@ -225,6 +234,11 @@ async function befriend(a, b) {
   const testEvents = sql(`select id from public.stall_events where room_id = '${test.roomId}'`);
   check('§10-9 満室でなくなった部屋はマスター放置に数えない',
     testEvents.length === 0, `${testEvents.length}件`);
+  // 後片付け（検証ルームを本番ロビーに残さない）
+  for (const r of [ctrl, test]) {
+    sql(`delete from public.room_members where room_id = '${r.roomId}'`);
+    sql(`delete from public.rooms where id = '${r.roomId}'`);
+  }
 }
 
 const failed = results.filter((r) => !r.ok);
