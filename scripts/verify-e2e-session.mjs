@@ -40,6 +40,10 @@ async function signup(tag, displayName) {
     password: PASSWORD,
     options: { data: { test_marker: 'test/lite', display_name: displayName } },
   });
+  if (data?.session) {
+    await sb.rpc('kl_agree_rules');
+    await sb.rpc('kl_set_birthdate', { p_birthdate: '1995-01-01' });
+  }
   return { sb, email, data, error };
 }
 
@@ -125,14 +129,14 @@ check('F: 相手の既読が反映される', Boolean(fView?.read_at));
 
 const { data: bonus1, error: bonusErr } = await F.sb.rpc('kl_claim_login_bonus');
 check('F: ログインボーナスを受け取れる（+10）',
-  !bonusErr && bonus1?.claimed === true && bonus1?.amount === 10 && bonus1?.freeBalance === 110,
+  !bonusErr && bonus1?.claimed === true && bonus1?.amount === 10 && bonus1?.freeBalance === 160,
   bonusErr ? rpcErr(bonusErr) : JSON.stringify(bonus1));
 const { data: bonus2 } = await F.sb.rpc('kl_claim_login_bonus');
 check('F: 同日の二重受取は claimed=false', bonus2?.claimed === false);
 
 const { data: giftRes, error: giftErr } = await F.sb.rpc('kl_send_gift', { p_to: gId, p_gift_key: 'heart' });
-check('F: ギフト heart(30) を送信でき無料残高が80になる',
-  !giftErr && giftRes?.freeBalance === 80,
+check('F: ギフト heart(30) を送信でき無料残高が130になる',
+  !giftErr && giftRes?.freeBalance === 130,
   giftErr ? rpcErr(giftErr) : JSON.stringify(giftRes));
 const { data: gProfileAfter } = await F.sb
   .from('profiles').select('popularity').eq('id', gId).single();
@@ -162,8 +166,8 @@ new Function('window', readFileSync(new URL('../client/js/data-adapter.js', impo
 const KL = fakeWindow.KL_DATA;
 const boot = await KL.bootstrap();
 check('アダプタ: Supabase モードで bootstrap できる', KL.mode === 'supabase', `mode=${KL.mode}`);
-check('アダプタ: 自プロフィールが実データ（公開ID・残高80）',
-  boot?.me?.publicId === fProfile?.public_id && boot?.me?.coins === 80,
+check('アダプタ: 自プロフィールが実データ（公開ID・残高130）',
+  boot?.me?.publicId === fProfile?.public_id && boot?.me?.coins === 130,
   `publicId=${boot?.me?.publicId} coins=${boot?.me?.coins}`);
 const adapterFriends = await KL.listFriends();
 check('アダプタ: フレンド一覧に G がいる',
@@ -175,8 +179,8 @@ const adapterMsgs = await KL.listMessages(gId);
 check('アダプタ: DM履歴に送信メッセージが含まれる',
   (adapterMsgs ?? []).some((m) => m.body === DM_BODY), `${(adapterMsgs ?? []).length}件`);
 const adapterCatalog = await KL.giftCatalog();
-check('アダプタ: ギフトカタログが実DBから8種返る',
-  (adapterCatalog ?? []).length === 8, `${(adapterCatalog ?? []).length}種`);
+check('アダプタ: ギフトカタログが実DBから11種返る',
+  (adapterCatalog ?? []).length === 11, `${(adapterCatalog ?? []).length}種`);
 
 console.log(`\nテストユーザー: F=${F.email} (id=${fId}, 公開ID=${fProfile?.public_id}) / G=${G.email} (id=${gId}, 公開ID=${gProfile?.public_id})`);
 const failed = results.filter((r) => !r.ok).length;

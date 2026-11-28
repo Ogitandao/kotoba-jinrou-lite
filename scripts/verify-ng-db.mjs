@@ -54,6 +54,7 @@ async function signup(tag) {
   });
   if (error || !data?.session) throw new Error(`signup ${tag}: ${error?.message ?? 'session なし'}`);
   await sb.rpc('kl_agree_rules');
+  await sb.rpc('kl_set_birthdate', { p_birthdate: '1995-01-01' });
   await sleepMs(300);
   return { sb, id: data.user.id };
 }

@@ -60,6 +60,9 @@ async function signup(tag) {
     options: { data: { test_marker: 'test/lite', display_name: `チュートリアル検証${tag}` } },
   });
   if (error || !data?.session) throw new Error(`signup ${tag} 失敗: ${error?.message ?? 'session なし'}`);
+  // 生年月日は先に済ませる（ガード順は 生年月日→ルール同意 のため、
+  // 未同意チェックで RULES_NOT_AGREED だけを切り分ける前提）
+  await sb.rpc('kl_set_birthdate', { p_birthdate: '1995-01-01' });
   return { sb, id: data.user.id, email };
 }
 const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -113,7 +116,7 @@ check('同意がサーバーに記録される（rules_agreed_at）',
   profAfter[0]?.rules_agreed_at != null);
 
 // --- 同意後は作成できる ---
-const created = await rpc(A, 'ww_create_room', { p_title: 'チュートリアル検証ルーム', p_capacity: 4 });
+const created = await rpc(A, 'ww_create_room', { p_title: 'チュートリアル検証', p_capacity: 4 });
 check('同意後は ww_create_room が成功する', !created.error && !!created.data?.id,
   created.code ?? '');
 const roomId = created.data?.id;

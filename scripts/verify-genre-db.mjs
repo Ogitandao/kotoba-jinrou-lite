@@ -58,6 +58,7 @@ async function signup(tag) {
   if (error || !data?.session) throw new Error(`signup ${tag} 失敗: ${error?.message ?? 'session なし'}`);
   // 0018 以降、ルーム作成・参加にはチュートリアル同意が必須
   await sb.rpc('kl_agree_rules');
+  await sb.rpc('kl_set_birthdate', { p_birthdate: '1995-01-01' });
   return { sb, id: data.user.id, email };
 }
 const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -122,7 +123,7 @@ const members = [users.b, users.c, users.d];
 // ---------- ジャンル指定ルーム（恋愛）：そのジャンルだけ出続ける ----------
 {
   const created = await rpc(host, 'ww_create_room', {
-    p_title: 'ジャンル検証（恋愛）', p_is_private: false, p_capacity: 4, p_genre: '恋愛',
+    p_title: '検証（恋愛）', p_is_private: false, p_capacity: 4, p_genre: '恋愛',
   });
   if (created.error) throw new Error(`create_room 失敗: ${created.error.message}`);
   const roomId = created.data.id;
@@ -154,7 +155,7 @@ const members = [users.b, users.c, users.d];
   const cats = new Set();
   for (let i = 0; i < 6; i++) {
     const created = await rpc(host, 'ww_create_room', {
-      p_title: `ジャンル検証（おまかせ${i + 1}）`, p_is_private: false, p_capacity: 4,
+      p_title: `検証（おまかせ${i + 1}）`, p_is_private: false, p_capacity: 4,
     });
     if (created.error) throw new Error(`create_room 失敗: ${created.error.message}`);
     const roomId = created.data.id;
@@ -173,7 +174,7 @@ const members = [users.b, users.c, users.d];
 // ---------- 不正なジャンルは弾く ----------
 {
   const r = await rpc(host, 'ww_create_room', {
-    p_title: 'ジャンル検証（不正）', p_is_private: false, p_capacity: 4, p_genre: '存在しないジャンル',
+    p_title: '検証（不正）', p_is_private: false, p_capacity: 4, p_genre: '存在しないジャンル',
   });
   check('存在しないジャンルは作成できない（INVALID_GENRE）',
     r.code === 'INVALID_GENRE', r.code ?? 'no error');

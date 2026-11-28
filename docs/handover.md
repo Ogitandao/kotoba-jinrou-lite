@@ -1463,3 +1463,9 @@ Cloudflare Pages デプロイは自動完結できず、おぎの操作待ち。
   【補正 0065】トリガが INSERT 時の明示値を現在時刻で上書きする問題を修正（明示値がある場合は尊重。通常作成では未指定のため実害なし）。
   【検証】verify-dissolve-db 新設 8/8：公開31分→解散＋メンバー消滅（心拍が新しくても解散する）／非公開31分→無事／公開29分→無事／作成時に時計記録／待機復帰で数え直し／実ゲーム完走後に時計がリセットされている。回帰：spec-gaps-db 14/14・stall-kick-db 9/9・lobby 76/76。検証後の開き部屋は0件。
   【検証手法の学び】SQLで部屋だけ先に作りメンバーを後から入れる方式は、間の1分間隔cronで「空の部屋」として正当に閉じられる（本番の作成RPCは原子的で起きない）。dissolve-db と spec-gaps-db §3-7 を「部屋＋メンバーを1文で作る」形に統一済み。test-spec §3 に行11（自動解散）を追加。
+
+■ 追補119（2026-11-28 午後・検証総ざらいと ようこそDM回帰の修正／0066）
+  【総ざらい】おぎの指示「あなた側でできる作業あったら全部進めといて」で全スイートを再実行。結果は全グリーン：lobby 76／social-ui 90／game-ui 125／kick-side 14／spec-gaps-ui 61／icons 24／social sim 45／penalty sim 83／fresh 9／supabase-mode 8／wordwolf sim 81／startflow-db 24／penalty-db 48／genre-db 9／icons-invite-db 21／ng-db ALL／appeals-db ALL／auth-db ALL／clear-db ALL／ticker-db ALL／tutorial-db 13／e2e-session 29／group-db 20／gameflows-db ALL／moderation2-db 25／push-db ALL／spec-gaps-db 14／stall-kick-db 9／dissolve-db 8。verify-realtime-dm のみ VM から WSS が張れないため対象外（実機確認領域）。
+  【本物のバグを1件発見・修正】ようこそDMが 2026-11-25 以降の新規登録者に届いていなかった。原因：0018 で handle_new_user に入れた kind='welcome' のDM挿入が、0023／0024（表示名まわり）の再定義で脱落。実ユーザー全員（おぎたん／あいあい／うんち／おなつ／地中海）が未受信であることをDBで確認。migration 0066 で現行の名前処理を保ったままDM挿入だけを復旧し、tutorial-db 13/13 で再発防止ごと確認。既存ユーザーへの遡及送信はおぎの判断待ち（未実施）。
+  【検証側の陳腐化を一括修理】0050（生年月日ガード）と0032（タイトル10文字）より前に書かれたスイート群が落ちていたため、signup への kl_set_birthdate 追加とタイトル短縮を startflow-db／penalty-db／genre-db／icons-invite-db／ng-db／tutorial-db／e2e-session に適用。e2e-session は期待値も現行仕様に更新（スターターボーナス込み残高160→ギフト後130、カタログ11種）。gameflows-db §5 に最終ラウンド部屋の明示後片付けを追加。
+  【その他】開発メモSpace にセクション15（放置・解散ルール確定と総ざらい）を追加。コールドスタート計画ドラフトの前提を現状に更新（Play のみ・機能ほぼ完成・判断5件を現行形に整理）。

@@ -66,6 +66,7 @@ async function signup(tag) {
   if (error || !data?.session) throw new Error(`signup ${tag} 失敗: ${error?.message ?? 'session なし'}`);
   // 0018 以降、ルーム作成・参加にはチュートリアル同意が必須
   await sb.rpc('kl_agree_rules');
+  await sb.rpc('kl_set_birthdate', { p_birthdate: '1995-01-01' });
   return { sb, id: data.user.id, email };
 }
 const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));

@@ -264,6 +264,11 @@ check('検証ユーザー4名（スキップ組）', K.length === 4);
     !!prof.penalty_until && new Date(prof.penalty_until) > new Date(),
     `penalty_until=${prof.penalty_until}`);
   // 後片付けは各ラウンド内で済ませてある（ホストはキック済み・残りは退出済み）
+  // 念のため最終ラウンドの部屋も明示的に畳む（実ロビーに残さない）
+  for (const rid of roomIds) {
+    sql(`delete from public.room_members where room_id = '${rid}'`);
+    sql(`delete from public.rooms where id = '${rid}'`);
+  }
 }
 
 // ---------- 6) モデレーション確定 → 処分DM ----------
