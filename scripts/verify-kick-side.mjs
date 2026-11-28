@@ -115,6 +115,47 @@ check('ルームが終了したら待機室が自動で閉じる', closedOut);
 check('「ルームは終了しました」のトーストが出る',
   $('toast').textContent.includes('終了しました'), $('toast').textContent);
 
+// --- マスター交代の再現（0063）：メンバー→マスター昇格で開始ボタンが出て、
+// --- 自分がマスターのまま外れたら「マスターを交代しました」で戻る ---
+serverView = 'member';
+KL.getRoom = origGetRoom;
+$('tabbtn-friends').click();
+await tick(30);
+const kenRow3 = [...document.querySelectorAll('#talk-list .talk-row')]
+  .find((r) => r.querySelector('.talk-name')?.textContent === 'けん');
+kenRow3.click();
+await tick(30);
+document.querySelector('#dm-msgs-inner .dm-invite-card').click();
+await tick(60);
+check('3回目の入室ができる', visible($('room-screen')));
+let hostView = 'member';
+const meUser = await KL.getMe();
+KL.getRoom = async (roomId) => {
+  const d = await origGetRoom(roomId);
+  if (hostView === 'promoted') {
+    // マスターが抜けて自分に移った状態：満室＋全員準備OKなら開始ボタンが有効になる
+    // （画面側のマスター判定は detail.hostId === 自分のid で行われる）
+    return {
+      ...d, isHost: true, hostId: meUser.id, players: d.capacity,
+      members: (d.members ?? []).map((m) => ({ ...m, ready: true, isHost: m.id === meUser.id })),
+    };
+  }
+  if (hostView === 'replaced') {
+    return { ...d, isMember: false, isHost: false, members: [], roomMessages: d.roomMessages ?? [] };
+  }
+  return d;
+};
+hostView = 'promoted';
+const promoted = await waitFor(() => !$('btn-start-game').classList.contains('hidden'), 5000);
+check('マスターに移ると「ゲームスタート」ボタンが出る', promoted);
+check('満室＋全員準備OKなら開始ボタンが押せる状態になる',
+  $('btn-start-game').disabled === false);
+hostView = 'replaced';
+const replacedOut = await waitFor(() => !$('room-screen').classList.contains('open'), 5000);
+check('マスター交代で外れたら待機室が自動で閉じる', replacedOut);
+check('「マスターを交代しました」のトーストが出る（キック文言と混同しない）',
+  $('toast').textContent.includes('マスターを交代しました'), $('toast').textContent);
+
 const failures = results.filter((r) => !r.ok).length;
 console.log(`\n=== ${failures === 0 ? 'ALL PASS' : failures + ' FAILURES'} (${results.length} checks) ===`);
 process.exit(failures ? 1 : 0);

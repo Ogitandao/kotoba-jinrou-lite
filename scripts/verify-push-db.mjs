@@ -114,6 +114,10 @@ check('週1回まで：直後の再実行では対象が減る（Bは含まれ�
 
 // ===== テスト仕様書 §11 の追加検証（2026-11-28） =====
 // §11-7 サーバー側：大元（master）OFF ではカテゴリが ON でも送らない
+// 呼び戻しステップで失効購読は掃除済みのため、まず購読を戻す
+await b.c.from('kl_push_subscriptions').insert({
+  user_id: b.id, endpoint, p256dh: realP256dh, auth: realAuth,
+});
 await b.c.from('kl_push_prefs').upsert({ user_id: b.id, master: false, dm: true });
 const dm3 = await a.c.rpc('kl_send_dm', { p_to: b.id, p_body: 'プッシュ検証3（大元OFF）' });
 check('DM送信（大元OFF時）', !dm3.error, dm3.error?.message ?? '');
@@ -138,7 +142,7 @@ check('§11-5 ギフト・フレンド申請では push-send が呼ばれない'
 
 // §11-4 運営お知らせは push のみで届き、システムDMには入らない
 const sysDmBefore = Number(sql1(
-  `select count(*)::int as n from public.dm_messages where receiver_id = '${b.id}' and sender_id is null`).n ?? 0);
+  `select count(*)::int as n from public.dm_messages where recipient_id = '${b.id}' and sender_id is null`).n ?? 0);
 const respBeforeAnn = Number(sql1('select coalesce(max(id),0)::int as n from net._http_response').n ?? 0);
 sql(`select net.http_post(
   url := 'https://dtdwkluanoaqiaruzbwe.supabase.co/functions/v1/push-send',
@@ -156,7 +160,7 @@ const subAfterAnn = Number(sql1(
 check('§11-4 購読者へ実際に配信が試みられた（失効購読が掃除された）',
   subAfterAnn === 0, `subs=${subAfterAnn}`);
 const sysDmAfter = Number(sql1(
-  `select count(*)::int as n from public.dm_messages where receiver_id = '${b.id}' and sender_id is null`).n ?? 0);
+  `select count(*)::int as n from public.dm_messages where recipient_id = '${b.id}' and sender_id is null`).n ?? 0);
 check('§11-4 お知らせはシステムDMには入らない（pushのみ）',
   sysDmAfter === sysDmBefore, `systemDM ${sysDmBefore} -> ${sysDmAfter}`);
 

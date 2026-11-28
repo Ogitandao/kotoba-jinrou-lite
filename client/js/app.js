@@ -2683,7 +2683,7 @@
     slideInScreen($('room-screen'));
     updateCreateBar();
     renderRoomScreen();
-    DATA.heartbeat(detail.id).catch(() => {});
+    heartbeatNow(detail.id);
     stopRoomPoll();
     state.roomPoll = setInterval(pollRoom, 1200);
   }
@@ -2700,22 +2700,31 @@
     }, 340);
     updateCreateBar();
   }
+  // 生存信号はアプリが表に出ている間だけ送る（2026-11-28 おぎ決定：
+  // 最小化したら一定時間でセッションが切れる。裏に回ったままの
+  // ハートビート継続は「いること」にしない）
+  function heartbeatNow(roomId) {
+    if (document.hidden) return;
+    DATA.heartbeat(roomId).catch(() => {});
+  }
   function stopRoomPoll() {
     if (state.roomPoll) { clearInterval(state.roomPoll); state.roomPoll = null; }
   }
   async function pollRoom() {
     if (!state.roomId || state.gameId) return;
     // 生存信号（対戦中の離脱判定に使う。先に送ってから状態を取得する）
-    DATA.heartbeat(state.roomId).catch(() => {});
+    heartbeatNow(state.roomId);
     const wasLobby = state.roomDetail?.status === 'lobby';
     const wasMember = !!state.roomDetail?.isMember;
+    const wasHost = !!state.roomDetail?.isHost;
     try {
       const detail = await DATA.getRoom(state.roomId);
       // キック／終了の検知：参加していたのに参加でなくなっていたら、
       // 空の待機室を表示し続けずロビーへ戻す（2026-11-27 おぎ実機報告：
       // キックされた側が0人の部屋画面に取り残された）。
-      // 自分の心拍は取得前に送っているので、巡回掃除で消されるのは
-      // アプリを開いている本人には起こらず、ここに来るのは実質キック
+      // 自分の心拍は取得前に送っているので、表に出ている本人は巡回掃除で
+      // 消されない。ここに来るのはキック・マスター自動交代・裏に回って
+      // 心拍が止まったまま掃除された場合
       if (wasMember && detail.status === 'closed') {
         closeRoomScreen();
         refreshRooms();
@@ -2725,7 +2734,11 @@
       if (wasMember && !detail.isMember && detail.status === 'lobby') {
         closeRoomScreen();
         refreshRooms();
-        toast('マスターにキックされました');
+        // 自分がマスターだったのに外れた場合はマスター交代（開始しなかった
+        // ことによる自動交代＝0063、または離席によるゴースト掃除＝0062）。
+        // 理由は断定せず、交代の事実だけを伝える（自動交代のときは理由を
+        // 説明するシステムDMが別途届く）
+        toast(wasHost ? 'マスターを交代しました' : 'マスターにキックされました');
         return;
       }
       state.roomDetail = detail;
@@ -3105,7 +3118,7 @@
   async function pollGame() {
     if (!state.gameId) return;
     // 生存信号（離脱判定用。取得より先に送り、自分の途絶と誤判定しない）
-    if (state.roomId) DATA.heartbeat(state.roomId).catch(() => {});
+    if (state.roomId) heartbeatNow(state.roomId);
     try {
       const view = await DATA.getGameView(state.gameId);
       state.gameView = view;
@@ -3986,7 +3999,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-28 10:50 / tutfix1';
+      $('build-stamp').textContent = 'build 2026-11-28 11:10 / stallkick1';
       loadPushSettings();
       openModal('modal-settings');
     });

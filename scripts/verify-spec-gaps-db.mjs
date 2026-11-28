@@ -66,10 +66,17 @@ async function rpc(user, fn, args) {
 async function signup(tag) {
   const sb = mkClient();
   const email = `kl.lite.gaps.${tag}${stamp}@gmail.com`;
-  const { data, error } = await sb.auth.signUp({
-    email, password: PW,
-    options: { data: { test_marker: 'test/lite', display_name: `ギャップ検証${tag}` } },
-  });
+  let data, error;
+  for (let i = 0; i < 4; i++) {
+    try {
+      ({ data, error } = await sb.auth.signUp({
+        email, password: PW,
+        options: { data: { test_marker: 'test/lite', display_name: `ギャップ検証${tag}` } },
+      }));
+    } catch (e) { error = e; }
+    if (!error) break;
+    await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
+  }
   if (error || !data?.session) throw new Error(`signup ${tag} 失敗: ${error?.message ?? 'session なし'}`);
   await sb.rpc('kl_agree_rules');
   await sb.rpc('kl_set_birthdate', { p_birthdate: '1995-01-01' });

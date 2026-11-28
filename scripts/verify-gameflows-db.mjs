@@ -52,10 +52,17 @@ async function rpc(user, fn, args) {
 async function signup(tag) {
   const sb = mkClient();
   const email = `kl.lite.gf.${tag}${stamp}@gmail.com`;
-  const { data, error } = await sb.auth.signUp({
-    email, password: pw,
-    options: { data: { test_marker: 'test/lite', display_name: `フロー検証${tag}` } },
-  });
+  let data, error;
+  for (let i = 0; i < 4; i++) {
+    try {
+      ({ data, error } = await sb.auth.signUp({
+        email, password: pw,
+        options: { data: { test_marker: 'test/lite', display_name: `フロー検証${tag}` } },
+      }));
+    } catch (e) { error = e; }
+    if (!error && data?.session) break;
+    await sleepMs(1000 * (i + 1));
+  }
   if (error || !data?.session) throw new Error(`signup ${tag} 失敗: ${error?.message ?? 'session なし'}`);
   await sb.rpc('kl_agree_rules');
   await sb.rpc('kl_set_birthdate', { p_birthdate: '1995-01-01' });
@@ -215,27 +222,35 @@ check('検証ユーザー4名（スキップ組）', K.length === 4);
 }
 
 // ---------- 5) マスター放置：3回で確定し DM が届く ----------
+// 0063 以降、公開ルームの放置検出はその場でマスターを強制キックするため、
+// 同じ部屋では1回しか記録できない。3回ぶんは別々の部屋で発生させる
 {
   const host = await signup('s1');
   const fillers = A.slice(0, 3);
-  const created = await rpc(host, 'ww_create_room', {
-    p_title: '放置検証ルーム', p_is_private: false, p_capacity: 4,
-  });
-  const roomId = created.data.id;
-  for (const u of fillers) await rpc(u, 'ww_join_room', { p_room: roomId });
-  for (const u of fillers) await rpc(u, 'ww_set_ready', { p_room: roomId, p_ready: true });
-  const readyRow = sql1(`select all_ready_at from public.rooms where id = '${roomId}'`);
-  check('放置検証：満室＋全員準備OKで all_ready_at が立つ', !!readyRow.all_ready_at);
-  for (let i = 0; i < 3; i++) {
-    sql(`update public.rooms set all_ready_at = now() - interval '${6 + i} minutes' where id = '${roomId}'`);
+  const roomIds = [];
+  for (let round = 0; round < 3; round++) {
+    const created = await rpc(host, 'ww_create_room', {
+      p_title: '放置検証ルーム', p_is_private: false, p_capacity: 4,
+    });
+    const roomId = created.data.id;
+    roomIds.push(roomId);
+    for (const u of fillers) await rpc(u, 'ww_join_room', { p_room: roomId });
+    for (const u of fillers) await rpc(u, 'ww_set_ready', { p_room: roomId, p_ready: true });
+    if (round === 0) {
+      const readyRow = sql1(`select all_ready_at from public.rooms where id = '${roomId}'`);
+      check('放置検証：満室＋全員準備OKで all_ready_at が立つ', !!readyRow.all_ready_at);
+    }
+    sql(`update public.rooms set all_ready_at = now() - interval '6 minutes' where id = '${roomId}'`);
     sql('select public.kl__detect_stalls()');
+    // 次の部屋に備えて全員退出（ホストはキック済み、残りは新マスターごと抜ける）
+    for (const u of fillers) await rpc(u, 'ww_leave_room', { p_room: roomId });
   }
   const recorded = sql(
-    `select count(*)::int as n from public.stall_events where room_id = '${roomId}' and status = 'recorded'`);
+    `select count(*)::int as n from public.stall_events where room_id in ('${roomIds.join("','")}') and status = 'recorded'`);
   check('放置が3回ぶん記録される', recorded[0].n === 3, JSON.stringify(recorded));
   sql('select public.kl__moderation_sweep()');
   const confirmed = sql(
-    `select count(*)::int as n from public.stall_events where room_id = '${roomId}' and status = 'confirmed'`);
+    `select count(*)::int as n from public.stall_events where room_id in ('${roomIds.join("','")}') and status = 'confirmed'`);
   check('sweep で3回とも確定する（30日で3回のハイブリッド条件）', confirmed[0].n === 3,
     JSON.stringify(confirmed));
   const pen = sql(
@@ -248,7 +263,7 @@ check('検証ユーザー4名（スキップ組）', K.length === 4);
   check('3回目で利用制限が発動する（penalty_until が未来）',
     !!prof.penalty_until && new Date(prof.penalty_until) > new Date(),
     `penalty_until=${prof.penalty_until}`);
-  for (const u of [host, ...fillers]) await rpc(u, 'ww_leave_room', { p_room: roomId });
+  // 後片付けは各ラウンド内で済ませてある（ホストはキック済み・残りは退出済み）
 }
 
 // ---------- 6) モデレーション確定 → 処分DM ----------

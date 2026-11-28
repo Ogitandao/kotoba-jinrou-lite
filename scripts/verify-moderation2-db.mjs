@@ -102,7 +102,9 @@ function insertCase({ author, surface, ref, snapshot, weight = 1.0 }) {
 function finalize(caseId, scores) {
   const row = sql1(`select public.kl__finalize_case('${caseId}',
     '{"scores": ${JSON.stringify(scores)}, "flagged": {}}'::jsonb) as decision`);
-  return row.decision;
+  // kl__finalize_case の戻りは jsonb（{ok, outcome, ...}）。outcome を取り出す
+  const d = row.decision;
+  return d && typeof d === 'object' ? d.outcome : d;
 }
 const sweep = () => sql('select public.kl__moderation_sweep() as swept');
 const setTrust = (userId, score) => sql(`insert into public.reporter_stats (user_id, trust_score)
@@ -110,7 +112,7 @@ const setTrust = (userId, score) => sql(`insert into public.reporter_stats (user
   on conflict (user_id) do update set trust_score = ${score}`);
 const systemDmsTo = (userId, like) => sql(
   `select body from public.dm_messages
-   where receiver_id = '${userId}' and sender_id is null and kind = 'system'
+   where recipient_id = '${userId}' and sender_id is null and kind = 'system'
      and body like '%${like}%'`);
 
 // ================= §9-2 二重通報・上限 =================
@@ -119,9 +121,9 @@ const systemDmsTo = (userId, like) => sql(
   const R = await signup('r2r');
   await befriend(A, R);
   const m1 = await sendDm(A, R, '二重通報の検証メッセージ');
-  const first = await rpc(R, 'kl_report', { p_kind: 'dm_message', p_target_id: m1, p_reason: 'その他' });
+  const first = await rpc(R, 'kl_report', { p_target_kind: 'dm_message', p_target_ref: m1, p_target_user: A.id, p_reason: 'その他', p_detail: null });
   check('§9-2 1回目の通報は受理される', !first.error, first.code ?? '');
-  const second = await rpc(R, 'kl_report', { p_kind: 'dm_message', p_target_id: m1, p_reason: 'その他' });
+  const second = await rpc(R, 'kl_report', { p_target_kind: 'dm_message', p_target_ref: m1, p_target_user: A.id, p_reason: 'その他', p_detail: null });
   check('§9-2 同じ投稿への2回目は ALREADY_REPORTED', second.code === 'ALREADY_REPORTED', second.code ?? '');
   // 24時間の上限：既存1件＋ダミー19件で20件に到達させる
   for (let i = 0; i < 19; i++) {
@@ -129,7 +131,7 @@ const systemDmsTo = (userId, like) => sql(
       values ('${R.id}', '${A.id}', 'dm_message', gen_random_uuid(), '検証')`);
   }
   const m2 = await sendDm(A, R, '上限検証メッセージ');
-  const over = await rpc(R, 'kl_report', { p_kind: 'dm_message', p_target_id: m2, p_reason: 'その他' });
+  const over = await rpc(R, 'kl_report', { p_target_kind: 'dm_message', p_target_ref: m2, p_target_user: A.id, p_reason: 'その他', p_detail: null });
   check('§9-2 24時間で20件を超える通報は REPORT_LIMIT', over.code === 'REPORT_LIMIT', over.code ?? '');
 }
 
@@ -143,7 +145,7 @@ const systemDmsTo = (userId, like) => sql(
   const m = await sendDm(A, R1, '仮非表示の検証メッセージ');
   for (const r of [R1, R2, R3]) {
     setTrust(r.id, 1.0);
-    const rep = await rpc(r, 'kl_report', { p_kind: 'dm_message', p_target_id: m, p_reason: '暴言・ハラスメント' });
+    const rep = await rpc(r, 'kl_report', { p_target_kind: 'dm_message', p_target_ref: m, p_target_user: A.id, p_reason: '暴言・ハラスメント', p_detail: null });
     if (rep.error) throw new Error(`§9-3 通報失敗: ${rep.code}`);
   }
   sweep();
@@ -152,7 +154,7 @@ const systemDmsTo = (userId, like) => sql(
     JSON.stringify(kase));
   const msg = sql1(`select hidden_at from public.dm_messages where id = '${m}'`);
   check('§9-3 重み3.0でメッセージは仮非表示になる', !!msg.hidden_at);
-  const notice = systemDmsTo(A.id, '非表示');
+  const notice = systemDmsTo(A.id, '見えない状態');
   check('§9-3 投稿者へ仮非表示のシステムDMが届く', notice.length >= 1);
 
   // 半減ルール：同じルームのメンバー2人からの通報は重み半分
@@ -170,7 +172,7 @@ const systemDmsTo = (userId, like) => sql(
     values ('${room.data.id}', '${H.id}', '半減検証の発言') returning id`);
   for (const r of [M1, M2]) {
     setTrust(r.id, 1.0);
-    const rep = await rpc(r, 'kl_report', { p_kind: 'room_message', p_target_id: rm.id, p_reason: '暴言・ハラスメント' });
+    const rep = await rpc(r, 'kl_report', { p_target_kind: 'room_message', p_target_ref: rm.id, p_target_user: H.id, p_reason: '暴言・ハラスメント', p_detail: null });
     if (rep.error) throw new Error(`§9-3 ルーム通報失敗: ${rep.code}`);
   }
   sweep();
@@ -187,7 +189,7 @@ const systemDmsTo = (userId, like) => sql(
   const m = await sendDm(A, R, '重大検証メッセージ');
   const caseId = insertCase({ author: A.id, surface: 'dm', ref: m, snapshot: '重大検証メッセージ' });
   const decision = finalize(caseId, { 'sexual/minors': 0.5 });
-  check('§9-6 未成年が絡む性的表現は初回でも penalized（凍結）', decision === 'penalized', decision);
+  check('§9-6 未成年が絡む性的表現は初回でも違反確定（upheld＝凍結）', decision === 'upheld', decision);
   const ev = sql1(`select minutes from public.penalty_events
     where user_id = '${A.id}' and track = 'harassment' order by created_at desc limit 1`);
   check('§9-6 ペナルティは無期限（minutes=-1）', Number(ev.minutes) === -1, JSON.stringify(ev));
@@ -201,11 +203,13 @@ const systemDmsTo = (userId, like) => sql(
   const A = await signup('r7a');
   const R = await signup('r7r');
   await befriend(A, R);
+  // finalize の outcome は違反確定なら常に 'upheld'。警告か処分かは
+  // penalty_events の kind/minutes で見る（実挙動に合わせた期待値）
   const expected = [
-    { decision: 'warned', kind: 'warning', minutes: 0 },
-    { decision: 'penalized', kind: 'violation', minutes: 10080 },
-    { decision: 'penalized', kind: 'violation', minutes: 43200 },
-    { decision: 'penalized', kind: 'violation', minutes: -1 },
+    { decision: 'upheld', kind: 'warning', minutes: 0 },
+    { decision: 'upheld', kind: 'violation', minutes: 10080 },
+    { decision: 'upheld', kind: 'violation', minutes: 43200 },
+    { decision: 'upheld', kind: 'violation', minutes: -1 },
   ];
   for (let i = 0; i < expected.length; i++) {
     const m = await sendDm(A, R, `階段検証メッセージ${i + 1}`);
@@ -233,7 +237,7 @@ const systemDmsTo = (userId, like) => sql(
     where user_id = '${B.id}' and track = 'harassment' and created_at > now() - interval '1 day'
     order by created_at desc limit 1`);
   check('§9-7 90日より前の違反は数えず、初回扱いで警告に戻る',
-    decision === 'warned' && ev.kind === 'warning' && Number(ev.minutes) === 0,
+    decision === 'upheld' && ev.kind === 'warning' && Number(ev.minutes) === 0,
     `${decision} / ${JSON.stringify(ev)}`);
 }
 
@@ -251,7 +255,7 @@ const systemDmsTo = (userId, like) => sql(
     decisions.push(finalize(caseId, { harassment: 0.7 }));
   }
   check('§9-8 中間帯（DM 0.7）が3件溜まると3件目で違反確定（warned）',
-    decisions[0] === 'dismissed' && decisions[1] === 'dismissed' && decisions[2] === 'warned',
+    decisions[0] === 'dismissed' && decisions[1] === 'dismissed' && decisions[2] === 'upheld',
     decisions.join(','));
   const reasons = sql(`select decision_reason from public.moderation_cases
     where id in ('${caseIds[0]}', '${caseIds[1]}') order by created_at`);
@@ -269,7 +273,7 @@ const systemDmsTo = (userId, like) => sql(
   const R = await signup('r9r');
   await befriend(A, R);
   const m1 = await sendDm(A, R, '結果通知（対応）メッセージ');
-  await rpc(R, 'kl_report', { p_kind: 'dm_message', p_target_id: m1, p_reason: '暴言・ハラスメント' });
+  await rpc(R, 'kl_report', { p_target_kind: 'dm_message', p_target_ref: m1, p_target_user: A.id, p_reason: '暴言・ハラスメント', p_detail: null });
   sweep();
   const c1 = sql1(`select id from public.moderation_cases where target_ref = '${m1}'`);
   finalize(c1.id, { harassment: 0.95 });
@@ -280,7 +284,7 @@ const systemDmsTo = (userId, like) => sql(
   const R2 = await signup('r9s');
   await befriend(A2, R2);
   const m2 = await sendDm(A2, R2, '結果通知（却下）メッセージ');
-  await rpc(R2, 'kl_report', { p_kind: 'dm_message', p_target_id: m2, p_reason: 'その他' });
+  await rpc(R2, 'kl_report', { p_target_kind: 'dm_message', p_target_ref: m2, p_target_user: A2.id, p_reason: 'その他', p_detail: null });
   sweep();
   const c2 = sql1(`select id from public.moderation_cases where target_ref = '${m2}'`);
   const d2 = finalize(c2.id, { harassment: 0.05 });
@@ -296,7 +300,7 @@ const systemDmsTo = (userId, like) => sql(
   await befriend(A, R);
   for (let i = 0; i < 5; i++) {
     const m = await sendDm(A, R, `虚偽通報検証メッセージ${i + 1}`);
-    await rpc(R, 'kl_report', { p_kind: 'dm_message', p_target_id: m, p_reason: 'その他' });
+    await rpc(R, 'kl_report', { p_target_kind: 'dm_message', p_target_ref: m, p_target_user: A.id, p_reason: 'その他', p_detail: null });
     sweep();
     const c = sql1(`select id from public.moderation_cases where target_ref = '${m}'`);
     finalize(c.id, { harassment: 0.05 });
@@ -332,7 +336,7 @@ const systemDmsTo = (userId, like) => sql(
   if (g.error) throw new Error(`§7-8 グループ作成失敗: ${g.code}`);
   const sent = await rpc(F, 'kl_send_group_message', { p_group: g.data.id, p_body: 'グループ通報の検証発言' });
   if (sent.error) throw new Error(`§7-8 グループ送信失敗: ${sent.code}`);
-  const rep = await rpc(O, 'kl_report', { p_kind: 'group_message', p_target_id: sent.data.id, p_reason: '暴言・ハラスメント' });
+  const rep = await rpc(O, 'kl_report', { p_target_kind: 'group_message', p_target_ref: sent.data.id, p_target_user: F.id, p_reason: '暴言・ハラスメント', p_detail: null });
   check('§7-8 グループ発言を通報できる', !rep.error, rep.code ?? '');
   sweep();
   const kase = sql1(`select surface from public.moderation_cases where target_ref = '${sent.data.id}'`);
