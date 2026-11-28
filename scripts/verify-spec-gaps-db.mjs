@@ -130,23 +130,26 @@ async function befriend(a, b) {
   const H = await signup('ghosth');
   const S = await signup('ghosts');
   const F = await signup('ghostf');
+  // 部屋とメンバーは1文で作る（間に見回りcronが挟まると空の部屋として
+  // 閉じられてしまうため。本番の作成RPCは原子的に作るので起きない）
+  const mkRoom = (title, status, memberRows) => sql1(`
+    with r as (insert into public.rooms (host_id, title, capacity, status)
+      values ('${H.id}', '${title}', 4, '${status}') returning id)
+    , m as (insert into public.room_members (room_id, user_id, joined_at, last_heartbeat_at)
+      select r.id, v.uid, v.j, v.hb from r,
+        (values ${memberRows}) as v(uid, j, hb))
+    select id from r`);
   // 部屋1：ホスト含め2人が心拍切れ、新鮮なメンバー1人が残る
-  const room1 = sql1(`insert into public.rooms (host_id, title, capacity, status)
-    values ('${H.id}', 'ゴースト検証1', 4, 'lobby') returning id`);
-  sql(`insert into public.room_members (room_id, user_id, joined_at, last_heartbeat_at) values
-    ('${room1.id}', '${H.id}', now() - interval '30 minutes', now() - interval '10 minutes'),
-    ('${room1.id}', '${S.id}', now() - interval '20 minutes', now() - interval '10 minutes'),
-    ('${room1.id}', '${F.id}', now() - interval '15 minutes', now())`);
+  const room1 = mkRoom('ゴースト検証1', 'lobby',
+    `('${H.id}'::uuid, now() - interval '30 minutes', now() - interval '10 minutes'),
+     ('${S.id}'::uuid, now() - interval '20 minutes', now() - interval '10 minutes'),
+     ('${F.id}'::uuid, now() - interval '15 minutes', now())`);
   // 部屋2：全員心拍切れ → closed
-  const room2 = sql1(`insert into public.rooms (host_id, title, capacity, status)
-    values ('${H.id}', 'ゴースト検証2', 4, 'lobby') returning id`);
-  sql(`insert into public.room_members (room_id, user_id, joined_at, last_heartbeat_at) values
-    ('${room2.id}', '${H.id}', now() - interval '30 minutes', now() - interval '10 minutes')`);
+  const room2 = mkRoom('ゴースト検証2', 'lobby',
+    `('${H.id}'::uuid, now() - interval '30 minutes', now() - interval '10 minutes')`);
   // 部屋3：対戦中は心拍切れでも触らない
-  const room3 = sql1(`insert into public.rooms (host_id, title, capacity, status)
-    values ('${H.id}', 'ゴースト検証3', 4, 'playing') returning id`);
-  sql(`insert into public.room_members (room_id, user_id, joined_at, last_heartbeat_at) values
-    ('${room3.id}', '${H.id}', now() - interval '30 minutes', now() - interval '10 minutes')`);
+  const room3 = mkRoom('ゴースト検証3', 'playing',
+    `('${H.id}'::uuid, now() - interval '30 minutes', now() - interval '10 minutes')`);
 
   sql('select public.ww_sweep()');
 
