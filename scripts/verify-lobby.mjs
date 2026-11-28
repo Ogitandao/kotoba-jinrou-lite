@@ -149,7 +149,10 @@ $('btn-create-room').click();
 check('キャンセル後は未同意のまま、再度試すとチュートリアルが再表示される',
   visible($('modal-tutorial')));
 for (let i = 0; i < 5; i++) $('btn-tutorial-next').click();
-check('最後のスライドでのみ「同意してはじめる」が出る',
+check('6枚目ではまだ「同意してはじめる」が出ない',
+  !visible($('btn-tutorial-agree')));
+$('btn-tutorial-next').click();
+check('最後のスライド（7枚目）でのみ「同意してはじめる」が出る',
   visible($('btn-tutorial-agree')));
 $('btn-tutorial-agree').click();
 await tick();

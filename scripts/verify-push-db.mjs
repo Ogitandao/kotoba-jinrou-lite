@@ -112,5 +112,53 @@ const cb2 = sql1('select public.kl__comeback_run() as n');
 check('週1回まで：直後の再実行では対象が減る（Bは含まれない）',
   Number(sql1(`select count(*)::int as n from public.kl_push_prefs where user_id = '${b.id}' and last_comeback_at > now() - interval '1 minute'`).n ?? 0) === 1);
 
+// ===== テスト仕様書 §11 の追加検証（2026-11-28） =====
+// §11-7 サーバー側：大元（master）OFF ではカテゴリが ON でも送らない
+await b.c.from('kl_push_prefs').upsert({ user_id: b.id, master: false, dm: true });
+const dm3 = await a.c.rpc('kl_send_dm', { p_to: b.id, p_body: 'プッシュ検証3（大元OFF）' });
+check('DM送信（大元OFF時）', !dm3.error, dm3.error?.message ?? '');
+await sleep(9000);
+const subAfter3 = Number(sql1(
+  `select count(*)::int as n from public.kl_push_subscriptions where user_id = '${b.id}'`).n ?? 0);
+check('§11-7 master=false では dm=true でも送信されず購読が残る', subAfter3 === 1, `subs=${subAfter3}`);
+await b.c.from('kl_push_prefs').upsert({ user_id: b.id, master: true, dm: true, announce: true });
+
+// §11-5 ギフト到着とフレンド申請では push は送られない
+// （トリガーは text/invite/system のみ。http 応答が増えないことで確認）
+const respBeforeGift = Number(sql1('select coalesce(max(id),0)::int as n from net._http_response').n ?? 0);
+const gift = await a.c.rpc('kl_send_gift', { p_to: b.id, p_gift_key: 'heart' });
+check('ギフト送信（プッシュ対象外の確認用）', !gift.error, gift.error?.message ?? '');
+const cUser = await mkUser('c');
+const fr = await a.c.rpc('kl_send_friend_request', { p_to: cUser.id });
+check('フレンド申請（プッシュ対象外の確認用）', !fr.error, fr.error?.message ?? '');
+await sleep(6000);
+const respAfterGift = Number(sql1('select coalesce(max(id),0)::int as n from net._http_response').n ?? 0);
+check('§11-5 ギフト・フレンド申請では push-send が呼ばれない',
+  respAfterGift === respBeforeGift, `responses ${respBeforeGift} -> ${respAfterGift}`);
+
+// §11-4 運営お知らせは push のみで届き、システムDMには入らない
+const sysDmBefore = Number(sql1(
+  `select count(*)::int as n from public.dm_messages where receiver_id = '${b.id}' and sender_id is null`).n ?? 0);
+const respBeforeAnn = Number(sql1('select coalesce(max(id),0)::int as n from net._http_response').n ?? 0);
+sql(`select net.http_post(
+  url := 'https://dtdwkluanoaqiaruzbwe.supabase.co/functions/v1/push-send',
+  headers := jsonb_build_object('Content-Type', 'application/json',
+    'x-cron-secret', (select value from public.kl_config where key = 'push_secret')),
+  body := jsonb_build_object('mode', 'announce', 'text', '検証のお知らせ')
+) as rid`);
+await sleep(9000);
+const annResp = sql1(
+  `select status_code from net._http_response where id > ${respBeforeAnn} order by id desc limit 1`);
+check('§11-4 お知らせ送信（push-send）が 200 を返した',
+  Number(annResp.status_code ?? 0) === 200, `status=${annResp.status_code}`);
+const subAfterAnn = Number(sql1(
+  `select count(*)::int as n from public.kl_push_subscriptions where user_id = '${b.id}'`).n ?? 0);
+check('§11-4 購読者へ実際に配信が試みられた（失効購読が掃除された）',
+  subAfterAnn === 0, `subs=${subAfterAnn}`);
+const sysDmAfter = Number(sql1(
+  `select count(*)::int as n from public.dm_messages where receiver_id = '${b.id}' and sender_id is null`).n ?? 0);
+check('§11-4 お知らせはシステムDMには入らない（pushのみ）',
+  sysDmAfter === sysDmBefore, `systemDM ${sysDmBefore} -> ${sysDmAfter}`);
+
 console.log(failures === 0 ? '=== ALL PASS ===' : `=== ${failures} FAILURES ===`);
 process.exit(failures === 0 ? 0 : 1);

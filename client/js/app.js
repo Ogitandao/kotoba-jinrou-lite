@@ -2569,7 +2569,7 @@
   // 最後のスライドの「同意する」と「キャンセル」だけ。
   // キャンセルしても未同意のままなので、入室を試みるたびに再表示される。
   // 設定／ようこそDMからは閲覧モード（「閉じる」で閉じられる）で開く。
-  const TUTORIAL_LAST = 5; // スライドは6枚（0始まり）
+  const TUTORIAL_LAST = 6; // スライドは7枚（0始まり）
   function ensureRulesConsent(action) {
     if (state.rulesAgreed) { action(); return; }
     state.pendingEntry = action;
@@ -3986,7 +3986,7 @@
       $('row-fresh-exit').classList.toggle('hidden', DATA.mode !== 'sim' || !IS_FRESH);
       $('row-demo-reset').classList.toggle('hidden', DATA.mode !== 'sim');
       // ビルド表示：端末がどの版を動かしているかを目で確認するため
-      $('build-stamp').textContent = 'build 2026-11-27 23:55 / kickfix1';
+      $('build-stamp').textContent = 'build 2026-11-28 10:50 / tutfix1';
       loadPushSettings();
       openModal('modal-settings');
     });

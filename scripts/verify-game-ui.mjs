@@ -212,6 +212,11 @@ await tick(30);
 check('キャンセルしても未同意のまま、入室を試みると再表示される',
 visible($('modal-tutorial')));
 for (let i = 0; i < 5; i++) $('btn-tutorial-next').click();
+check('6枚目（困ったときは）ではまだ同意ボタンが出ない', !visible($('btn-tutorial-agree')));
+$('btn-tutorial-next').click();
+check('7枚目（コインとギフト）に到達できる', $('tutorial-track').style.transform === 'translateX(-600%)'
+  && document.querySelectorAll('.tutorial-slide').length === 7
+  && document.querySelectorAll('#tutorial-dots .tutorial-dot').length === 7);
 check('最後のスライドで同意ボタンが出る', visible($('btn-tutorial-agree')));
 $('btn-tutorial-agree').click();
 await tick(30);
