@@ -1,0 +1,171 @@
+{
+ "handle_new_user": [
+  "insert into coin_ledger",
+  "insert into coin_wallets",
+  "insert into dm_messages",
+  "insert into profiles"
+ ],
+ "ww_create_room": [
+  "insert into coin_ledger",
+  "insert into room_members",
+  "insert into rooms",
+  "perform kl__assert_not_penalized",
+  "perform kl__assert_rules_agreed",
+  "perform kl__require_birthdate",
+  "raise invalid_genre",
+  "raise title_required",
+  "raise title_too_long",
+  "raise unauthenticated"
+ ],
+ "ww_join_room": [
+  "insert into room_members",
+  "perform kl__assert_not_penalized",
+  "perform kl__assert_rules_agreed",
+  "perform kl__require_birthdate",
+  "perform ww__refresh_all_ready",
+  "raise invite_required",
+  "raise room_busy",
+  "raise room_full",
+  "raise room_not_found",
+  "raise unauthenticated"
+ ],
+ "ww_leave_room": [
+  "delete from room_members",
+  "perform ww__refresh_all_ready",
+  "update rooms"
+ ],
+ "ww_kick_member": [
+  "delete from room_members",
+  "perform kl__require_birthdate",
+  "perform ww__refresh_all_ready",
+  "raise in_result",
+  "raise invalid_target",
+  "raise not_a_member",
+  "raise not_host",
+  "raise room_busy",
+  "raise room_not_found",
+  "raise unauthenticated"
+ ],
+ "ww_set_ready": [
+  "perform kl__require_birthdate",
+  "perform ww__refresh_all_ready",
+  "raise not_a_member",
+  "raise unauthenticated",
+  "update room_members"
+ ],
+ "ww__start_game_now": [
+  "insert into ww_sets",
+  "raise not_all_ready",
+  "raise room_busy",
+  "raise room_not_found",
+  "raise room_not_full",
+  "update rooms"
+ ],
+ "ww_start_game": [
+  "perform kl__require_birthdate",
+  "raise not_host",
+  "raise room_not_found",
+  "raise unauthenticated"
+ ],
+ "ww__advance_expired": [
+  "perform ww__finish",
+  "perform ww__resolve_vote",
+  "perform ww__set_phase",
+  "perform ww__terminate_set",
+  "update room_members",
+  "update rooms",
+  "update ww_games",
+  "update ww_sets"
+ ],
+ "ww__terminate_set": [
+  "delete from room_members",
+  "insert into ww_messages",
+  "update room_members",
+  "update rooms",
+  "update ww_sets"
+ ],
+ "ww__detect_abandons": [
+  "perform kl__apply_penalty",
+  "perform ww__set_phase",
+  "perform ww__terminate_set",
+  "update ww_games"
+ ],
+ "ww__cleanup_lobby_rooms": [
+  "delete from room_members",
+  "perform ww__refresh_all_ready",
+  "update rooms"
+ ],
+ "ww_sweep": [
+  "perform ww__advance_expired",
+  "perform ww__cleanup_lobby_rooms",
+  "perform ww__detect_abandons"
+ ],
+ "kl__detect_stalls": [
+  "delete from room_members",
+  "insert into stall_events",
+  "perform kl__send_system_dm",
+  "perform ww__refresh_all_ready",
+  "update rooms"
+ ],
+ "kl__moderation_sweep": [
+  "insert into moderation_cases",
+  "insert into penalty_events",
+  "perform kl__apply_penalty",
+  "perform kl__send_system_dm",
+  "raise provisional",
+  "update dm_messages",
+  "update kl_group_messages",
+  "update moderation_cases",
+  "update reports",
+  "update stall_events",
+  "update ww_messages",
+  "update ww_room_messages"
+ ],
+ "kl__apply_penalty": [
+  "insert into penalty_events",
+  "perform kl__send_system_dm",
+  "update profiles"
+ ],
+ "kl_send_dm": [
+  "insert into dm_messages",
+  "perform kl__assert_not_heavy",
+  "perform kl__require_birthdate",
+  "perform kl_require_user",
+  "raise blocked",
+  "raise empty_message",
+  "raise message_too_long",
+  "raise not_friends",
+  "raise self_action",
+  "raise unauthenticated",
+  "raise url_not_allowed"
+ ],
+ "kl_send_group_message": [
+  "insert into kl_group_messages",
+  "perform kl__assert_not_heavy",
+  "perform kl__require_birthdate",
+  "perform kl__require_group_member",
+  "raise empty_message",
+  "raise message_too_long",
+  "raise url_not_allowed"
+ ],
+ "kl_send_gift": [
+  "insert into coin_ledger",
+  "insert into dm_messages",
+  "insert into gift_history",
+  "perform kl__require_birthdate",
+  "perform kl_require_user",
+  "raise blocked",
+  "raise gift_not_found",
+  "raise self_action",
+  "raise unauthenticated",
+  "update profiles"
+ ],
+ "kl_claim_login_bonus": [
+  "insert into coin_ledger",
+  "insert into kl_starter_bonus",
+  "perform kl__require_birthdate",
+  "raise unauthenticated",
+  "raise user_not_found",
+  "update coin_wallets"
+ ]
+}
