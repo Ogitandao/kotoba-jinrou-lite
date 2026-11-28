@@ -267,7 +267,9 @@ check('検証ユーザー4名（スキップ組）', K.length === 4);
   // 念のため最終ラウンドの部屋も明示的に畳む（実ロビーに残さない）
   for (const rid of roomIds) {
     sql(`delete from public.room_members where room_id = '${rid}'`);
-    sql(`delete from public.rooms where id = '${rid}'`);
+    // stall_events 等から参照されていると行削除できない場合があるため、
+    // ロビーに出なくなる「closed 化」を正とする（行削除はベストエフォート）
+    sql(`update public.rooms set status = 'closed' where id = '${rid}'`);
   }
 }
 
